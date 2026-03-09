@@ -73,7 +73,9 @@ export default function BusinessDetailPage() {
       });
       setReviews(r);
       await loadDashboard();
-      setActionSuccess(`Fetched ${r.length} review${r.length !== 1 ? "s" : ""}.`);
+      setActionSuccess(
+        `Fetched ${r.length} review${r.length !== 1 ? "s" : ""}. Previous analysis was cleared — run analysis again for updated insights.`
+      );
     } catch (err) {
       setActionError(
         err instanceof ApiError ? err.detail : "Failed to fetch reviews."
@@ -146,9 +148,16 @@ export default function BusinessDetailPage() {
       {dashboard && (
         <>
           <div className="mb-6">
-            <h1 className="text-2xl font-semibold">
-              {dashboard.business_name}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold">
+                {dashboard.business_name}
+              </h1>
+              {dashboard.business_type && dashboard.business_type !== "other" && (
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">
+                  {dashboard.business_type}
+                </span>
+              )}
+            </div>
             {dashboard.address && (
               <p className="text-gray-500 text-sm mt-1">
                 {dashboard.address}

@@ -9,10 +9,25 @@ export interface TokenResponse {
   token_type: string;
 }
 
+export const BUSINESS_TYPES = [
+  "restaurant",
+  "bar",
+  "cafe",
+  "gym",
+  "salon",
+  "hotel",
+  "clinic",
+  "retail",
+  "other",
+] as const;
+
+export type BusinessType = (typeof BUSINESS_TYPES)[number];
+
 export interface Business {
   id: string;
   place_id: string;
   name: string;
+  business_type: string;
   address: string | null;
   google_maps_url: string | null;
   avg_rating: number | null;
@@ -44,15 +59,22 @@ export interface Analysis {
   summary: string;
   top_complaints: InsightItem[];
   top_praise: InsightItem[];
+  action_items: string[];
+  risk_areas: string[];
+  recommended_focus: string;
   created_at: string;
 }
 
 export interface Dashboard {
   business_name: string;
+  business_type: string;
   address: string | null;
   avg_rating: number | null;
   total_reviews: number;
   top_complaints: InsightItem[];
   top_praise: InsightItem[];
   ai_summary: string | null;
+  action_items: string[];
+  risk_areas: string[];
+  recommended_focus: string | null;
 }

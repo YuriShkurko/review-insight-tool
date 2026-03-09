@@ -17,6 +17,7 @@ class Business(Base):
     )
     place_id: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    business_type: Mapped[str] = mapped_column(String(50), nullable=False, default="other")
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
     google_maps_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     avg_rating: Mapped[float | None] = mapped_column(Float, nullable=True)

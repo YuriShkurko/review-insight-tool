@@ -1,12 +1,26 @@
 import uuid
 from datetime import datetime
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
+
+
+class BusinessType(str, Enum):
+    restaurant = "restaurant"
+    bar = "bar"
+    cafe = "cafe"
+    gym = "gym"
+    salon = "salon"
+    hotel = "hotel"
+    clinic = "clinic"
+    retail = "retail"
+    other = "other"
 
 
 class BusinessCreate(BaseModel):
     google_maps_url: str | None = None
     place_id: str | None = None
+    business_type: BusinessType = BusinessType.other
 
 
 class BusinessRead(BaseModel):
@@ -15,6 +29,7 @@ class BusinessRead(BaseModel):
     id: uuid.UUID
     place_id: str
     name: str
+    business_type: str
     address: str | None
     google_maps_url: str | None
     avg_rating: float | None

@@ -4,14 +4,24 @@ A micro-SaaS that lets business owners paste a Google Maps link, fetch customer 
 
 Built as a full-stack portfolio project demonstrating a clean, production-style architecture with FastAPI, Next.js, PostgreSQL, and OpenAI.
 
+## Screenshots
+
+| Login | Add Business | Dashboard |
+|-------|-------------|-----------|
+| ![Login](docs/screenshots/01-login.png) | ![Add Business](docs/screenshots/02-add-business.png) | ![Dashboard](docs/screenshots/03-dashboard.png) |
+
+| Insights & Actions | Reviews |
+|--------------------|---------|
+| ![Insights](docs/screenshots/04-insights.png) | ![Reviews](docs/screenshots/05-reviews.png) |
+
 ## Core Features
 
-- **Add a business** — Paste any Google Maps URL; the app extracts the place ID and business name automatically
+- **Add a business** — Paste any Google Maps URL; select business type (restaurant, bar, cafe, gym, salon, hotel, clinic, retail, or other)
 - **Fetch reviews** — Pluggable provider system: mock data for development, Outscraper for real Google Maps reviews
-- **AI analysis** — Generates a summary, top complaints, and top praise using OpenAI (or mock data when no key is configured)
-- **Dashboard** — Displays average rating, review count, AI summary, and categorized insights
+- **Clean refresh** — Re-fetching reviews replaces the old set entirely and clears stale analysis
+- **Business-type-aware AI analysis** — Generates summary, top complaints, top praise, action items, risk areas, and a recommended focus area using prompts tailored to the business type
+- **Dashboard** — Displays average rating, review count, AI summary, recommended focus, categorized insights, action items, and risk areas
 - **User auth** — JWT-based registration and login; each user sees only their own businesses
-- **Deduplication** — Re-fetching reviews is safe; duplicates are detected by external ID
 
 ## Tech Stack
 
@@ -164,7 +174,7 @@ All endpoints are prefixed with `/api`. Business, review, analysis, and dashboar
 └── README.md
 ```
 
-## Current Limitations (V1)
+## Current Limitations (V1.1)
 
 - **Outscraper costs** — Outscraper is a paid API; mock mode is free and used by default
 - **No real-time updates** — Dashboard must be manually refreshed after actions
@@ -173,9 +183,11 @@ All endpoints are prefixed with `/api`. Business, review, analysis, and dashboar
 - **No password requirements** — No minimum length or complexity enforcement
 - **Single-user focus** — No teams, roles, or shared access
 - **No delete** — Businesses cannot be removed once added
+- **Review refresh replaces all** — Refreshing reviews deletes the old set and clears analysis; there is no incremental update
 
 ## Future Improvements
 
+- Competitor comparison — compare your business insights against linked competitors
 - Additional review providers (Yelp, TripAdvisor, App Store, Play Store)
 - Add Alembic for database migrations
 - Add delete/archive business functionality

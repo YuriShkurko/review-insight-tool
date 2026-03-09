@@ -4,13 +4,14 @@ import { useEffect, useState, useCallback, type FormEvent } from "react";
 import { useRequireAuth } from "@/lib/auth";
 import { apiFetch, ApiError } from "@/lib/api";
 import BusinessCard from "@/components/BusinessCard";
-import type { Business } from "@/lib/types";
+import { BUSINESS_TYPES, type Business, type BusinessType } from "@/lib/types";
 
 export default function BusinessesPage() {
   const { user, isLoading } = useRequireAuth();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
+  const [businessType, setBusinessType] = useState<BusinessType>("other");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -40,8 +41,8 @@ export default function BusinessesPage() {
     const trimmed = input.trim();
     const isUrl = trimmed.startsWith("http");
     const body = isUrl
-      ? { google_maps_url: trimmed, place_id: null }
-      : { place_id: trimmed, google_maps_url: null };
+      ? { google_maps_url: trimmed, place_id: null, business_type: businessType }
+      : { place_id: trimmed, google_maps_url: null, business_type: businessType };
 
     try {
       const biz = await apiFetch<Business>("/businesses", {
@@ -50,6 +51,7 @@ export default function BusinessesPage() {
       });
       setBusinesses((prev) => [biz, ...prev]);
       setInput("");
+      setBusinessType("other");
     } catch (err) {
       setError(
         err instanceof ApiError ? err.detail : "Failed to add business."
@@ -71,23 +73,37 @@ export default function BusinessesPage() {
     <div className="max-w-2xl mx-auto py-8 px-4">
       <h1 className="text-2xl font-semibold mb-6">Your Businesses</h1>
 
-      <form onSubmit={handleAdd} className="flex gap-2 mb-2">
-        <input
-          type="text"
-          required
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Paste a Google Maps URL or place ID"
-          disabled={adding}
-          className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        />
-        <button
-          type="submit"
-          disabled={adding || !input.trim()}
-          className="bg-blue-600 text-white px-5 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
-        >
-          {adding ? "Adding..." : "Add Business"}
-        </button>
+      <form onSubmit={handleAdd} className="space-y-2 mb-2">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            required
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Paste a Google Maps URL or place ID"
+            disabled={adding}
+            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          />
+          <select
+            value={businessType}
+            onChange={(e) => setBusinessType(e.target.value as BusinessType)}
+            disabled={adding}
+            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 capitalize"
+          >
+            {BUSINESS_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={adding || !input.trim()}
+            className="bg-blue-600 text-white px-5 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+          >
+            {adding ? "Adding..." : "Add Business"}
+          </button>
+        </div>
       </form>
 
       {error && (

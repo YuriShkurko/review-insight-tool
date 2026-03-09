@@ -31,7 +31,9 @@ async def create_business(
             detail="Provide a valid place_id or a Google Maps URL containing one.",
         )
 
-    business = await get_or_create_business(db, place_id, current_user.id, google_maps_url)
+    business = await get_or_create_business(
+        db, place_id, current_user.id, google_maps_url, payload.business_type.value
+    )
     return business
 
 

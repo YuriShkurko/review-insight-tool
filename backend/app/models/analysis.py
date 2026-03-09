@@ -18,6 +18,9 @@ class Analysis(Base):
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     top_complaints: Mapped[list] = mapped_column(JSON, nullable=False)
     top_praise: Mapped[list] = mapped_column(JSON, nullable=False)
+    action_items: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    risk_areas: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    recommended_focus: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

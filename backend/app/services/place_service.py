@@ -71,6 +71,7 @@ async def get_or_create_business(
     place_id: str,
     user_id: uuid.UUID,
     google_maps_url: str | None = None,
+    business_type: str = "other",
 ) -> Business:
     """Return existing business owned by this user, or create a new one."""
     existing = (
@@ -90,6 +91,7 @@ async def get_or_create_business(
         user_id=user_id,
         place_id=place_id,
         name=details["name"],
+        business_type=business_type,
         address=details["address"],
         google_maps_url=google_maps_url,
     )

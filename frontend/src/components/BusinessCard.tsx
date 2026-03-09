@@ -7,7 +7,14 @@ export default function BusinessCard({ business }: { business: Business }) {
       href={`/businesses/${business.id}`}
       className="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
     >
-      <h3 className="font-semibold text-lg">{business.name}</h3>
+      <div className="flex items-center gap-2">
+        <h3 className="font-semibold text-lg">{business.name}</h3>
+        {business.business_type && business.business_type !== "other" && (
+          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">
+            {business.business_type}
+          </span>
+        )}
+      </div>
       {business.address && (
         <p className="text-gray-500 text-sm mt-1">{business.address}</p>
       )}

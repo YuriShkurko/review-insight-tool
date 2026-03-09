@@ -7,31 +7,56 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.analysis import Analysis
+from app.models.business import Business
 from app.models.review import Review
 
-SYSTEM_PROMPT = """\
-You are an expert business analyst. Analyze the following customer reviews
-and return a JSON object with exactly these keys:
-
-- "summary": A concise 2-3 sentence summary of overall customer sentiment.
-- "top_complaints": A list of up to 5 objects, each with "label" (short phrase) and "count" (estimated number of reviews mentioning it).
-- "top_praise": A list of up to 5 objects, each with "label" (short phrase) and "count" (estimated number of reviews mentioning it).
-
-Example format:
-{
-  "summary": "...",
-  "top_complaints": [{"label": "Long wait times", "count": 4}],
-  "top_praise": [{"label": "Friendly staff", "count": 6}]
+_TYPE_FOCUS: dict[str, str] = {
+    "restaurant": "service speed, staff friendliness, food quality, wait times, cleanliness, atmosphere, value for money, menu variety, consistency",
+    "bar": "drink quality, atmosphere, music/noise, staff friendliness, wait times, pricing, cleanliness, crowd feel",
+    "cafe": "coffee/drink quality, food quality, atmosphere, Wi-Fi/workspace suitability, service speed, cleanliness, value",
+    "gym": "cleanliness, equipment quality and availability, crowding, staff helpfulness, trainer quality, value, locker rooms",
+    "salon": "scheduling ease, wait times, staff professionalism, result quality, cleanliness, pricing, communication",
+    "hotel": "cleanliness, front desk service, check-in/out process, amenities, room comfort, noise, value",
+    "clinic": "wait times, staff professionalism, doctor communication, cleanliness, scheduling ease, billing clarity",
+    "retail": "staff helpfulness, product availability, checkout speed, store organization, cleanliness, return policy, value",
 }
+
+_BASE_PROMPT = """\
+You are an expert operations and customer-experience consultant.
+Analyze the following customer reviews for a {business_type} business.
+
+{focus_instruction}
+
+Return a JSON object with exactly these keys:
+
+- "summary": A concise 2-3 sentence overall assessment written as a consultant would.
+- "top_complaints": Up to 5 objects with "label" (short phrase) and "count" (estimated mentions).
+- "top_praise": Up to 5 objects with "label" (short phrase) and "count" (estimated mentions).
+- "action_items": Up to 5 short actionable improvement suggestions based on the reviews.
+- "risk_areas": Up to 3 short descriptions of recurring problems that could hurt the business if unaddressed.
+- "recommended_focus": A single sentence stating the #1 area management should prioritize.
 
 Return ONLY valid JSON, no markdown fences or extra text."""
 
 
+def _build_system_prompt(business_type: str) -> str:
+    focus_areas = _TYPE_FOCUS.get(business_type, "")
+    if focus_areas:
+        focus_instruction = f"Pay special attention to these areas relevant to a {business_type}: {focus_areas}."
+    else:
+        focus_instruction = "Evaluate all standard customer experience dimensions."
+    return _BASE_PROMPT.format(
+        business_type=business_type,
+        focus_instruction=focus_instruction,
+    )
+
+
 def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
-    """Run OpenAI analysis on stored reviews and persist the result.
+    """Run analysis on stored reviews and persist the result.
 
     Overwrites any existing analysis for this business.
     """
+    business = db.query(Business).filter(Business.id == business_id).first()
     reviews = db.query(Review).filter(Review.business_id == business_id).all()
     if not reviews:
         raise HTTPException(
@@ -39,8 +64,10 @@ def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
             detail="No reviews found for this business. Fetch reviews first.",
         )
 
+    business_type = business.business_type if business else "other"
+    system_prompt = _build_system_prompt(business_type)
     review_texts = _format_reviews_for_prompt(reviews)
-    result = _call_openai(review_texts)
+    result = _call_openai(system_prompt, review_texts)
     result = _normalize_result(result)
 
     existing = (
@@ -50,6 +77,9 @@ def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
         existing.summary = result["summary"]
         existing.top_complaints = result["top_complaints"]
         existing.top_praise = result["top_praise"]
+        existing.action_items = result["action_items"]
+        existing.risk_areas = result["risk_areas"]
+        existing.recommended_focus = result["recommended_focus"]
         db.commit()
         db.refresh(existing)
         return existing
@@ -60,6 +90,9 @@ def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
         summary=result["summary"],
         top_complaints=result["top_complaints"],
         top_praise=result["top_praise"],
+        action_items=result["action_items"],
+        risk_areas=result["risk_areas"],
+        recommended_focus=result["recommended_focus"],
     )
     db.add(analysis)
     db.commit()
@@ -69,22 +102,17 @@ def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
 
 def _normalize_result(result: dict) -> dict:
     """Ensure the analysis result always has the expected shape."""
-    summary = result.get("summary") or ""
-    complaints = _normalize_insights(result.get("top_complaints", []))
-    praise = _normalize_insights(result.get("top_praise", []))
     return {
-        "summary": summary,
-        "top_complaints": complaints,
-        "top_praise": praise,
+        "summary": result.get("summary") or "",
+        "top_complaints": _normalize_insights(result.get("top_complaints", [])),
+        "top_praise": _normalize_insights(result.get("top_praise", [])),
+        "action_items": _normalize_strings(result.get("action_items", [])),
+        "risk_areas": _normalize_strings(result.get("risk_areas", [])),
+        "recommended_focus": str(result.get("recommended_focus") or ""),
     }
 
 
 def _normalize_insights(items: list) -> list[dict]:
-    """Coerce insight items into {label, count} objects.
-
-    Handles both the new format (objects) and the old format (plain strings)
-    gracefully so the frontend always gets a consistent shape.
-    """
     normalized = []
     for item in items:
         if isinstance(item, dict):
@@ -97,6 +125,10 @@ def _normalize_insights(items: list) -> list[dict]:
     return normalized
 
 
+def _normalize_strings(items: list) -> list[str]:
+    return [str(item) for item in items if item]
+
+
 def _format_reviews_for_prompt(reviews: list[Review]) -> str:
     lines = []
     for r in reviews:
@@ -105,7 +137,7 @@ def _format_reviews_for_prompt(reviews: list[Review]) -> str:
     return "\n".join(lines)
 
 
-def _call_openai(review_texts: str) -> dict:
+def _call_openai(system_prompt: str, review_texts: str) -> dict:
     if not settings.OPENAI_API_KEY:
         return _mock_analysis()
 
@@ -113,7 +145,7 @@ def _call_openai(review_texts: str) -> dict:
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": review_texts},
         ],
         temperature=0.3,
@@ -126,7 +158,7 @@ def _call_openai(review_texts: str) -> dict:
 
 
 def _mock_analysis() -> dict:
-    """Return a plausible analysis when no OpenAI key is configured."""
+    """Return plausible analysis when no OpenAI key is configured."""
     return {
         "summary": (
             "Customers generally appreciate the quality of service and friendly staff, "
@@ -147,4 +179,17 @@ def _mock_analysis() -> dict:
             {"label": "Clean and well-maintained space", "count": 3},
             {"label": "Good value for money", "count": 3},
         ],
+        "action_items": [
+            "Hire additional staff during peak hours to reduce wait times",
+            "Implement quality checklists for food preparation consistency",
+            "Review portion sizing relative to menu pricing",
+            "Add signage for nearby parking options",
+            "Consider acoustic panels to reduce noise during busy periods",
+        ],
+        "risk_areas": [
+            "Recurring wait time complaints may drive away first-time visitors",
+            "Inconsistent food quality erodes trust with regular customers",
+            "Parking frustration discourages repeat visits",
+        ],
+        "recommended_focus": "Prioritize reducing wait times during peak hours, as this is the most frequently cited pain point.",
     }

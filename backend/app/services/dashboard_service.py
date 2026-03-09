@@ -29,10 +29,14 @@ def get_dashboard(
 
     return DashboardResponse(
         business_name=business.name,
+        business_type=business.business_type,
         address=business.address,
         avg_rating=business.avg_rating,
         total_reviews=business.total_reviews,
         top_complaints=analysis.top_complaints if analysis else [],
         top_praise=analysis.top_praise if analysis else [],
         ai_summary=analysis.summary if analysis else None,
+        action_items=analysis.action_items if analysis else [],
+        risk_areas=analysis.risk_areas if analysis else [],
+        recommended_focus=analysis.recommended_focus if analysis else None,
     )

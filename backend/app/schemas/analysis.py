@@ -17,4 +17,7 @@ class AnalysisRead(BaseModel):
     summary: str
     top_complaints: list[InsightItem]
     top_praise: list[InsightItem]
+    action_items: list[str]
+    risk_areas: list[str]
+    recommended_focus: str
     created_at: datetime

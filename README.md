@@ -1,8 +1,85 @@
 # Review Insight Tool
 
-An AI-powered review analysis platform for small businesses. Paste a Google Maps link, fetch real customer reviews, and get actionable business insights — tailored to your business type.
+An AI-powered review analysis platform that helps small business owners understand what their customers really think — and what to do about it.
 
-Built as a full-stack portfolio project with FastAPI, Next.js, PostgreSQL, and OpenAI.
+Paste a Google Maps link, fetch reviews, and get tailored insights: top complaints, top praise, action items, risk areas, and a recommended focus — all customized to your business type.
+
+## Why This Exists
+
+Small business owners receive hundreds of reviews but rarely have time to read them all, spot patterns, or turn feedback into action.
+
+Review Insight Tool solves this by:
+
+- **Aggregating reviews** from Google Maps into a single view
+- **Surfacing patterns** — what customers love and what frustrates them
+- **Generating actionable recommendations** tailored to each business type
+- **Saving hours** of manual review reading with AI-powered analysis
+
+## Features
+
+- **Add a business** — paste a Google Maps link and select your business type
+- **Fetch reviews** — pull real customer reviews with one click
+- **Get AI analysis** — receive a consultant-style assessment with complaints, praise, action items, risk areas, and a recommended focus
+- **Business-type-aware insights** — a restaurant gets different analysis than a gym or salon
+- **Clean dashboard** — see average rating, review count, and all insights in one view
+- **Secure access** — each user sees only their own businesses and data
+- **Fresh data** — refreshing reviews replaces the old set and clears stale analysis automatically
+
+## Quick Start
+
+Requires only [Docker](https://www.docker.com/).
+
+```bash
+git clone https://github.com/YOUR_USERNAME/review-insight-tool.git
+cd review-insight-tool
+cp backend/.env.example backend/.env
+make up
+```
+
+Open http://localhost:3000 and register an account.
+
+> The app works immediately with sample data. To use real reviews and AI analysis, add your `OUTSCRAPER_API_KEY` and `OPENAI_API_KEY` to `backend/.env` and restart.
+
+<details>
+<summary><strong>Local setup (without Docker)</strong></summary>
+
+Requires Python 3.11+, Node.js 18+, and a running PostgreSQL instance.
+
+**1. Start PostgreSQL**
+
+```bash
+docker run --name review-insight-db \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=review_insight \
+  -p 5432:5432 \
+  -d postgres:16
+```
+
+**2. Backend**
+
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate       # Windows
+# source venv/bin/activate  # macOS / Linux
+
+pip install -r requirements.txt
+cp .env.example .env
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+**3. Frontend**
+
+```bash
+cd frontend
+npm install
+cp .env.local.example .env.local
+npm run dev
+```
+
+Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
+
+</details>
 
 ## Screenshots
 
@@ -14,70 +91,69 @@ Built as a full-stack portfolio project with FastAPI, Next.js, PostgreSQL, and O
 |--------------------|---------|
 | ![Insights](docs/screenshots/04-insights.png) | ![Reviews](docs/screenshots/05-reviews.png) |
 
-## Problem & Motivation
+## Usage
 
-Small business owners receive hundreds of reviews across platforms but rarely have time to read them all, spot patterns, or turn feedback into action. Review Insight Tool solves this by:
+1. **Register** — create an account at `/register`
+2. **Add a business** — paste a Google Maps URL, select the business type
+3. **Fetch reviews** — click "Fetch Reviews" to pull customer reviews
+4. **Run analysis** — click "Run Analysis" to generate tailored insights
+5. **View dashboard** — see your rating, AI summary, complaints, praise, action items, and risk areas
 
-- **Aggregating reviews** from Google Maps into a single view
-- **Surfacing patterns** — what customers love and what frustrates them
-- **Generating actionable recommendations** tailored to the specific business type (a restaurant gets different insights than a gym or salon)
-- **Saving hours** of manual review reading with AI-powered analysis
+> **Tip:** Use **Share → Copy link** from the Google Maps business info panel. Search-bar URLs may not work.
 
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| **Business onboarding** | Paste a Google Maps URL, select a business type, and the app extracts the place ID and name automatically |
-| **Review ingestion** | Pluggable provider architecture — mock data for development, Outscraper for real Google Maps reviews |
-| **Clean refresh** | Re-fetching reviews replaces the old set and clears stale analysis for a trustworthy single source of truth |
-| **Business-type-aware AI analysis** | LLM prompts are tailored per business type (restaurant, bar, cafe, gym, salon, hotel, clinic, retail) |
-| **Rich insights** | Summary, top complaints, top praise, action items, risk areas, and a recommended focus area |
-| **Dashboard** | Average rating, review count, AI summary, and categorized insights in one view |
-| **User auth** | JWT-based registration and login; each user sees only their own data |
+---
 
 ## Architecture
 
 ```mermaid
-graph LR
+graph TB
     User([User]) --> Frontend
 
     subgraph Client
-        Frontend[Next.js Frontend<br/>React · TypeScript · Tailwind]
+        Frontend["Next.js Frontend\nReact · TypeScript · Tailwind"]
     end
 
     subgraph Server
-        API[FastAPI Backend<br/>Routes · Services · Auth]
-        Providers[Review Providers<br/>Mock · Outscraper · ...]
-        LLM[LLM Analysis<br/>OpenAI GPT-4o-mini]
+        API["FastAPI Backend\nRoutes · Services · Auth"]
+    end
+
+    subgraph Providers
+        RP["Review Provider Layer\nOutscraper · Sample Data"]
+    end
+
+    subgraph External
+        LLM["LLM Engine (External)\nOpenAI GPT-4o-mini"]
     end
 
     subgraph Data
-        DB[(PostgreSQL<br/>Users · Businesses<br/>Reviews · Analyses)]
+        DB[("PostgreSQL\nUsers · Businesses\nReviews · Analyses")]
     end
 
-    Frontend -- HTTP/JSON --> API
-    API --> Providers
+    Frontend -- "HTTP / JSON" --> API
+    API --> RP
     API --> LLM
     API --> DB
 ```
 
-**Backend** follows a layered pattern:
+The **Review Provider Layer** separates external review sources from core application logic, so adding a new provider (Yelp, TripAdvisor, etc.) requires only a new provider class and factory registration — no changes to routes, services, or the frontend.
+
+**Backend layers:**
 
 | Layer | Responsibility |
 |-------|---------------|
-| **Routes** | Thin HTTP handlers, input validation, auth enforcement |
-| **Services** | Business logic — place resolution, review ingestion, AI analysis, dashboard assembly |
-| **Providers** | Pluggable review source abstraction (mock, Outscraper, future: Yelp, etc.) |
-| **Models** | SQLAlchemy ORM — User, Business, Review, Analysis |
-| **Schemas** | Pydantic request/response validation |
+| Routes | HTTP handlers, input validation, auth enforcement |
+| Services | Business logic — place resolution, review ingestion, AI analysis, dashboard |
+| Providers | Pluggable review source abstraction |
+| Models | SQLAlchemy ORM — User, Business, Review, Analysis |
+| Schemas | Pydantic request/response validation |
 
-**Frontend** follows a 3-layer pattern:
+**Frontend layers:**
 
 | Layer | Responsibility |
 |-------|---------------|
-| **Pages** | Next.js App Router pages with client-side data fetching |
-| **Components** | Small, reusable UI pieces — DashboardView, ReviewList, InsightList, etc. |
-| **Lib** | API client, auth context, TypeScript types |
+| Pages | Next.js App Router pages with client-side data fetching |
+| Components | Reusable UI — DashboardView, ReviewList, InsightList |
+| Lib | API client, auth context, TypeScript types |
 
 ## Tech Stack
 
@@ -88,102 +164,29 @@ graph LR
 | Database | PostgreSQL 16 |
 | AI | OpenAI GPT-4o-mini |
 | Auth | JWT (PyJWT), bcrypt |
-| Review providers | Mock (built-in), Outscraper |
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- Node.js 18+
-- Docker (for PostgreSQL)
-
-### 1. Start PostgreSQL
-
-```bash
-docker run --name review-insight-db \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=review_insight \
-  -p 5432:5432 \
-  -d postgres:16
-```
-
-### 2. Backend
-
-```bash
-cd backend
-
-python -m venv venv
-venv\Scripts\activate       # Windows
-# source venv/bin/activate  # macOS / Linux
-
-pip install -r requirements.txt
-
-cp .env.example .env
-# Edit .env if needed — defaults work for local development with mock data
-
-python -m uvicorn app.main:app --reload --port 8000
-```
-
-Backend runs at http://localhost:8000 — Swagger docs at http://localhost:8000/docs
-
-### 3. Frontend
-
-```bash
-cd frontend
-
-npm install
-
-cp .env.local.example .env.local
-
-npm run dev
-```
-
-Frontend runs at http://localhost:3000
-
-### Using Make (optional)
-
-If you have `make` available, you can use the provided Makefile:
-
-```bash
-make backend    # start backend server
-make frontend   # start frontend dev server
-make test       # run backend tests
-make lint       # run linters
-```
-
-## Usage
-
-The core workflow in 5 steps:
-
-1. **Register** — Create an account at `/register`
-2. **Add a business** — Paste a Google Maps URL and select the business type (restaurant, bar, cafe, gym, salon, hotel, clinic, retail, or other)
-3. **Fetch reviews** — Click "Fetch Reviews" to pull customer reviews via the configured provider
-4. **Run analysis** — Click "Run Analysis" to generate AI-powered insights tailored to the business type
-5. **View dashboard** — See average rating, AI summary, recommended focus, top complaints, top praise, action items, and risk areas
-
-> **Tip:** Use the **Share > Copy link** button on Google Maps to get a reliable URL. Search-bar URLs may not contain the required place ID.
+| Review providers | Sample data (built-in), Outscraper |
+| Infrastructure | Docker, Docker Compose |
 
 ## API
 
-All endpoints are prefixed with `/api`. Business, review, analysis, and dashboard endpoints require a `Bearer` token in the `Authorization` header.
+All endpoints are prefixed with `/api`. Protected endpoints require a `Bearer` token.
 
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/api/auth/register` | POST | No | Create account |
-| `/api/auth/login` | POST | No | Sign in, receive JWT |
+| `/api/auth/login` | POST | No | Sign in, receive token |
 | `/api/auth/me` | GET | Yes | Current user info |
 | `/api/businesses` | POST | Yes | Add business |
-| `/api/businesses` | GET | Yes | List user's businesses |
+| `/api/businesses` | GET | Yes | List businesses |
 | `/api/businesses/{id}` | GET | Yes | Get business details |
-| `/api/businesses/{id}/fetch-reviews` | POST | Yes | Fetch/replace reviews |
+| `/api/businesses/{id}/fetch-reviews` | POST | Yes | Fetch / replace reviews |
 | `/api/businesses/{id}/reviews` | GET | Yes | List reviews |
 | `/api/businesses/{id}/analyze` | POST | Yes | Run AI analysis |
-| `/api/businesses/{id}/dashboard` | GET | Yes | Get dashboard data |
+| `/api/businesses/{id}/dashboard` | GET | Yes | Dashboard data |
 
-Interactive API docs: http://localhost:8000/docs
+Interactive docs: http://localhost:8000/docs
 
-## Environment Variables
+## Configuration
 
 ### Backend (`backend/.env`)
 
@@ -191,10 +194,10 @@ Interactive API docs: http://localhost:8000/docs
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5432/review_insight` |
 | `REVIEW_PROVIDER` | Review source: `mock` or `outscraper` | `mock` |
-| `OUTSCRAPER_API_KEY` | Outscraper API key (required when provider = outscraper) | — |
-| `OPENAI_API_KEY` | OpenAI API key (blank = mock analysis) | — |
+| `OUTSCRAPER_API_KEY` | Outscraper API key (required for real reviews) | — |
+| `OPENAI_API_KEY` | OpenAI API key (blank = sample analysis) | — |
 | `GOOGLE_PLACES_API_KEY` | Google Places API key (blank = extract name from URL) | — |
-| `JWT_SECRET_KEY` | Secret for signing JWT tokens | `change-me-in-production` |
+| `JWT_SECRET_KEY` | Secret for signing tokens | `change-me-in-production` |
 | `JWT_EXPIRE_MINUTES` | Token expiry in minutes | `1440` |
 
 ### Frontend (`frontend/.env.local`)
@@ -208,90 +211,110 @@ Interactive API docs: http://localhost:8000/docs
 ```
 ├── backend/
 │   ├── app/
-│   │   ├── main.py              # FastAPI app entry point
-│   │   ├── config.py            # Pydantic settings from environment
+│   │   ├── main.py              # FastAPI entry point
+│   │   ├── config.py            # Pydantic settings
 │   │   ├── database.py          # SQLAlchemy engine and session
-│   │   ├── auth.py              # JWT + bcrypt auth utilities
-│   │   ├── models/              # SQLAlchemy ORM models
-│   │   ├── schemas/             # Pydantic validation schemas
+│   │   ├── auth.py              # JWT + bcrypt utilities
+│   │   ├── models/              # ORM models
+│   │   ├── schemas/             # Request/response schemas
 │   │   ├── routes/              # API route handlers
-│   │   ├── services/            # Business logic layer
-│   │   ├── providers/           # Pluggable review source providers
-│   │   └── mock/                # Mock data generators
-│   ├── tests/                   # pytest test suite
+│   │   ├── services/            # Business logic
+│   │   ├── providers/           # Review source providers
+│   │   └── mock/                # Sample data generators
+│   ├── tests/                   # pytest suite
+│   ├── Dockerfile
 │   ├── requirements.txt
 │   └── .env.example
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── app/                 # Next.js App Router pages
-│   │   ├── components/          # Reusable React components
+│   │   ├── app/                 # Next.js pages
+│   │   ├── components/          # React components
 │   │   └── lib/                 # API client, auth, types
+│   ├── Dockerfile
 │   ├── package.json
 │   └── .env.local.example
 │
-├── docs/screenshots/            # README screenshots
+├── docs/
+│   ├── screenshots/             # README screenshots
+│   └── SPEC.md                  # System specification
+│
+├── docker-compose.yml           # Full-stack Docker setup
 ├── Makefile                     # Developer shortcuts
 └── README.md
 ```
 
 ## Development
 
-### Backend development
+### Makefile commands
 
-```bash
-cd backend
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-python -m uvicorn app.main:app --reload --port 8000
-```
-
-The `--reload` flag enables hot-reloading on file changes.
-
-### Frontend development
-
-```bash
-cd frontend
-npm run dev
-```
+| Command | Description |
+|---------|-------------|
+| `make up` | Start full stack with Docker Compose |
+| `make down` | Stop the stack |
+| `make logs` | Follow container logs |
+| `make backend` | Start backend locally (no Docker) |
+| `make frontend` | Start frontend locally (no Docker) |
+| `make dev` | Start both locally (Windows) |
+| `make test` | Run backend unit tests |
+| `make test-e2e` | Run E2E tests (requires `make up`) |
+| `make lint` | Run linters |
+| `make db-reset` | Drop all tables (backend recreates on restart) |
+| `make clean` | Remove build artifacts and caches |
 
 ### Database reset
 
-Since the project uses `create_all` (no Alembic migrations), schema changes require a manual reset:
+The project uses `create_all` (no Alembic). Schema changes require dropping tables:
 
 ```bash
-docker exec -i review-insight-db psql -U postgres -d review_insight \
-  -c "DROP TABLE IF EXISTS analyses, reviews, businesses, users CASCADE;"
+make db-reset
+# Then restart the backend
 ```
-
-Restart the backend to recreate tables.
 
 ## Testing
 
 Backend tests use **pytest**:
 
 ```bash
-cd backend
-pip install pytest
-python -m pytest tests/ -v
+make test           # unit tests (no server required)
+make test-e2e       # end-to-end tests (requires running backend via make up)
 ```
 
-Tests cover:
-- Mock provider review normalization and determinism
-- Analysis result normalization
-- Business-type-aware prompt generation
-- Dashboard response schema validation
+### Unit tests (34 tests)
+
+| Area | Coverage |
+|------|----------|
+| Provider normalization | Sample data shape, determinism, field validation, source tagging |
+| Analysis normalization | Insight coercion, string normalization, missing-field defaults |
+| Prompt generation | Business-type-specific prompts for all 8 types + generic fallback |
+| Schema validation | Dashboard response shape, analysis fields, business type enum |
+
+### End-to-end test
+
+A single E2E test (`tests/e2e/test_full_flow.py`) verifies the full core workflow against a running backend:
+
+1. Register a user
+2. Create a business
+3. Fetch reviews
+4. Run analysis
+5. Validate dashboard contains all expected fields
+6. Verify that refreshing reviews clears stale analysis
+
+## Specification
+
+For detailed system behavior, user flows, analysis output shapes, and known limitations, see [docs/SPEC.md](docs/SPEC.md).
 
 ## Roadmap
 
-- [ ] **Competitor comparison** — link competitor Google Maps pages and get side-by-side insights with improvement suggestions
-- [ ] **Additional review providers** — Yelp, TripAdvisor, App Store, Play Store
-- [ ] **Database migrations** — Alembic for safe schema evolution
-- [ ] **Delete/archive businesses** — remove or archive businesses from the dashboard
-- [ ] **Secure auth** — refresh tokens, httpOnly cookies, password strength enforcement
-- [ ] **Background jobs** — Celery/Redis for async review fetching
-- [ ] **Export reports** — PDF/CSV export of analysis results
-- [ ] **Deployment** — Docker Compose, CI/CD pipeline
+- [ ] Competitor comparison — side-by-side insights against linked competitor businesses
+- [ ] Additional review providers — Yelp, TripAdvisor, App Store, Play Store
+- [ ] Database migrations — Alembic for safe schema evolution
+- [ ] Delete/archive businesses
+- [ ] Secure auth — refresh tokens, httpOnly cookies
+- [ ] Background jobs — Celery/Redis for async review fetching
+- [ ] Export reports — PDF/CSV
+- [ ] CI/CD pipeline
 
 ## License
 
-This is a personal portfolio project. Not licensed for commercial use.
+Personal portfolio project. Not licensed for commercial use.

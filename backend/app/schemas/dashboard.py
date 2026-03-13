@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 from app.schemas.analysis import InsightItem
@@ -15,3 +17,5 @@ class DashboardResponse(BaseModel):
     action_items: list[str]
     risk_areas: list[str]
     recommended_focus: str | None
+    analysis_created_at: datetime | None
+    last_updated_at: datetime | None

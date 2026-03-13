@@ -18,7 +18,12 @@ def get_review_provider() -> ReviewProvider:
     if name == "outscraper":
         from app.providers.outscraper_provider import OutscraperProvider
 
-        return OutscraperProvider(api_key=settings.OUTSCRAPER_API_KEY)
+        return OutscraperProvider(
+            api_key=settings.OUTSCRAPER_API_KEY,
+            reviews_limit=settings.OUTSCRAPER_REVIEWS_LIMIT,
+            sort=settings.OUTSCRAPER_SORT,
+            cutoff=settings.OUTSCRAPER_CUTOFF,
+        )
 
     supported = ("mock", "outscraper")
     raise ValueError(

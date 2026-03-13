@@ -39,4 +39,6 @@ def get_dashboard(
         action_items=analysis.action_items if analysis else [],
         risk_areas=analysis.risk_areas if analysis else [],
         recommended_focus=analysis.recommended_focus if analysis else None,
+        analysis_created_at=analysis.created_at if analysis else None,
+        last_updated_at=business.updated_at,
     )

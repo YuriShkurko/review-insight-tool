@@ -197,6 +197,9 @@ Interactive docs: http://localhost:8000/docs
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5432/review_insight` |
 | `REVIEW_PROVIDER` | Review source: `mock` or `outscraper` | `mock` |
 | `OUTSCRAPER_API_KEY` | Outscraper API key (required for real reviews) | — |
+| `OUTSCRAPER_REVIEWS_LIMIT` | Max reviews per fetch | `100` |
+| `OUTSCRAPER_SORT` | Order: `newest`, `most_relevant`, `highest_rating`, `lowest_rating` | `newest` |
+| `OUTSCRAPER_CUTOFF` | Optional Unix timestamp — only reviews newer than this (empty = all). Offset pagination not supported by API. | — |
 | `OPENAI_API_KEY` | OpenAI API key (blank = sample analysis) | — |
 | `GOOGLE_PLACES_API_KEY` | Google Places API key (blank = extract name from URL) | — |
 | `JWT_SECRET_KEY` | Secret for signing tokens | `change-me-in-production` |

@@ -162,6 +162,88 @@ Every business belongs to exactly one user. All queries are filtered by `user_id
 | Outscraper is paid | Sample data mode is free and used by default |
 | Single-user focus | No teams, roles, or shared access |
 
+## Real Scenario Testing
+
+### Prerequisites
+
+Set the following in `backend/.env` for real-provider testing:
+
+```
+REVIEW_PROVIDER=outscraper
+OUTSCRAPER_API_KEY=<your key>
+OPENAI_API_KEY=<your key>
+OUTSCRAPER_REVIEWS_LIMIT=100
+OUTSCRAPER_SORT=newest
+OUTSCRAPER_CUTOFF=
+USE_MOCK_REVIEWS=false
+```
+
+Restart the backend after changing `.env`.
+
+**Outscraper query controls (for repeatable testing):**
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `OUTSCRAPER_SORT` | `newest` | Order: `most_relevant`, `newest`, `highest_rating`, `lowest_rating` |
+| `OUTSCRAPER_CUTOFF` | (empty) | Unix timestamp: only fetch reviews **newer than** this (leave empty to fetch all) |
+
+**Note:** The Outscraper API’s `start` parameter is a **timestamp**, not an offset, so “skip first N reviews” style pagination is not supported. To get only newer reviews (e.g. after a previous fetch), set `OUTSCRAPER_CUTOFF` to the Unix timestamp of the oldest review you already have.
+
+### Workflow
+
+Use a real business (e.g., a Google Maps link you own or can test against):
+
+1. Register a new account
+2. Add the business with its Google Maps URL and correct business type
+3. Fetch reviews — verify review count and avg rating update
+4. Run analysis — verify all dashboard fields populate (summary, complaints, praise, action items, risk areas, recommended focus)
+5. Fetch reviews again — verify old analysis is cleared, dashboard prompts to re-run analysis
+6. Run analysis again — verify dashboard re-populates with fresh insights
+7. Inspect the dashboard — verify all sections render correctly
+
+### Bug-Hunt Checklist
+
+| Check | What to look for |
+|-------|-----------------|
+| Dashboard loads | All stat cards, insight sections, and review list render without errors |
+| No duplicate reviews | Review count matches `total_reviews`; no repeated authors/text after refresh |
+| Analysis fields valid | Summary is non-empty; complaints/praise have labels and counts; action items are actionable |
+| Stale analysis cleared | After re-fetching reviews, dashboard shows "Run Analysis" prompt, not old data |
+| Timeouts visible | Provider or LLM timeout produces a clear error, not a hang |
+| Provider failures logged | Check backend logs for `op=outscraper_fetch success=false` on API errors |
+| Truncation visible | If review count exceeds limits, logs show `truncated_to=` warning |
+| Business stats correct | `avg_rating` and `total_reviews` match the actual fetched reviews |
+| Refresh is idempotent | Fetching reviews twice in a row produces the same result |
+
+### Checking logs during testing
+
+Monitor backend logs in real time:
+
+```bash
+# Local
+uvicorn app.main:app --reload --port 8000   # logs appear in terminal
+
+# Docker
+make logs
+```
+
+Key log patterns to watch:
+
+```
+op=outscraper_fetch query=... reviews_limit=100       # provider request
+op=provider_fetch ... duration_ms=... success=true     # fetch timing
+op=refresh_clear ... old_reviews_deleted=... old_analyses_deleted=...  # cleanup
+op=llm_call ... duration_ms=... success=true           # analysis timing
+op=fetch_reviews ... review_count=...                  # final count
+```
+
+### Further testing after a successful run
+
+- **Refresh then re-analyze:** Fetch reviews again on the same business → confirm logs show `old_reviews_deleted=100` (or current count) and `old_analyses_deleted=1`, dashboard shows "Run Analysis", then run analysis and confirm insights update.
+- **Different business / URL:** Add another business (e.g. different Maps URL), fetch and analyze — confirms no cross-business data leakage.
+- **E2E test:** With backend running (`make up` or `make backend`), run `make test-e2e` to exercise the full flow automatically.
+- **JWT warning in logs:** If you see `InsecureKeyLengthWarning` for the HMAC key, set `JWT_SECRET_KEY` in `.env` to a string of 32+ characters to silence it and improve security.
+
 ## Planned Improvements
 
 - Competitor comparison (side-by-side insights with linked competitor businesses)

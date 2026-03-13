@@ -32,8 +32,13 @@ def fetch_reviews_for_business(db: Session, business: Business) -> list[Review]:
         )
         raw_reviews = raw_reviews[:MAX_REVIEWS_PER_FETCH]
 
-    db.query(Review).filter(Review.business_id == business.id).delete()
-    db.query(Analysis).filter(Analysis.business_id == business.id).delete()
+    deleted_reviews = db.query(Review).filter(Review.business_id == business.id).delete()
+    deleted_analyses = db.query(Analysis).filter(Analysis.business_id == business.id).delete()
+    if deleted_reviews or deleted_analyses:
+        logger.info(
+            "op=refresh_clear business_id=%s old_reviews_deleted=%d old_analyses_deleted=%d",
+            business.id, deleted_reviews, deleted_analyses,
+        )
 
     for raw in raw_reviews:
         db.add(Review(

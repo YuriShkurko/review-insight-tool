@@ -77,4 +77,6 @@ export interface Dashboard {
   action_items: string[];
   risk_areas: string[];
   recommended_focus: string | null;
+  analysis_created_at: string | null;
+  last_updated_at: string | null;
 }

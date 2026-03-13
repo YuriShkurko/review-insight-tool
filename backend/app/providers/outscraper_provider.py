@@ -11,28 +11,42 @@ from app.providers.base import NormalizedReview, ReviewProvider
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_REVIEWS_LIMIT = 30
-
-
 class OutscraperProvider(ReviewProvider):
     """Fetches Google Maps reviews via the Outscraper API."""
 
-    def __init__(self, api_key: str, reviews_limit: int = _DEFAULT_REVIEWS_LIMIT):
+    def __init__(
+        self,
+        api_key: str,
+        reviews_limit: int = 100,
+        sort: str = "newest",
+        cutoff: str = "",
+    ):
         if not api_key:
             raise ValueError("OUTSCRAPER_API_KEY is required for the outscraper provider.")
         self._client = ApiClient(api_key=api_key)
         self._reviews_limit = reviews_limit
+        self._sort = sort
+        self._cutoff = cutoff.strip() if cutoff else ""
 
     def fetch_reviews(
         self, place_id: str, google_maps_url: str | None = None
     ) -> list[NormalizedReview]:
         query = google_maps_url or place_id
+        cutoff_ts = int(self._cutoff) if self._cutoff.isdigit() else None
+        logger.info(
+            "op=outscraper_fetch query=%s reviews_limit=%d sort=%s cutoff=%s",
+            query[:80], self._reviews_limit, self._sort,
+            cutoff_ts if cutoff_ts is not None else "none",
+        )
+        kwargs: dict = {
+            "reviews_limit": self._reviews_limit,
+            "language": "en",
+            "sort": self._sort,
+        }
+        if cutoff_ts is not None:
+            kwargs["cutoff"] = cutoff_ts
         try:
-            results = self._client.google_maps_reviews(
-                query,
-                reviews_limit=self._reviews_limit,
-                language="en",
-            )
+            results = self._client.google_maps_reviews(query, **kwargs)
         except Exception as exc:
             logger.error(
                 "op=outscraper_fetch success=false error=%s detail=%s",

@@ -13,6 +13,11 @@ class Settings(BaseSettings):
 
     REVIEW_PROVIDER: str = "mock"
     OUTSCRAPER_API_KEY: str = ""
+    OUTSCRAPER_REVIEWS_LIMIT: int = 100
+    OUTSCRAPER_SORT: str = "newest"
+    OUTSCRAPER_CUTOFF: str = ""
+    # Deprecated: API uses "start" as timestamp, not offset. Kept so .env with OUTSCRAPER_SKIP still loads; value is ignored.
+    OUTSCRAPER_SKIP: int = 0
 
     # Backward compat: USE_MOCK_REVIEWS=true → REVIEW_PROVIDER defaults to "mock"
     USE_MOCK_REVIEWS: bool = True
@@ -21,7 +26,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
     @model_validator(mode="after")
     def _resolve_provider_and_keys(self) -> "Settings":

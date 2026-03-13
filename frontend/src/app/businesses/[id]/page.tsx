@@ -220,6 +220,33 @@ export default function BusinessDetailPage() {
             </div>
           )}
 
+          {/* Data context strip */}
+          {(hasReviews || hasAnalysis) && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mb-6 px-1">
+              {dashboard.total_reviews > 0 && (
+                <span>{dashboard.total_reviews} reviews stored</span>
+              )}
+              {hasAnalysis && dashboard.analysis_created_at && (
+                <span>
+                  Analysis ran{" "}
+                  {new Date(dashboard.analysis_created_at).toLocaleDateString(
+                    undefined,
+                    { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }
+                  )}
+                </span>
+              )}
+              {dashboard.last_updated_at && (
+                <span>
+                  Last updated{" "}
+                  {new Date(dashboard.last_updated_at).toLocaleDateString(
+                    undefined,
+                    { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }
+                  )}
+                </span>
+              )}
+            </div>
+          )}
+
           <DashboardView data={dashboard} />
         </>
       )}

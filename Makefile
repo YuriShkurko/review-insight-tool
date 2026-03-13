@@ -25,8 +25,11 @@ frontend:
 	cd frontend && npm run dev
 
 ## Start both backend and frontend locally (Windows)
+## Backend runs in background. If you get "network error" on login, run "make backend" in another terminal to see backend logs (e.g. DB not running).
 dev:
-	start /B cmd /C "cd backend && python -m uvicorn app.main:app --reload --port 8000"
+	@echo Starting backend on http://localhost:8000 ...
+	cmd /C "cd /d $(CURDIR)\backend && start /B python -m uvicorn app.main:app --reload --port 8000"
+	@echo Starting frontend on http://localhost:3000 ...
 	cd frontend && npm run dev
 
 ## Stop local backend and frontend processes

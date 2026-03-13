@@ -112,23 +112,23 @@ graph TB
     User([User]) --> Frontend
 
     subgraph Client
-        Frontend["Next.js Frontend\nReact · TypeScript · Tailwind"]
+        Frontend["Next.js Frontend<br/>React · TypeScript · Tailwind"]
     end
 
     subgraph Server
-        API["FastAPI Backend\nRoutes · Services · Auth"]
+        API["FastAPI Backend<br/>Routes · Services · Auth"]
     end
 
     subgraph Providers
-        RP["Review Provider Layer\nOutscraper · Sample Data"]
+        RP["Review Provider Layer<br/>Outscraper · Sample Data"]
     end
 
     subgraph External
-        LLM["LLM Engine (External)\nOpenAI GPT-4o-mini"]
+        LLM["LLM Engine External<br/>OpenAI GPT-4o-mini"]
     end
 
     subgraph Data
-        DB[("PostgreSQL\nUsers · Businesses\nReviews · Analyses")]
+        DB[("PostgreSQL<br/>Users · Businesses<br/>Reviews · Analyses")]
     end
 
     Frontend -- "HTTP / JSON" --> API

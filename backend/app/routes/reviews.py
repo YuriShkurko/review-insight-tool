@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -5,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
+from app.logging_config import timed_operation
 from app.models.business import Business
 from app.models.review import Review
 from app.models.user import User
@@ -13,6 +15,7 @@ from app.schemas.review import ReviewRead
 from app.services.analysis_service import analyze_reviews
 from app.services.review_service import fetch_reviews_for_business
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/businesses/{business_id}", tags=["reviews"])
 
 
@@ -36,7 +39,9 @@ def trigger_fetch_reviews(
     current_user: User = Depends(get_current_user),
 ):
     business = _get_business_for_user(business_id, current_user, db)
-    reviews = fetch_reviews_for_business(db, business)
+    with timed_operation(logger, "fetch_reviews", business_id=business_id):
+        reviews = fetch_reviews_for_business(db, business)
+    logger.info("op=fetch_reviews business_id=%s review_count=%d", business_id, len(reviews))
     return reviews
 
 
@@ -62,4 +67,6 @@ def trigger_analysis(
     current_user: User = Depends(get_current_user),
 ):
     _get_business_for_user(business_id, current_user, db)
-    return analyze_reviews(db, business_id)
+    with timed_operation(logger, "analyze", business_id=business_id):
+        result = analyze_reviews(db, business_id)
+    return result

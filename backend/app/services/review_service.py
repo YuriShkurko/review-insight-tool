@@ -1,11 +1,17 @@
+import logging
 import uuid
 
 from sqlalchemy.orm import Session
 
+from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
 from app.models.review import Review
 from app.providers import get_review_provider
+
+logger = logging.getLogger(__name__)
+
+MAX_REVIEWS_PER_FETCH = 500
 
 
 def fetch_reviews_for_business(db: Session, business: Business) -> list[Review]:
@@ -15,7 +21,16 @@ def fetch_reviews_for_business(db: Session, business: Business) -> list[Review]:
     reflects a single, consistent, up-to-date review set.
     """
     provider = get_review_provider()
-    raw_reviews = provider.fetch_reviews(business.place_id, business.google_maps_url)
+
+    with timed_operation(logger, "provider_fetch", business_id=business.id, provider=type(provider).__name__):
+        raw_reviews = provider.fetch_reviews(business.place_id, business.google_maps_url)
+
+    if len(raw_reviews) > MAX_REVIEWS_PER_FETCH:
+        logger.warning(
+            "op=provider_fetch business_id=%s review_count=%d truncated_to=%d",
+            business.id, len(raw_reviews), MAX_REVIEWS_PER_FETCH,
+        )
+        raw_reviews = raw_reviews[:MAX_REVIEWS_PER_FETCH]
 
     db.query(Review).filter(Review.business_id == business.id).delete()
     db.query(Analysis).filter(Analysis.business_id == business.id).delete()

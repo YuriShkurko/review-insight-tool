@@ -34,7 +34,10 @@ class OutscraperProvider(ReviewProvider):
                 language="en",
             )
         except Exception as exc:
-            logger.error("Outscraper API error for %s: %s", query, exc)
+            logger.error(
+                "op=outscraper_fetch success=false error=%s detail=%s",
+                type(exc).__name__, exc,
+            )
             raise HTTPException(
                 status_code=502,
                 detail="Failed to fetch reviews from Outscraper. Please try again later.",

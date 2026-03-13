@@ -1,4 +1,5 @@
 import json
+import logging
 import uuid
 
 from fastapi import HTTPException
@@ -6,9 +7,15 @@ from openai import OpenAI
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
 from app.models.review import Review
+
+logger = logging.getLogger(__name__)
+
+MAX_REVIEWS_FOR_ANALYSIS = 200
+LLM_TIMEOUT_SECONDS = 60
 
 _TYPE_FOCUS: dict[str, str] = {
     "restaurant": "service speed, staff friendliness, food quality, wait times, cleanliness, atmosphere, value for money, menu variety, consistency",
@@ -64,10 +71,19 @@ def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
             detail="No reviews found for this business. Fetch reviews first.",
         )
 
+    if len(reviews) > MAX_REVIEWS_FOR_ANALYSIS:
+        logger.warning(
+            "op=analyze business_id=%s review_count=%d truncated_to=%d",
+            business_id, len(reviews), MAX_REVIEWS_FOR_ANALYSIS,
+        )
+        reviews = reviews[:MAX_REVIEWS_FOR_ANALYSIS]
+
     business_type = business.business_type if business else "other"
     system_prompt = _build_system_prompt(business_type)
     review_texts = _format_reviews_for_prompt(reviews)
-    result = _call_openai(system_prompt, review_texts)
+
+    with timed_operation(logger, "llm_call", business_id=business_id, review_count=len(reviews)):
+        result = _call_openai(system_prompt, review_texts)
     result = _normalize_result(result)
 
     existing = (
@@ -141,19 +157,28 @@ def _call_openai(system_prompt: str, review_texts: str) -> dict:
     if not settings.OPENAI_API_KEY:
         return _mock_analysis()
 
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": review_texts},
-        ],
-        temperature=0.3,
-    )
+    try:
+        client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=LLM_TIMEOUT_SECONDS)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": review_texts},
+            ],
+            temperature=0.3,
+        )
+    except Exception as exc:
+        logger.error("op=llm_call success=false error=%s detail=%s", type(exc).__name__, exc)
+        raise HTTPException(
+            status_code=502,
+            detail="AI analysis failed. Please try again later.",
+        ) from exc
+
     content = response.choices[0].message.content or "{}"
     try:
         return json.loads(content)
     except json.JSONDecodeError:
+        logger.warning("op=llm_parse success=false content_length=%d", len(content))
         return {"summary": content, "top_complaints": [], "top_praise": []}
 
 

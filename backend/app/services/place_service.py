@@ -55,7 +55,7 @@ async def resolve_place_details(
         "fields": "name,formatted_address",
         "key": settings.GOOGLE_PLACES_API_KEY,
     }
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.get(url, params=params)
         resp.raise_for_status()
         result = resp.json().get("result", {})

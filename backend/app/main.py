@@ -6,8 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import Base, engine
+from app.logging_config import setup_logging
 from app.routes import api_router
 
+setup_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -15,7 +17,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     logger.info(
-        "Config loaded — REVIEW_PROVIDER=%s, OPENAI_API_KEY set=%s, OUTSCRAPER_API_KEY set=%s",
+        "op=startup review_provider=%s openai_key_set=%s outscraper_key_set=%s",
         settings.REVIEW_PROVIDER,
         bool(settings.OPENAI_API_KEY),
         bool(settings.OUTSCRAPER_API_KEY),

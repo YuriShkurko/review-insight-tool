@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -8,6 +9,7 @@ from app.database import get_db
 from app.models.user import User
 from app.schemas.auth import TokenResponse, UserLogin, UserRead, UserRegister
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
@@ -15,6 +17,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def register(payload: UserRegister, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
+        logger.warning("op=register email=%s success=false error=duplicate", payload.email)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A user with this email already exists.",
@@ -28,6 +31,7 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
 
+    logger.info("op=register user_id=%s success=true", user.id)
     return TokenResponse(access_token=create_access_token(user.id))
 
 
@@ -35,11 +39,13 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
 def login(payload: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not verify_password(payload.password, user.hashed_password):
+        logger.warning("op=login email=%s success=false error=invalid_credentials", payload.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
         )
 
+    logger.info("op=login user_id=%s success=true", user.id)
     return TokenResponse(access_token=create_access_token(user.id))
 
 

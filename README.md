@@ -41,11 +41,13 @@ Open http://localhost:3000 and register an account.
 > The app works immediately with sample data. To use real reviews and AI analysis, add your `OUTSCRAPER_API_KEY` and `OPENAI_API_KEY` to `backend/.env` and restart.
 
 <details>
-<summary><strong>Local setup (without Docker)</strong></summary>
+<summary><strong>Local development setup (without Docker Compose)</strong></summary>
 
-Requires Python 3.11+, Node.js 18+, and a running PostgreSQL instance.
+Requires Python 3.11+, Node.js 18+, and PostgreSQL 16.
 
 **1. Start PostgreSQL**
+
+Use a local PostgreSQL installation, or start one quickly with Docker:
 
 ```bash
 docker run --name review-insight-db \
@@ -261,6 +263,18 @@ Interactive docs: http://localhost:8000/docs
 | `make lint` | Run linters |
 | `make db-reset` | Drop all tables (backend recreates on restart) |
 | `make clean` | Remove build artifacts and caches |
+
+### Observability
+
+The backend logs all key operations with structured fields:
+
+- **Auth**: registration, login (success/failure)
+- **Business**: creation with timing
+- **Reviews**: provider fetch duration, review count, payload truncation
+- **Analysis**: LLM call duration, review count, parse failures
+- **Dashboard**: aggregation timing
+
+Logs use `op=<name> duration_ms=<ms> success=<bool>` format for easy searching and monitoring. External calls (review providers, LLM) have timeouts and payload limits to fail fast instead of hanging.
 
 ### Database reset
 

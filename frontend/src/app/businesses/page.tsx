@@ -80,7 +80,7 @@ export default function BusinessesPage() {
             required
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Paste a Google Maps URL or place ID"
+            placeholder="Paste a Google Maps URL, shortened link, or place ID"
             disabled={adding}
             className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           />
@@ -124,11 +124,41 @@ export default function BusinessesPage() {
           </button>
         </div>
       ) : businesses.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-lg">
-          <p className="text-gray-400 text-lg mb-1">No businesses yet</p>
-          <p className="text-gray-400 text-sm">
-            Paste a Google Maps link above to add your first business.
+        <div className="bg-white border border-gray-200 rounded-lg p-8">
+          <h2 className="text-lg font-semibold text-gray-800 mb-1">
+            Welcome to Review Insight
+          </h2>
+          <p className="text-gray-500 text-sm mb-5">
+            Understand what your customers are saying — in three simple steps.
           </p>
+          <ol className="space-y-3 text-sm text-gray-700">
+            <li className="flex items-start gap-3">
+              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold shrink-0">
+                1
+              </span>
+              <span>
+                <strong>Add your business</strong> — paste a Google Maps link
+                (full or shortened) or a place ID above.
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold shrink-0">
+                2
+              </span>
+              <span>
+                <strong>Fetch reviews</strong> — we pull your latest Google reviews automatically.
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold shrink-0">
+                3
+              </span>
+              <span>
+                <strong>Run analysis</strong> — AI generates a summary,
+                top complaints, praise, action items, and risk areas.
+              </span>
+            </li>
+          </ol>
         </div>
       ) : (
         <div className="space-y-3">

@@ -1,3 +1,4 @@
+import logging
 import re
 import uuid
 from urllib.parse import unquote
@@ -8,6 +9,37 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.business import Business
+
+logger = logging.getLogger(__name__)
+
+_SHORTLINK_HOSTS = {"maps.app.goo.gl", "goo.gl"}
+_REDIRECT_TIMEOUT = 10
+
+
+def _is_shortened_url(url: str) -> bool:
+    """Check if a URL is a known Google Maps shortened link."""
+    for host in _SHORTLINK_HOSTS:
+        if host in url:
+            return True
+    return False
+
+
+async def _resolve_shortened_url(url: str) -> str | None:
+    """Follow redirects on a shortened Google Maps URL and return the final URL."""
+    try:
+        async with httpx.AsyncClient(
+            timeout=_REDIRECT_TIMEOUT, follow_redirects=True, max_redirects=5
+        ) as client:
+            resp = await client.head(url)
+            resolved = str(resp.url)
+            logger.info("op=resolve_shortlink success=true resolved=%s", resolved)
+            return resolved
+    except Exception as exc:
+        logger.warning(
+            "op=resolve_shortlink success=false error=%s detail=%s",
+            type(exc).__name__, exc,
+        )
+        return None
 
 
 def parse_place_id_from_url(google_maps_url: str) -> str | None:
@@ -22,6 +54,20 @@ def parse_place_id_from_url(google_maps_url: str) -> str | None:
         if match:
             return match.group(1)
     return None
+
+
+async def resolve_place_id_from_url(google_maps_url: str) -> tuple[str | None, str]:
+    """Parse a place ID from a Google Maps URL, resolving shortened links first.
+
+    Returns (place_id, resolved_url) — resolved_url may differ from input
+    if the original was a shortened link.
+    """
+    url = google_maps_url
+    if _is_shortened_url(url):
+        resolved = await _resolve_shortened_url(url)
+        if resolved:
+            url = resolved
+    return parse_place_id_from_url(url), url
 
 
 def _extract_name_from_url(google_maps_url: str) -> str | None:
@@ -73,13 +119,22 @@ async def get_or_create_business(
     google_maps_url: str | None = None,
     business_type: str = "other",
 ) -> Business:
-    """Return existing business owned by this user, or create a new one."""
+    """Return existing business owned by this user, or create a new one.
+
+    If the business exists as competitor-only, promote it to a regular business.
+    Raises 409 if the business already exists as a regular (non-competitor) business.
+    """
     existing = (
         db.query(Business)
         .filter(Business.place_id == place_id, Business.user_id == user_id)
         .first()
     )
     if existing:
+        if existing.is_competitor:
+            existing.is_competitor = False
+            db.commit()
+            db.refresh(existing)
+            return existing
         raise HTTPException(
             status_code=409,
             detail="You have already added this business.",
@@ -94,6 +149,40 @@ async def get_or_create_business(
         business_type=business_type,
         address=details["address"],
         google_maps_url=google_maps_url,
+        is_competitor=False,
+    )
+    db.add(business)
+    db.commit()
+    db.refresh(business)
+    return business
+
+
+async def get_or_create_business_for_competitor(
+    db: Session,
+    place_id: str,
+    user_id: uuid.UUID,
+    google_maps_url: str | None = None,
+    business_type: str = "other",
+) -> Business:
+    """Return existing business (same user + place_id) or create a new one marked as competitor. Never raises 409."""
+    existing = (
+        db.query(Business)
+        .filter(Business.place_id == place_id, Business.user_id == user_id)
+        .first()
+    )
+    if existing:
+        return existing
+
+    details = await resolve_place_details(place_id, google_maps_url)
+    business = Business(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        place_id=place_id,
+        name=details["name"],
+        business_type=business_type,
+        address=details["address"],
+        google_maps_url=google_maps_url,
+        is_competitor=True,
     )
     db.add(business)
     db.commit()

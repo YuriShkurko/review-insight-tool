@@ -80,3 +80,33 @@ export interface Dashboard {
   analysis_created_at: string | null;
   last_updated_at: string | null;
 }
+
+export interface CompetitorRead {
+  link_id: string;
+  business: Business;
+  has_reviews: boolean;
+  has_analysis: boolean;
+}
+
+export interface BusinessSnapshot {
+  business_id: string;
+  name: string;
+  business_type: string;
+  avg_rating: number | null;
+  total_reviews: number;
+  summary: string;
+  top_complaints: InsightItem[];
+  top_praise: InsightItem[];
+  action_items: string[];
+  risk_areas: string[];
+  recommended_focus: string;
+}
+
+export interface ComparisonResponse {
+  target: BusinessSnapshot;
+  competitors: BusinessSnapshot[];
+  comparison_summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  opportunities: string[];
+}

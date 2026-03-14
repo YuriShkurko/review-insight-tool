@@ -10,7 +10,7 @@ from app.logging_config import timed_operation
 from app.models.business import Business
 from app.models.user import User
 from app.schemas.business import BusinessCreate, BusinessRead
-from app.services.place_service import get_or_create_business, parse_place_id_from_url
+from app.services.place_service import get_or_create_business, resolve_place_id_from_url
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/businesses", tags=["businesses"])
@@ -26,12 +26,12 @@ async def create_business(
     google_maps_url = payload.google_maps_url
 
     if not place_id and google_maps_url:
-        place_id = parse_place_id_from_url(google_maps_url)
+        place_id, google_maps_url = await resolve_place_id_from_url(google_maps_url)
 
     if not place_id:
         raise HTTPException(
             status_code=400,
-            detail="Provide a valid place_id or a Google Maps URL containing one.",
+            detail="Could not extract a place identifier. Paste a full or shortened Google Maps URL, or a place ID.",
         )
 
     with timed_operation(logger, "create_business", user_id=current_user.id, type=payload.business_type.value):
@@ -48,7 +48,7 @@ def list_businesses(
 ):
     return (
         db.query(Business)
-        .filter(Business.user_id == current_user.id)
+        .filter(Business.user_id == current_user.id, Business.is_competitor.is_(False))
         .order_by(Business.created_at.desc())
         .all()
     )

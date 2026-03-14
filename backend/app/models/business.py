@@ -1,10 +1,11 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.competitor_link import CompetitorLink
 
 
 class Business(Base):
@@ -22,6 +23,7 @@ class Business(Base):
     google_maps_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     avg_rating: Mapped[float | None] = mapped_column(Float, nullable=True)
     total_reviews: Mapped[int] = mapped_column(Integer, default=0)
+    is_competitor: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -32,3 +34,14 @@ class Business(Base):
     owner: Mapped["User"] = relationship(back_populates="businesses")  # noqa: F821
     reviews: Mapped[list["Review"]] = relationship(back_populates="business", cascade="all, delete-orphan")  # noqa: F821
     analysis: Mapped["Analysis | None"] = relationship(back_populates="business", uselist=False, cascade="all, delete-orphan")  # noqa: F821
+    competitor_links_out: Mapped[list["CompetitorLink"]] = relationship(
+        CompetitorLink,
+        foreign_keys=[CompetitorLink.target_business_id],
+        back_populates="target_business",
+        cascade="all, delete-orphan",
+    )
+    competitor_links_in: Mapped[list["CompetitorLink"]] = relationship(
+        CompetitorLink,
+        foreign_keys=[CompetitorLink.competitor_business_id],
+        back_populates="competitor_business",
+    )

@@ -1,6 +1,6 @@
 # Review Insight Tool — System Specification
 
-Version: 1.1  
+Version: 1.2  
 Last updated: March 2026
 
 ## Overview
@@ -16,6 +16,8 @@ Review Insight Tool is a web application that helps small business owners unders
 | **Analysis** | AI-generated insights for a business's reviews. Includes summary, complaints, praise, action items, risk areas, and a recommended focus. |
 | **Dashboard** | Aggregated view combining business stats and analysis results. |
 | **Provider** | A pluggable module that fetches reviews from an external source (e.g., Outscraper for Google Maps). |
+| **Competitor link** | A directional link from a "target" business to another business (the competitor). Stored in `competitor_links`; competitors are normal businesses owned by the same user. |
+| **Comparison** | AI-generated comparison of the target business vs linked competitors that have analysis. Includes summary, strengths, weaknesses, and opportunities. |
 
 ## User Flows
 
@@ -91,6 +93,20 @@ Review Insight Tool is a web application that helps small business owners unders
 | Reviews exist, no analysis | Amber prompt: "Run Analysis" |
 | Reviews + analysis exist | Full dashboard with all insight sections |
 
+### 7. Competitor Comparison (V2)
+
+1. User opens a business detail page (the "target" business) that has reviews and analysis.
+2. In the **Competitors** section, user pastes a Google Maps URL (or place ID) and selects business type, then clicks "Add Competitor".
+3. Backend creates the competitor as a normal business (or reuses existing) and creates a `CompetitorLink` from target to competitor. Maximum 3 competitors per target.
+4. Competitor appears in the list; user can open the competitor's detail page to fetch reviews and run analysis (same flow as any business).
+5. Back on the target business page, when at least one linked competitor has analysis, user clicks **Generate Comparison**.
+6. Backend loads target and all competitors that have analysis, sends snapshot data to the LLM, and returns a structured comparison (summary, strengths, weaknesses, opportunities).
+7. Frontend displays side-by-side snapshots and the AI-generated comparison.
+
+**Expected result:** User sees where their business is stronger or weaker vs competitors and what opportunities to prioritize.
+
+**Constraints:** Competitors are manual only (no auto-discovery). Comparison is generated on demand, not cached. A business cannot be linked as its own competitor.
+
 ## Analysis Output Shape
 
 Each analysis produces the following fields:
@@ -154,7 +170,7 @@ Every business belongs to exactly one user. All queries are filtered by `user_id
 
 | Limitation | Notes |
 |------------|-------|
-| No database migrations | Schema changes require a manual table drop and recreate |
+| No database migrations | Schema changes require a manual table drop and recreate (V2 adds `competitor_links`; reset required when upgrading from pre-V2). |
 | Token in localStorage | Not suitable for production; httpOnly cookies recommended |
 | No password requirements | No minimum length or complexity enforcement |
 | No delete | Businesses cannot be removed once added |
@@ -246,7 +262,6 @@ op=fetch_reviews ... review_count=...                  # final count
 
 ## Planned Improvements
 
-- Competitor comparison (side-by-side insights with linked competitor businesses)
 - Additional review providers (Yelp, TripAdvisor)
 - Alembic migrations
 - Background job processing for review fetching

@@ -4,6 +4,24 @@ An AI-powered review analysis platform that helps small business owners understa
 
 Paste a Google Maps link, fetch reviews, and get tailored insights: top complaints, top praise, action items, risk areas, and a recommended focus — all customized to your business type.
 
+## Table of Contents
+
+- [Why This Exists](#why-this-exists)
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Screenshots](#screenshots)
+- [Usage](#usage)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [API](#api)
+- [Configuration](#configuration)
+- [Project Structure](#project-structure)
+- [Development](#development)
+- [Testing](#testing)
+- [Specification](#specification)
+- [Roadmap](#roadmap)
+- [License](#license)
+
 ## Why This Exists
 
 Small business owners receive hundreds of reviews but rarely have time to read them all, spot patterns, or turn feedback into action.
@@ -24,6 +42,7 @@ Review Insight Tool solves this by:
 - **Clean dashboard** — see average rating, review count, and all insights in one view
 - **Secure access** — each user sees only their own businesses and data
 - **Fresh data** — refreshing reviews replaces the old set and clears stale analysis automatically
+- **Competitor comparison (V2)** — link up to 3 competitor businesses, run analysis on them, and generate an AI comparison (strengths, weaknesses, opportunities)
 
 ## Quick Start
 
@@ -100,6 +119,7 @@ Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
 3. **Fetch reviews** — click "Fetch Reviews" to pull customer reviews
 4. **Run analysis** — click "Run Analysis" to generate tailored insights
 5. **View dashboard** — see your rating, AI summary, complaints, praise, action items, and risk areas
+6. **Compare with competitors (optional)** — on a business page, add up to 3 competitors (Google Maps URLs), fetch and analyze each, then click "Generate Comparison" for AI-generated strengths, weaknesses, and opportunities
 
 > **Tip:** Use **Share → Copy link** from the Google Maps business info panel. Search-bar URLs may not work.
 
@@ -185,6 +205,10 @@ All endpoints are prefixed with `/api`. Protected endpoints require a `Bearer` t
 | `/api/businesses/{id}/reviews` | GET | Yes | List reviews |
 | `/api/businesses/{id}/analyze` | POST | Yes | Run AI analysis |
 | `/api/businesses/{id}/dashboard` | GET | Yes | Dashboard data |
+| `/api/businesses/{id}/competitors` | POST | Yes | Link a competitor |
+| `/api/businesses/{id}/competitors` | GET | Yes | List linked competitors |
+| `/api/businesses/{id}/competitors/{cid}` | DELETE | Yes | Remove a competitor link |
+| `/api/businesses/{id}/competitors/comparison` | POST | Yes | Generate AI comparison |
 
 Interactive docs: http://localhost:8000/docs
 
@@ -281,7 +305,7 @@ Logs use `op=<name> duration_ms=<ms> success=<bool>` format for easy searching a
 
 ### Database reset
 
-The project uses `create_all` (no Alembic). Schema changes require dropping tables:
+The project uses `create_all` (no Alembic). Schema changes require dropping tables. **V2 adds the `competitor_links` table and `businesses.is_competitor` column** — if you upgrade from a pre-V2 database, run a reset so the schema is recreated:
 
 ```bash
 make db-reset
@@ -323,7 +347,7 @@ For detailed system behavior, user flows, analysis output shapes, and known limi
 
 ## Roadmap
 
-- [ ] Competitor comparison — side-by-side insights against linked competitor businesses
+- [x] Competitor comparison — side-by-side insights against linked competitor businesses
 - [ ] Additional review providers — Yelp, TripAdvisor, App Store, Play Store
 - [ ] Database migrations — Alembic for safe schema evolution
 - [ ] Delete/archive businesses

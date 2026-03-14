@@ -1,4 +1,4 @@
-.PHONY: up down logs test test-e2e lint backend frontend dev stop db-reset clean
+.PHONY: up down logs test test-e2e lint backend frontend dev stop db-reset db-add-is-competitor clean
 
 # ── Docker Compose ──────────────────────────────────────────────
 
@@ -58,10 +58,18 @@ lint:
 # ── Database ───────────────────────────────────────────────────
 
 ## Reset database (drops all tables — backend will recreate on next start)
+## Use with Docker Compose: make up, then make db-reset, then restart backend.
+## For standalone DB container (review-insight-db), run: docker exec -i review-insight-db psql -U postgres -d review_insight -c "DROP TABLE IF EXISTS competitor_links, analyses, reviews, businesses, users CASCADE;"
 db-reset:
-	docker exec -i review-insight-db psql -U postgres -d review_insight \
-		-c "DROP TABLE IF EXISTS analyses, reviews, businesses, users CASCADE;"
+	docker compose exec -T db psql -U postgres -d review_insight \
+		-c "DROP TABLE IF EXISTS competitor_links, analyses, reviews, businesses, users CASCADE;"
 	@echo Tables dropped. Restart backend to recreate.
+
+## Add is_competitor column to existing DB (keeps data). Run if you pulled the competitor-list fix without resetting.
+db-add-is-competitor:
+	docker compose exec -T db psql -U postgres -d review_insight \
+		-c "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS is_competitor boolean NOT NULL DEFAULT false;"
+	@echo Column added. Restart backend if needed.
 
 # ── Cleanup ────────────────────────────────────────────────────
 

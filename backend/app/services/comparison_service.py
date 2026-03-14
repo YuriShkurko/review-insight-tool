@@ -1,0 +1,200 @@
+import json
+import logging
+import uuid
+
+from fastapi import HTTPException
+from openai import OpenAI
+from sqlalchemy.orm import Session
+
+from app.config import settings
+from app.logging_config import timed_operation
+from app.models.analysis import Analysis
+from app.models.business import Business
+from app.models.competitor_link import CompetitorLink
+from app.schemas.comparison import BusinessSnapshot, ComparisonResponse
+from app.schemas.analysis import InsightItem
+
+logger = logging.getLogger(__name__)
+
+LLM_TIMEOUT_SECONDS = 60
+
+_COMPARISON_SYSTEM = """\
+You are an expert business and customer-experience consultant.
+You will receive structured analysis data for a TARGET business and one or more COMPETITOR businesses (same industry).
+Your job is to produce a concise comparison that helps the target business understand:
+- Where they are stronger than competitors
+- Where they are weaker
+- What opportunities they should prioritize
+
+Return a JSON object with exactly these keys:
+- "comparison_summary": 2-4 sentences summarizing how the target compares overall to competitors.
+- "strengths": List of up to 5 short phrases where the target is doing better than competitors (based on praise, ratings, or fewer complaints).
+- "weaknesses": List of up to 5 short phrases where the target lags competitors or has more complaints.
+- "opportunities": List of up to 5 short actionable opportunities the target should consider (inspired by competitor strengths or gaps).
+
+Return ONLY valid JSON, no markdown fences or extra text."""
+
+
+def _snapshot_from_business_and_analysis(
+    business: Business, analysis: Analysis | None
+) -> BusinessSnapshot | None:
+    if not analysis:
+        return None
+    return BusinessSnapshot(
+        business_id=business.id,
+        name=business.name,
+        business_type=business.business_type,
+        avg_rating=business.avg_rating,
+        total_reviews=business.total_reviews,
+        summary=analysis.summary,
+        top_complaints=[InsightItem(**x) for x in analysis.top_complaints],
+        top_praise=[InsightItem(**x) for x in analysis.top_praise],
+        action_items=analysis.action_items or [],
+        risk_areas=analysis.risk_areas or [],
+        recommended_focus=analysis.recommended_focus or "",
+    )
+
+
+def _format_snapshots_for_prompt(target: BusinessSnapshot, competitors: list[BusinessSnapshot]) -> str:
+    """Serialize target and competitors into a string for the LLM."""
+    def snapshot_to_dict(s: BusinessSnapshot) -> dict:
+        return {
+            "name": s.name,
+            "business_type": s.business_type,
+            "avg_rating": s.avg_rating,
+            "total_reviews": s.total_reviews,
+            "summary": s.summary,
+            "top_complaints": [{"label": i.label, "count": i.count} for i in s.top_complaints],
+            "top_praise": [{"label": i.label, "count": i.count} for i in s.top_praise],
+            "action_items": s.action_items,
+            "risk_areas": s.risk_areas,
+            "recommended_focus": s.recommended_focus,
+        }
+    data = {
+        "target": snapshot_to_dict(target),
+        "competitors": [snapshot_to_dict(c) for c in competitors],
+    }
+    return json.dumps(data, indent=2)
+
+
+def _call_openai_comparison(prompt_text: str) -> dict:
+    if not settings.OPENAI_API_KEY:
+        return _mock_comparison()
+    try:
+        client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=LLM_TIMEOUT_SECONDS)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": _COMPARISON_SYSTEM},
+                {"role": "user", "content": prompt_text},
+            ],
+            temperature=0.3,
+        )
+    except Exception as exc:
+        logger.error(
+            "op=comparison_llm success=false error=%s detail=%s",
+            type(exc).__name__, exc,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="Comparison generation failed. Please try again later.",
+        ) from exc
+    content = response.choices[0].message.content or "{}"
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        logger.warning("op=comparison_parse success=false content_length=%d", len(content))
+        return _mock_comparison()
+
+
+def _mock_comparison() -> dict:
+    return {
+        "comparison_summary": "Comparison insights are available when OpenAI is configured.",
+        "strengths": [],
+        "weaknesses": [],
+        "opportunities": [],
+    }
+
+
+def _normalize_comparison_result(raw: dict) -> dict:
+    return {
+        "comparison_summary": str(raw.get("comparison_summary") or ""),
+        "strengths": [str(s) for s in (raw.get("strengths") or []) if s],
+        "weaknesses": [str(w) for w in (raw.get("weaknesses") or []) if w],
+        "opportunities": [str(o) for o in (raw.get("opportunities") or []) if o],
+    }
+
+
+def generate_comparison(
+    db: Session, business_id: uuid.UUID, user_id: uuid.UUID
+) -> ComparisonResponse:
+    """Build comparison of target business vs linked competitors that have analysis.
+
+    Requires: target has analysis, at least one linked competitor has analysis.
+    """
+    target_business = (
+        db.query(Business)
+        .filter(Business.id == business_id, Business.user_id == user_id)
+        .first()
+    )
+    if not target_business:
+        raise HTTPException(status_code=404, detail="Business not found.")
+
+    target_analysis = (
+        db.query(Analysis).filter(Analysis.business_id == business_id).first()
+    )
+    target_snapshot = _snapshot_from_business_and_analysis(
+        target_business, target_analysis
+    )
+    if not target_snapshot:
+        raise HTTPException(
+            status_code=400,
+            detail="Run analysis on this business before generating a comparison.",
+        )
+
+    links = (
+        db.query(CompetitorLink)
+        .filter(CompetitorLink.target_business_id == business_id)
+        .all()
+    )
+    competitor_snapshots: list[BusinessSnapshot] = []
+    for link in links:
+        comp_business = (
+            db.query(Business)
+            .filter(Business.id == link.competitor_business_id)
+            .first()
+        )
+        if not comp_business or comp_business.user_id != user_id:
+            continue
+        comp_analysis = (
+            db.query(Analysis)
+            .filter(Analysis.business_id == link.competitor_business_id)
+            .first()
+        )
+        snap = _snapshot_from_business_and_analysis(comp_business, comp_analysis)
+        if snap:
+            competitor_snapshots.append(snap)
+
+    if not competitor_snapshots:
+        raise HTTPException(
+            status_code=400,
+            detail="Add at least one competitor and run analysis on them before generating a comparison.",
+        )
+
+    prompt_text = _format_snapshots_for_prompt(target_snapshot, competitor_snapshots)
+    with timed_operation(
+        logger, "comparison_llm",
+        business_id=business_id,
+        competitor_count=len(competitor_snapshots),
+    ):
+        raw = _call_openai_comparison(prompt_text)
+    normalized = _normalize_comparison_result(raw)
+
+    return ComparisonResponse(
+        target=target_snapshot,
+        competitors=competitor_snapshots,
+        comparison_summary=normalized["comparison_summary"],
+        strengths=normalized["strengths"],
+        weaknesses=normalized["weaknesses"],
+        opportunities=normalized["opportunities"],
+    )

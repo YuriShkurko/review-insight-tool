@@ -7,7 +7,9 @@ import { useRequireAuth } from "@/lib/auth";
 import { apiFetch, ApiError } from "@/lib/api";
 import DashboardView from "@/components/DashboardView";
 import ReviewList from "@/components/ReviewList";
-import type { Dashboard, Review } from "@/lib/types";
+import CompetitorSection from "@/components/CompetitorSection";
+import ComparisonView from "@/components/ComparisonView";
+import type { Dashboard, Review, ComparisonResponse, CompetitorRead } from "@/lib/types";
 
 export default function BusinessDetailPage() {
   const { user, isLoading: authLoading } = useRequireAuth();
@@ -22,8 +24,18 @@ export default function BusinessDetailPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+  const [competitors, setCompetitors] = useState<CompetitorRead[]>([]);
+  const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
+  const [comparing, setComparing] = useState(false);
+  const [comparisonError, setComparisonError] = useState("");
 
-  const busy = fetchingReviews || analyzing;
+  const busy = fetchingReviews || analyzing || comparing;
+
+  const handleCompetitorsChange = useCallback((comps: CompetitorRead[]) => {
+    setCompetitors(comps);
+    setComparison(null);
+    setComparisonError("");
+  }, []);
 
   const loadDashboard = useCallback(async () => {
     const d = await apiFetch<Dashboard>(`/businesses/${id}/dashboard`);
@@ -100,6 +112,27 @@ export default function BusinessDetailPage() {
       );
     } finally {
       setAnalyzing(false);
+    }
+  }
+
+  async function handleGenerateComparison() {
+    setComparing(true);
+    setComparisonError("");
+    setComparison(null);
+    try {
+      const data = await apiFetch<ComparisonResponse>(
+        `/businesses/${id}/competitors/comparison`,
+        { method: "POST" }
+      );
+      setComparison(data);
+    } catch (err) {
+      setComparisonError(
+        err instanceof ApiError
+          ? err.detail
+          : "Failed to generate comparison."
+      );
+    } finally {
+      setComparing(false);
     }
   }
 
@@ -205,12 +238,14 @@ export default function BusinessDetailPage() {
           )}
           {!actionError && !actionSuccess && <div className="mb-4" />}
 
-          {/* Workflow guidance when data is missing */}
+          {/* Workflow guidance depending on state */}
           {!hasReviews && !hasAnalysis && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
-              Click <strong>Fetch Reviews</strong> to pull reviews for this
-              business, then <strong>Run Analysis</strong> to generate AI
-              insights.
+              <strong>Step 1:</strong> Click <strong>Fetch Reviews</strong> to pull
+              reviews for this business.
+              <br />
+              <strong>Step 2:</strong> Click <strong>Run Analysis</strong> to generate
+              AI-powered insights.
             </div>
           )}
           {hasReviews && !hasAnalysis && (
@@ -218,6 +253,11 @@ export default function BusinessDetailPage() {
               Reviews loaded. Click <strong>Run Analysis</strong> to generate
               AI-powered insights.
             </div>
+          )}
+          {hasAnalysis && competitors.length === 0 && (
+            <p className="text-xs text-gray-400 mb-6 px-1">
+              Want to see how you stack up? Scroll down to add competitors and generate a comparison.
+            </p>
           )}
 
           {/* Data context strip */}
@@ -248,6 +288,60 @@ export default function BusinessDetailPage() {
           )}
 
           <DashboardView data={dashboard} />
+
+          {/* Competitors */}
+          <div className="mt-8 space-y-4">
+            <CompetitorSection
+              businessId={id}
+              onCompetitorsChange={handleCompetitorsChange}
+            />
+          </div>
+
+          {/* Comparison */}
+          {competitors.length > 0 && (
+            <div className="mt-8 space-y-4">
+              {!hasAnalysis && (
+                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                  Run analysis on this business before generating a comparison.
+                </p>
+              )}
+              {hasAnalysis && !competitors.some((c) => c.has_analysis) && (
+                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                  Fetch reviews and run analysis on at least one competitor before comparing.
+                </p>
+              )}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleGenerateComparison}
+                  disabled={busy || !hasAnalysis || !competitors.some((c) => c.has_analysis)}
+                  title={
+                    !hasAnalysis
+                      ? "Run analysis on this business first"
+                      : !competitors.some((c) => c.has_analysis)
+                        ? "At least one competitor needs analysis"
+                        : undefined
+                  }
+                  className="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                >
+                  {comparing ? "Generating…" : "Generate Comparison"}
+                </button>
+                <span className="text-sm text-gray-500">
+                  Compares with competitors that have analysis.
+                </span>
+              </div>
+              {comparisonError && (
+                <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded px-3 py-2">
+                  {comparisonError}
+                </p>
+              )}
+              {comparison && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
+                  <ComparisonView data={comparison} />
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 

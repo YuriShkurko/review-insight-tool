@@ -11,6 +11,31 @@ import {
 
 const MAX_COMPETITORS = 3;
 
+function StatusBadge({ hasReviews, hasAnalysis }: { hasReviews: boolean; hasAnalysis: boolean }) {
+  if (hasAnalysis) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 px-2.5 py-0.5 rounded-full">
+        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+        Analyzed
+      </span>
+    );
+  }
+  if (hasReviews) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+        Needs analysis
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 px-2.5 py-0.5 rounded-full">
+      <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+      Needs reviews
+    </span>
+  );
+}
+
 export default function CompetitorSection({
   businessId,
   onCompetitorsChange,
@@ -91,11 +116,14 @@ export default function CompetitorSection({
 
   if (loading) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-5">
-        <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide mb-3">
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
           Competitors
         </h3>
-        <div className="text-sm text-gray-500">Loading…</div>
+        <div className="flex items-center gap-2 text-sm text-gray-400">
+          <div className="h-4 w-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+          Loading…
+        </div>
       </div>
     );
   }
@@ -103,17 +131,10 @@ export default function CompetitorSection({
   const atLimit = competitors.length >= MAX_COMPETITORS;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5">
-      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide mb-3">
-        Competitors
-      </h3>
-      <p className="text-sm text-gray-600 mb-4">
-        Add up to {MAX_COMPETITORS} competitor businesses to compare insights.
-        Open each competitor to fetch reviews and run analysis.
-      </p>
-
+    <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+      {/* Add form */}
       {!atLimit && (
-        <form onSubmit={handleAdd} className="space-y-2 mb-4">
+        <form onSubmit={handleAdd} className="space-y-2">
           <div className="flex flex-wrap gap-2 items-end">
             <div className="flex-1 min-w-[200px]">
               <label className="block text-xs text-gray-500 mb-1">
@@ -124,85 +145,93 @@ export default function CompetitorSection({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="https://maps.app.goo.gl/... or full Maps URL"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <div className="w-32">
+            <div className="w-28">
               <label className="block text-xs text-gray-500 mb-1">Type</label>
               <select
                 value={businessType}
                 onChange={(e) => setBusinessType(e.target.value as BusinessType)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm capitalize"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm capitalize focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {BUSINESS_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </div>
             <button
               type="submit"
               disabled={adding || !input.trim()}
-              className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
             >
               {adding ? "Adding…" : "Add Competitor"}
             </button>
           </div>
+          <p className="text-xs text-gray-400">
+            Add up to {MAX_COMPETITORS} competitors. Open each competitor to fetch reviews and run analysis.
+          </p>
         </form>
+      )}
+      {atLimit && (
+        <p className="text-xs text-gray-400">
+          Maximum of {MAX_COMPETITORS} competitors reached. Remove one to add another.
+        </p>
       )}
 
       {error && (
-        <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded px-3 py-2 mb-4">
+        <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
 
+      {/* Competitor list */}
       {competitors.length === 0 ? (
-        <p className="text-sm text-gray-500">No competitors linked yet.</p>
+        <div className="text-center py-6 border border-dashed border-gray-200 rounded-xl">
+          <p className="text-sm text-gray-400">
+            No competitors linked yet
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Add a competitor above to start comparing
+          </p>
+        </div>
       ) : (
-        <ul className="space-y-2">
+        <div className="space-y-2">
           {competitors.map(({ link_id, business, has_reviews, has_analysis }) => (
-            <li
+            <div
               key={link_id}
-              className="flex items-center justify-between gap-2 py-2 border-b border-gray-100 last:border-0"
+              className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors"
             >
-              <Link
-                href={`/businesses/${business.id}`}
-                className="flex-1 min-w-0 font-medium text-blue-600 hover:underline truncate"
-              >
-                {business.name}
-              </Link>
-              <span className="text-sm text-gray-500 shrink-0">
-                {business.avg_rating != null
-                  ? `★ ${business.avg_rating.toFixed(1)}`
-                  : "—"}{" "}
-                · {business.total_reviews} reviews
-              </span>
-              {has_analysis ? (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full shrink-0">
-                  Analyzed
-                </span>
-              ) : has_reviews ? (
-                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full shrink-0">
-                  Needs analysis
-                </span>
-              ) : (
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full shrink-0">
-                  Needs reviews
-                </span>
-              )}
+              <div className="flex-1 min-w-0">
+                <Link
+                  href={`/businesses/${business.id}`}
+                  className="font-medium text-sm text-gray-900 hover:text-blue-600 transition-colors truncate block"
+                >
+                  {business.name}
+                </Link>
+                <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                  <span>
+                    {business.avg_rating != null
+                      ? `★ ${business.avg_rating.toFixed(1)}`
+                      : "No rating"}
+                  </span>
+                  <span>
+                    {business.total_reviews} review{business.total_reviews !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              </div>
+              <StatusBadge hasReviews={has_reviews} hasAnalysis={has_analysis} />
               <button
                 type="button"
                 onClick={() => handleRemove(business.id)}
                 disabled={removing === business.id}
-                className="text-red-600 text-sm hover:underline disabled:opacity-50 shrink-0"
+                className="text-xs text-gray-400 hover:text-red-600 disabled:opacity-50 transition-colors shrink-0"
               >
                 {removing === business.id ? "Removing…" : "Remove"}
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

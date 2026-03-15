@@ -1,8 +1,8 @@
 import uuid
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.errors import BusinessNotFoundError
 from app.models.analysis import Analysis
 from app.models.business import Business
 from app.schemas.dashboard import DashboardResponse
@@ -21,7 +21,7 @@ def get_dashboard(
         .first()
     )
     if not business:
-        raise HTTPException(status_code=404, detail="Business not found.")
+        raise BusinessNotFoundError()
 
     analysis = (
         db.query(Analysis).filter(Analysis.business_id == business_id).first()

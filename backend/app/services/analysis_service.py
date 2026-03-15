@@ -2,11 +2,11 @@ import json
 import logging
 import uuid
 
-from fastapi import HTTPException
 from openai import OpenAI
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.errors import ExternalProviderError, NoReviewsError
 from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
@@ -66,10 +66,7 @@ def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
     business = db.query(Business).filter(Business.id == business_id).first()
     reviews = db.query(Review).filter(Review.business_id == business_id).all()
     if not reviews:
-        raise HTTPException(
-            status_code=400,
-            detail="No reviews found for this business. Fetch reviews first.",
-        )
+        raise NoReviewsError()
 
     if len(reviews) > MAX_REVIEWS_FOR_ANALYSIS:
         logger.warning(
@@ -169,10 +166,7 @@ def _call_openai(system_prompt: str, review_texts: str) -> dict:
         )
     except Exception as exc:
         logger.error("op=llm_call success=false error=%s detail=%s", type(exc).__name__, exc)
-        raise HTTPException(
-            status_code=502,
-            detail="AI analysis failed. Please try again later.",
-        ) from exc
+        raise ExternalProviderError("AI analysis failed. Please try again later.") from exc
 
     content = response.choices[0].message.content or "{}"
     try:

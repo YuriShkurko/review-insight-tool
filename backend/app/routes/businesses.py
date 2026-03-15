@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
+from app.errors import BusinessAlreadyExistsError
 from app.logging_config import timed_operation
 from app.models.business import Business
 from app.models.user import User
@@ -34,10 +35,13 @@ async def create_business(
             detail="Could not extract a place identifier. Paste a full or shortened Google Maps URL, or a place ID.",
         )
 
-    with timed_operation(logger, "create_business", user_id=current_user.id, type=payload.business_type.value):
-        business = await get_or_create_business(
-            db, place_id, current_user.id, google_maps_url, payload.business_type.value
-        )
+    try:
+        with timed_operation(logger, "create_business", user_id=current_user.id, type=payload.business_type.value):
+            business = await get_or_create_business(
+                db, place_id, current_user.id, google_maps_url, payload.business_type.value
+            )
+    except BusinessAlreadyExistsError as exc:
+        raise HTTPException(status_code=409, detail=exc.message) from exc
     return business
 
 

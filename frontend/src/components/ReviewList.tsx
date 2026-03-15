@@ -5,6 +5,16 @@ import type { Review } from "@/lib/types";
 
 const PREVIEW_COUNT = 5;
 
+function StarRating({ rating }: { rating: number }) {
+  const clamped = Math.min(Math.max(rating, 0), 5);
+  return (
+    <span className="text-sm font-medium text-amber-500 tracking-tight">
+      {"★".repeat(clamped)}
+      {"☆".repeat(5 - clamped)}
+    </span>
+  );
+}
+
 export default function ReviewList({ reviews }: { reviews: Review[] }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -13,27 +23,21 @@ export default function ReviewList({ reviews }: { reviews: Review[] }) {
   const visible = expanded ? reviews : reviews.slice(0, PREVIEW_COUNT);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5">
-      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide mb-3">
-        Reviews ({reviews.length})
-      </h3>
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
       <div className="space-y-3">
         {visible.map((r) => (
           <div
             key={r.id}
-            className="border-b border-gray-100 pb-3 last:border-0"
+            className="border-b border-gray-100 pb-3 last:border-0 last:pb-0"
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-gray-800">
                 {r.author || "Anonymous"}
               </span>
-              <span className="text-sm text-yellow-600 font-medium">
-                {"★".repeat(Math.min(r.rating, 5))}
-                {"☆".repeat(Math.max(5 - r.rating, 0))}
-              </span>
+              <StarRating rating={r.rating} />
             </div>
             {r.text && (
-              <p className="text-sm text-gray-700 leading-relaxed">{r.text}</p>
+              <p className="text-sm text-gray-600 leading-relaxed">{r.text}</p>
             )}
           </div>
         ))}
@@ -41,9 +45,9 @@ export default function ReviewList({ reviews }: { reviews: Review[] }) {
       {reviews.length > PREVIEW_COUNT && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-3 text-sm text-blue-600 hover:underline"
+          className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
         >
-          {expanded ? "Show less" : `Show all ${reviews.length} reviews`}
+          {expanded ? "Show fewer" : `Show all ${reviews.length} reviews`}
         </button>
       )}
     </div>

@@ -11,6 +11,14 @@ import CompetitorSection from "@/components/CompetitorSection";
 import ComparisonView from "@/components/ComparisonView";
 import type { Dashboard, Review, ComparisonResponse, CompetitorRead } from "@/lib/types";
 
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+      {children}
+    </h2>
+  );
+}
+
 export default function BusinessDetailPage() {
   const { user, isLoading: authLoading } = useRequireAuth();
   const params = useParams();
@@ -146,14 +154,14 @@ export default function BusinessDetailPage() {
 
   if (loadError) {
     return (
-      <div className="max-w-3xl mx-auto py-8 px-4">
+      <div className="max-w-4xl mx-auto py-8 px-4">
         <Link
           href="/businesses"
-          className="text-sm text-blue-600 hover:underline mb-4 inline-block"
+          className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-flex items-center gap-1"
         >
-          &larr; Back to businesses
+          <span aria-hidden>&larr;</span> Back to businesses
         </Link>
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-lg">
+        <div className="text-center py-16 bg-white border border-gray-200 rounded-xl">
           <p className="text-gray-500 mb-3">{loadError}</p>
           <button
             onClick={loadAll}
@@ -170,184 +178,197 @@ export default function BusinessDetailPage() {
   const hasAnalysis = !!(dashboard?.ai_summary);
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
+      {/* Navigation */}
       <Link
         href="/businesses"
-        className="text-sm text-blue-600 hover:underline mb-4 inline-block"
+        className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
       >
-        &larr; Back to businesses
+        <span aria-hidden>&larr;</span> Back to businesses
       </Link>
 
       {dashboard && (
         <>
-          <div className="mb-6">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold">
-                {dashboard.business_name}
-              </h1>
-              {dashboard.business_type && dashboard.business_type !== "other" && (
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">
-                  {dashboard.business_type}
-                </span>
-              )}
+          {/* ── Header ── */}
+          <header className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2.5 mb-1">
+                  <h1 className="text-2xl font-bold tracking-tight truncate">
+                    {dashboard.business_name}
+                  </h1>
+                  {dashboard.business_type && dashboard.business_type !== "other" && (
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full capitalize shrink-0">
+                      {dashboard.business_type}
+                    </span>
+                  )}
+                </div>
+                {dashboard.address && (
+                  <p className="text-gray-500 text-sm">{dashboard.address}</p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleFetchReviews}
+                  disabled={busy}
+                  className="border border-gray-300 bg-white text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                >
+                  {fetchingReviews
+                    ? "Fetching..."
+                    : hasReviews
+                      ? "Refresh Reviews"
+                      : "Fetch Reviews"}
+                </button>
+                <button
+                  onClick={handleAnalyze}
+                  disabled={busy || !hasReviews}
+                  title={!hasReviews ? "Fetch reviews first" : undefined}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {analyzing
+                    ? "Analyzing..."
+                    : hasAnalysis
+                      ? "Re-run Analysis"
+                      : "Run Analysis"}
+                </button>
+              </div>
             </div>
-            {dashboard.address && (
-              <p className="text-gray-500 text-sm mt-1">
-                {dashboard.address}
+
+            {/* Feedback messages */}
+            {actionError && (
+              <p className="mt-4 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {actionError}
               </p>
             )}
-          </div>
+            {actionSuccess && !actionError && (
+              <p className="mt-4 text-green-700 text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                {actionSuccess}
+              </p>
+            )}
 
-          {/* Actions */}
-          <div className="flex flex-wrap items-center gap-3 mb-2">
-            <button
-              onClick={handleFetchReviews}
-              disabled={busy}
-              className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {fetchingReviews
-                ? "Fetching..."
-                : hasReviews
-                  ? "Refresh Reviews"
-                  : "Fetch Reviews"}
-            </button>
-            <button
-              onClick={handleAnalyze}
-              disabled={busy || !hasReviews}
-              title={!hasReviews ? "Fetch reviews first" : undefined}
-              className="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
-            >
-              {analyzing
-                ? "Analyzing..."
-                : hasAnalysis
-                  ? "Re-run Analysis"
-                  : "Run Analysis"}
-            </button>
-          </div>
+            {/* Metadata strip */}
+            {(hasReviews || hasAnalysis) && (
+              <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-gray-400">
+                {dashboard.total_reviews > 0 && (
+                  <span>{dashboard.total_reviews} reviews stored</span>
+                )}
+                {hasAnalysis && dashboard.analysis_created_at && (
+                  <span>
+                    Analysis:{" "}
+                    {new Date(dashboard.analysis_created_at).toLocaleDateString(
+                      undefined,
+                      { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }
+                    )}
+                  </span>
+                )}
+                {dashboard.last_updated_at && (
+                  <span>
+                    Updated:{" "}
+                    {new Date(dashboard.last_updated_at).toLocaleDateString(
+                      undefined,
+                      { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }
+                    )}
+                  </span>
+                )}
+              </div>
+            )}
+          </header>
 
-          {/* Feedback messages */}
-          {actionError && (
-            <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded px-3 py-2 mb-4">
-              {actionError}
-            </p>
-          )}
-          {actionSuccess && !actionError && (
-            <p className="text-green-700 text-sm bg-green-50 border border-green-200 rounded px-3 py-2 mb-4">
-              {actionSuccess}
-            </p>
-          )}
-          {!actionError && !actionSuccess && <div className="mb-4" />}
-
-          {/* Workflow guidance depending on state */}
+          {/* ── Guidance ── */}
           {!hasReviews && !hasAnalysis && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
-              <strong>Step 1:</strong> Click <strong>Fetch Reviews</strong> to pull
-              reviews for this business.
-              <br />
-              <strong>Step 2:</strong> Click <strong>Run Analysis</strong> to generate
-              AI-powered insights.
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-sm text-blue-800 space-y-1">
+              <p><strong>Step 1:</strong> Click <strong>Fetch Reviews</strong> to pull reviews for this business.</p>
+              <p><strong>Step 2:</strong> Click <strong>Run Analysis</strong> to generate AI-powered insights.</p>
             </div>
           )}
           {hasReviews && !hasAnalysis && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm text-amber-800">
-              Reviews loaded. Click <strong>Run Analysis</strong> to generate
-              AI-powered insights.
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
+              Reviews loaded. Click <strong>Run Analysis</strong> to generate AI-powered insights.
             </div>
           )}
-          {hasAnalysis && competitors.length === 0 && (
-            <p className="text-xs text-gray-400 mb-6 px-1">
-              Want to see how you stack up? Scroll down to add competitors and generate a comparison.
-            </p>
-          )}
 
-          {/* Data context strip */}
+          {/* ── Dashboard Insights ── */}
           {(hasReviews || hasAnalysis) && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mb-6 px-1">
-              {dashboard.total_reviews > 0 && (
-                <span>{dashboard.total_reviews} reviews stored</span>
-              )}
-              {hasAnalysis && dashboard.analysis_created_at && (
-                <span>
-                  Analysis ran{" "}
-                  {new Date(dashboard.analysis_created_at).toLocaleDateString(
-                    undefined,
-                    { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }
-                  )}
-                </span>
-              )}
-              {dashboard.last_updated_at && (
-                <span>
-                  Last updated{" "}
-                  {new Date(dashboard.last_updated_at).toLocaleDateString(
-                    undefined,
-                    { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }
-                  )}
-                </span>
-              )}
-            </div>
+            <section>
+              <SectionHeading>Insights</SectionHeading>
+              <DashboardView data={dashboard} />
+            </section>
           )}
 
-          <DashboardView data={dashboard} />
-
-          {/* Competitors */}
-          <div className="mt-8 space-y-4">
+          {/* ── Competitors ── */}
+          <section>
+            <SectionHeading>Competitors</SectionHeading>
             <CompetitorSection
               businessId={id}
               onCompetitorsChange={handleCompetitorsChange}
             />
-          </div>
+          </section>
 
-          {/* Comparison */}
+          {/* ── Comparison ── */}
           {competitors.length > 0 && (
-            <div className="mt-8 space-y-4">
-              {!hasAnalysis && (
-                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                  Run analysis on this business before generating a comparison.
-                </p>
-              )}
-              {hasAnalysis && !competitors.some((c) => c.has_analysis) && (
-                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                  Fetch reviews and run analysis on at least one competitor before comparing.
-                </p>
-              )}
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleGenerateComparison}
-                  disabled={busy || !hasAnalysis || !competitors.some((c) => c.has_analysis)}
-                  title={
-                    !hasAnalysis
-                      ? "Run analysis on this business first"
-                      : !competitors.some((c) => c.has_analysis)
-                        ? "At least one competitor needs analysis"
-                        : undefined
-                  }
-                  className="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                >
-                  {comparing ? "Generating…" : "Generate Comparison"}
-                </button>
-                <span className="text-sm text-gray-500">
-                  Compares with competitors that have analysis.
-                </span>
-              </div>
-              {comparisonError && (
-                <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded px-3 py-2">
-                  {comparisonError}
-                </p>
-              )}
-              {comparison && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
-                  <ComparisonView data={comparison} />
+            <section>
+              <SectionHeading>Comparison</SectionHeading>
+              <div className="space-y-4">
+                {!hasAnalysis && (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                    Run analysis on this business before generating a comparison.
+                  </p>
+                )}
+                {hasAnalysis && !competitors.some((c) => c.has_analysis) && (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                    Fetch reviews and run analysis on at least one competitor before comparing.
+                  </p>
+                )}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleGenerateComparison}
+                    disabled={busy || !hasAnalysis || !competitors.some((c) => c.has_analysis)}
+                    title={
+                      !hasAnalysis
+                        ? "Run analysis on this business first"
+                        : !competitors.some((c) => c.has_analysis)
+                          ? "At least one competitor needs analysis"
+                          : undefined
+                    }
+                    className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  >
+                    {comparing ? "Generating…" : "Generate Comparison"}
+                  </button>
+                  {!comparing && !comparison && (
+                    <span className="text-xs text-gray-400">
+                      Compares with competitors that have analysis.
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
+                {comparisonError && (
+                  <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                    {comparisonError}
+                  </p>
+                )}
+                {comparison && <ComparisonView data={comparison} />}
+              </div>
+            </section>
+          )}
+
+          {/* Competitor hint when analysis done but no competitors */}
+          {hasAnalysis && competitors.length === 0 && (
+            <p className="text-xs text-gray-400 text-center">
+              Want to see how you compare? Add competitors above and generate a comparison.
+            </p>
+          )}
+
+          {/* ── Reviews ── */}
+          {hasReviews && (
+            <section>
+              <SectionHeading>Reviews</SectionHeading>
+              <ReviewList reviews={reviews} />
+            </section>
           )}
         </>
       )}
-
-      <div className="mt-6">
-        <ReviewList reviews={reviews} />
-      </div>
     </div>
   );
 }

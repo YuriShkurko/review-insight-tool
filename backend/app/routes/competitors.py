@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
+from app.errors import BusinessNotFoundError, ComparisonNotReadyError, ExternalProviderError
 from app.models.analysis import Analysis
 from app.models.business import Business
 from app.models.competitor_link import CompetitorLink
@@ -157,4 +158,11 @@ def create_comparison(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return generate_comparison(db, business_id, current_user.id)
+    try:
+        return generate_comparison(db, business_id, current_user.id)
+    except BusinessNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=exc.message) from exc
+    except ComparisonNotReadyError as exc:
+        raise HTTPException(status_code=400, detail=exc.message) from exc
+    except ExternalProviderError as exc:
+        raise HTTPException(status_code=502, detail=exc.message) from exc

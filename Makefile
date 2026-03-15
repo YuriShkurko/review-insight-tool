@@ -1,4 +1,4 @@
-.PHONY: up down logs test test-e2e lint backend frontend dev stop db-reset db-add-is-competitor clean
+.PHONY: up down logs test test-integration test-e2e lint backend frontend dev stop db-reset db-add-is-competitor clean
 
 # ── Docker Compose ──────────────────────────────────────────────
 
@@ -44,7 +44,11 @@ stop:
 
 ## Run backend unit tests
 test:
-	cd backend && python -m pytest tests/ -v --ignore=tests/e2e
+	cd backend && python -m pytest tests/ -v --ignore=tests/e2e --ignore=tests/integration
+
+## Run integration tests (uses in-memory SQLite, no running server needed)
+test-integration:
+	cd backend && python -m pytest tests/integration/ -v
 
 ## Run end-to-end tests (requires running backend via make up)
 test-e2e:

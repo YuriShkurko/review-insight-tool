@@ -25,6 +25,8 @@ class TestDashboardResponse:
             action_items=["Hire more baristas"],
             risk_areas=["Peak hour delays"],
             recommended_focus="Speed up service during morning rush.",
+            analysis_created_at=None,
+            last_updated_at=None,
         )
         assert data.business_name == "Test Cafe"
         assert data.business_type == "cafe"
@@ -46,6 +48,8 @@ class TestDashboardResponse:
             action_items=[],
             risk_areas=[],
             recommended_focus=None,
+            analysis_created_at=None,
+            last_updated_at=None,
         )
         assert data.ai_summary is None
         assert data.action_items == []
@@ -64,6 +68,8 @@ class TestDashboardResponse:
             action_items=["Buy new equipment"],
             risk_areas=[],
             recommended_focus="Equipment upgrades.",
+            analysis_created_at=None,
+            last_updated_at=None,
         )
         d = data.model_dump()
         assert isinstance(d, dict)

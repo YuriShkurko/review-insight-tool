@@ -2,11 +2,11 @@ import json
 import logging
 import uuid
 
-from fastapi import HTTPException
 from openai import OpenAI
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.errors import BusinessNotFoundError, ComparisonNotReadyError, ExternalProviderError
 from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
@@ -95,10 +95,7 @@ def _call_openai_comparison(prompt_text: str) -> dict:
             "op=comparison_llm success=false error=%s detail=%s",
             type(exc).__name__, exc,
         )
-        raise HTTPException(
-            status_code=502,
-            detail="Comparison generation failed. Please try again later.",
-        ) from exc
+        raise ExternalProviderError("Comparison generation failed. Please try again later.") from exc
     content = response.choices[0].message.content or "{}"
     try:
         return json.loads(content)
@@ -138,7 +135,7 @@ def generate_comparison(
         .first()
     )
     if not target_business:
-        raise HTTPException(status_code=404, detail="Business not found.")
+        raise BusinessNotFoundError()
 
     target_analysis = (
         db.query(Analysis).filter(Analysis.business_id == business_id).first()
@@ -147,9 +144,8 @@ def generate_comparison(
         target_business, target_analysis
     )
     if not target_snapshot:
-        raise HTTPException(
-            status_code=400,
-            detail="Run analysis on this business before generating a comparison.",
+        raise ComparisonNotReadyError(
+            "Run analysis on this business before generating a comparison."
         )
 
     links = (
@@ -176,9 +172,8 @@ def generate_comparison(
             competitor_snapshots.append(snap)
 
     if not competitor_snapshots:
-        raise HTTPException(
-            status_code=400,
-            detail="Add at least one competitor and run analysis on them before generating a comparison.",
+        raise ComparisonNotReadyError(
+            "Add at least one competitor and run analysis on them before generating a comparison."
         )
 
     prompt_text = _format_snapshots_for_prompt(target_snapshot, competitor_snapshots)

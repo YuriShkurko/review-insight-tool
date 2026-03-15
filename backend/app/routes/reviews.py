@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
+from app.errors import ExternalProviderError, NoReviewsError
 from app.logging_config import timed_operation
 from app.models.business import Business
 from app.models.review import Review
@@ -67,6 +68,11 @@ def trigger_analysis(
     current_user: User = Depends(get_current_user),
 ):
     _get_business_for_user(business_id, current_user, db)
-    with timed_operation(logger, "analyze", business_id=business_id):
-        result = analyze_reviews(db, business_id)
+    try:
+        with timed_operation(logger, "analyze", business_id=business_id):
+            result = analyze_reviews(db, business_id)
+    except NoReviewsError as exc:
+        raise HTTPException(status_code=400, detail=exc.message) from exc
+    except ExternalProviderError as exc:
+        raise HTTPException(status_code=502, detail=exc.message) from exc
     return result

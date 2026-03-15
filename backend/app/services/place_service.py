@@ -4,10 +4,10 @@ import uuid
 from urllib.parse import unquote
 
 import httpx
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.errors import BusinessAlreadyExistsError
 from app.models.business import Business
 
 logger = logging.getLogger(__name__)
@@ -135,10 +135,7 @@ async def get_or_create_business(
             db.commit()
             db.refresh(existing)
             return existing
-        raise HTTPException(
-            status_code=409,
-            detail="You have already added this business.",
-        )
+        raise BusinessAlreadyExistsError()
 
     details = await resolve_place_details(place_id, google_maps_url)
     business = Business(

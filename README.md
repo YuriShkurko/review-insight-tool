@@ -104,13 +104,21 @@ Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
 
 ## Screenshots
 
-| Login | Add Business | Dashboard |
-|-------|-------------|-----------|
-| ![Login](docs/screenshots/01-login.png) | ![Add Business](docs/screenshots/02-add-business.png) | ![Dashboard](docs/screenshots/03-dashboard.png) |
+| Login | Business List |
+|-------|--------------|
+| ![Login](docs/screenshots/01-login.png) | ![Business List](docs/screenshots/02-business-list.png) |
 
-| Insights & Actions | Reviews |
-|--------------------|---------|
-| ![Insights](docs/screenshots/04-insights.png) | ![Reviews](docs/screenshots/05-reviews.png) |
+| Dashboard — Header & Stats | Dashboard — Insights |
+|----------------------------|---------------------|
+| ![Dashboard Header](docs/screenshots/03-dashboard-header.png) | ![Dashboard Insights](docs/screenshots/04-dashboard-insights.png) |
+
+| Competitors | Comparison |
+|-------------|------------|
+| ![Competitors](docs/screenshots/05-competitors.png) | ![Comparison](docs/screenshots/06-comparison.png) |
+
+| Reviews |
+|---------|
+| ![Reviews](docs/screenshots/07-reviews.png) |
 
 ## Usage
 

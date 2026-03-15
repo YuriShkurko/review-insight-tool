@@ -71,7 +71,7 @@ export default function BusinessesPage() {
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
-      <h1 className="text-2xl font-semibold mb-6">Your Businesses</h1>
+      <h1 className="text-2xl font-bold tracking-tight mb-6">Your Businesses</h1>
 
       <form onSubmit={handleAdd} className="space-y-2 mb-2">
         <div className="flex gap-2">
@@ -82,13 +82,13 @@ export default function BusinessesPage() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Paste a Google Maps URL, shortened link, or place ID"
             disabled={adding}
-            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
           />
           <select
             value={businessType}
             onChange={(e) => setBusinessType(e.target.value as BusinessType)}
             disabled={adding}
-            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 capitalize"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 capitalize"
           >
             {BUSINESS_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -99,7 +99,7 @@ export default function BusinessesPage() {
           <button
             type="submit"
             disabled={adding || !input.trim()}
-            className="bg-blue-600 text-white px-5 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+            className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
           >
             {adding ? "Adding..." : "Add Business"}
           </button>
@@ -107,7 +107,7 @@ export default function BusinessesPage() {
       </form>
 
       {error && (
-        <p className="text-red-600 text-sm mb-4 bg-red-50 border border-red-200 rounded px-3 py-2">
+        <p className="text-red-600 text-sm mb-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
@@ -124,7 +124,7 @@ export default function BusinessesPage() {
           </button>
         </div>
       ) : businesses.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-8">
+        <div className="bg-white border border-gray-200 rounded-xl p-8">
           <h2 className="text-lg font-semibold text-gray-800 mb-1">
             Welcome to Review Insight
           </h2>

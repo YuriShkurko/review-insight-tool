@@ -8,7 +8,10 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.errors import BusinessAlreadyExistsError
 from app.logging_config import timed_operation
+from app.models.analysis import Analysis
 from app.models.business import Business
+from app.models.competitor_link import CompetitorLink
+from app.models.review import Review
 from app.models.user import User
 from app.schemas.business import BusinessCreate, BusinessRead
 from app.services.place_service import get_or_create_business, resolve_place_id_from_url
@@ -72,3 +75,28 @@ def get_business(
     if not business:
         raise HTTPException(status_code=404, detail="Business not found.")
     return business
+
+
+@router.delete("/{business_id}", status_code=204)
+def delete_business(
+    business_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    business = (
+        db.query(Business)
+        .filter(Business.id == business_id, Business.user_id == current_user.id)
+        .first()
+    )
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found.")
+    db.query(CompetitorLink).filter(
+        (CompetitorLink.target_business_id == business_id)
+        | (CompetitorLink.competitor_business_id == business_id)
+    ).delete(synchronize_session="fetch")
+    db.query(Analysis).filter(Analysis.business_id == business_id).delete()
+    db.query(Review).filter(Review.business_id == business_id).delete()
+    db.delete(business)
+    db.commit()
+    logger.info("op=delete_business business_id=%s user_id=%s", business_id, current_user.id)
+    return None

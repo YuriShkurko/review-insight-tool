@@ -4,15 +4,19 @@ import hashlib
 import logging
 from datetime import datetime, timezone
 
+import httpx
 from fastapi import HTTPException
-from outscraper import ApiClient
 
 from app.providers.base import NormalizedReview, ReviewProvider
 
 logger = logging.getLogger(__name__)
 
+_API_BASE = "https://api.app.outscraper.com"
+_REQUEST_TIMEOUT = 120  # seconds — hard cap so a single fetch can never block longer
+
+
 class OutscraperProvider(ReviewProvider):
-    """Fetches Google Maps reviews via the Outscraper API."""
+    """Fetches Google Maps reviews via the Outscraper REST API (no SDK)."""
 
     def __init__(
         self,
@@ -23,7 +27,7 @@ class OutscraperProvider(ReviewProvider):
     ):
         if not api_key:
             raise ValueError("OUTSCRAPER_API_KEY is required for the outscraper provider.")
-        self._client = ApiClient(api_key=api_key)
+        self._api_key = api_key
         self._reviews_limit = reviews_limit
         self._sort = sort
         self._cutoff = cutoff.strip() if cutoff else ""
@@ -31,22 +35,56 @@ class OutscraperProvider(ReviewProvider):
     def fetch_reviews(
         self, place_id: str, google_maps_url: str | None = None
     ) -> list[NormalizedReview]:
-        query = google_maps_url or place_id
+        query = google_maps_url or place_id or ""
+        if not query:
+            return []
+
         cutoff_ts = int(self._cutoff) if self._cutoff.isdigit() else None
         logger.info(
-            "op=outscraper_fetch query=%s reviews_limit=%d sort=%s cutoff=%s",
-            query[:80], self._reviews_limit, self._sort,
+            "op=outscraper_fetch query_len=%d query_preview=%s reviews_limit=%d sort=%s cutoff=%s",
+            len(query), query[:80] if len(query) > 80 else query,
+            self._reviews_limit, self._sort,
             cutoff_ts if cutoff_ts is not None else "none",
         )
-        kwargs: dict = {
-            "reviews_limit": self._reviews_limit,
-            "language": "en",
+
+        params: dict = {
+            "query": query,
+            "reviewsLimit": self._reviews_limit,
+            "limit": 1,
             "sort": self._sort,
+            "language": "en",
+            "async": False,
         }
         if cutoff_ts is not None:
-            kwargs["cutoff"] = cutoff_ts
+            params["cutoff"] = cutoff_ts
+
         try:
-            results = self._client.google_maps_reviews(query, **kwargs)
+            with httpx.Client(timeout=_REQUEST_TIMEOUT) as client:
+                resp = client.get(
+                    f"{_API_BASE}/maps/reviews-v3",
+                    headers={"X-API-KEY": self._api_key},
+                    params=params,
+                )
+                resp.raise_for_status()
+                body = resp.json()
+        except httpx.TimeoutException as exc:
+            logger.error(
+                "op=outscraper_fetch success=false error=Timeout detail=%s timeout=%ds",
+                exc, _REQUEST_TIMEOUT,
+            )
+            raise HTTPException(
+                status_code=504,
+                detail=f"Outscraper request timed out after {_REQUEST_TIMEOUT}s. Try again or reduce review limit.",
+            ) from exc
+        except httpx.HTTPStatusError as exc:
+            logger.error(
+                "op=outscraper_fetch success=false error=HTTPStatus detail=%d %s",
+                exc.response.status_code, exc.response.text[:200],
+            )
+            raise HTTPException(
+                status_code=502,
+                detail="Failed to fetch reviews from Outscraper. Please try again later.",
+            ) from exc
         except Exception as exc:
             logger.error(
                 "op=outscraper_fetch success=false error=%s detail=%s",
@@ -57,6 +95,7 @@ class OutscraperProvider(ReviewProvider):
                 detail="Failed to fetch reviews from Outscraper. Please try again later.",
             ) from exc
 
+        results = body.get("data", [])
         if not results or not isinstance(results, list) or len(results) == 0:
             return []
 
@@ -65,6 +104,10 @@ class OutscraperProvider(ReviewProvider):
             return []
 
         raw_reviews: list[dict] = place_data.get("reviews_data") or []
+        logger.info(
+            "op=outscraper_fetch success=true reviews_returned=%d",
+            len(raw_reviews),
+        )
         return [r for raw in raw_reviews if (r := self._normalize(raw, place_id)) is not None]
 
     @staticmethod

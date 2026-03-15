@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback, type FormEvent } from "react";
-import Link from "next/link";
 import { apiFetch, ApiError } from "@/lib/api";
 import {
   BUSINESS_TYPES,
   type CompetitorRead,
   type BusinessType,
+  type Review,
 } from "@/lib/types";
 
 const MAX_COMPETITORS = 3;
@@ -47,7 +47,9 @@ export default function CompetitorSection({
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [input, setInput] = useState("");
   const [businessType, setBusinessType] = useState<BusinessType>("other");
 
@@ -73,6 +75,7 @@ export default function CompetitorSection({
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     setError("");
+    setSuccessMsg("");
     setAdding(true);
     const trimmed = input.trim();
     const isUrl = trimmed.startsWith("http");
@@ -98,6 +101,7 @@ export default function CompetitorSection({
 
   async function handleRemove(competitorBusinessId: string) {
     setError("");
+    setSuccessMsg("");
     setRemoving(competitorBusinessId);
     try {
       await apiFetch(
@@ -114,12 +118,34 @@ export default function CompetitorSection({
     }
   }
 
+  async function handlePrepare(competitorBusinessId: string, name: string) {
+    setError("");
+    setSuccessMsg("");
+    setPreparing(competitorBusinessId);
+    try {
+      const reviews = await apiFetch<Review[]>(
+        `/businesses/${competitorBusinessId}/fetch-reviews`,
+        { method: "POST" }
+      );
+      await apiFetch(`/businesses/${competitorBusinessId}/analyze`, {
+        method: "POST",
+      });
+      await loadCompetitors();
+      setSuccessMsg(`${name}: ${reviews.length} reviews fetched & analyzed.`);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? `${name}: ${err.detail}`
+          : `Failed to prepare ${name}.`
+      );
+    } finally {
+      setPreparing(null);
+    }
+  }
+
   if (loading) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
-          Competitors
-        </h3>
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <div className="h-4 w-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
           Loading…
@@ -129,6 +155,7 @@ export default function CompetitorSection({
   }
 
   const atLimit = competitors.length >= MAX_COMPETITORS;
+  const anyBusy = !!removing || !!preparing;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
@@ -169,7 +196,7 @@ export default function CompetitorSection({
             </button>
           </div>
           <p className="text-xs text-gray-400">
-            Add up to {MAX_COMPETITORS} competitors. Open each competitor to fetch reviews and run analysis.
+            Add up to {MAX_COMPETITORS} competitors.
           </p>
         </form>
       )}
@@ -182,6 +209,11 @@ export default function CompetitorSection({
       {error && (
         <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
           {error}
+        </p>
+      )}
+      {successMsg && !error && (
+        <p className="text-green-700 text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+          {successMsg}
         </p>
       )}
 
@@ -203,12 +235,9 @@ export default function CompetitorSection({
               className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors"
             >
               <div className="flex-1 min-w-0">
-                <Link
-                  href={`/businesses/${business.id}`}
-                  className="font-medium text-sm text-gray-900 hover:text-blue-600 transition-colors truncate block"
-                >
+                <span className="font-medium text-sm text-gray-900 truncate block">
                   {business.name}
-                </Link>
+                </span>
                 <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
                   <span>
                     {business.avg_rating != null
@@ -221,10 +250,20 @@ export default function CompetitorSection({
                 </div>
               </div>
               <StatusBadge hasReviews={has_reviews} hasAnalysis={has_analysis} />
+              {!has_analysis && (
+                <button
+                  type="button"
+                  onClick={() => handlePrepare(business.id, business.name)}
+                  disabled={anyBusy || adding}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors shrink-0"
+                >
+                  {preparing === business.id ? "Preparing…" : has_reviews ? "Analyze" : "Fetch & Analyze"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => handleRemove(business.id)}
-                disabled={removing === business.id}
+                disabled={anyBusy || adding}
                 className="text-xs text-gray-400 hover:text-red-600 disabled:opacity-50 transition-colors shrink-0"
               >
                 {removing === business.id ? "Removing…" : "Remove"}

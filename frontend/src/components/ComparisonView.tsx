@@ -127,7 +127,7 @@ export default function ComparisonView({ data }: { data: ComparisonResponse }) {
   return (
     <div className="space-y-5">
       {/* Snapshot cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <SnapshotCard snapshot={data.target} isTarget />
         {data.competitors.map((c) => (
           <SnapshotCard key={c.business_id} snapshot={c} isTarget={false} />

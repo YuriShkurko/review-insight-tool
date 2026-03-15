@@ -6,7 +6,9 @@ COPY package.json package-lock.json* ./
 RUN npm install
 
 COPY . .
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

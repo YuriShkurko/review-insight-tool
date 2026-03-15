@@ -15,6 +15,39 @@ logger = logging.getLogger(__name__)
 _SHORTLINK_HOSTS = {"maps.app.goo.gl", "goo.gl"}
 _REDIRECT_TIMEOUT = 10
 
+# Place ID extraction patterns (order matters: more specific first).
+# Supports: place_id=, query_place_id=, /place/.../data=!...!1s0x... or !1sChIJ..., and bare !1s forms.
+_PLACE_ID_PATTERNS = [
+    # Query params (most reliable when present)
+    r"[?&]place_id=([A-Za-z0-9_-]+)",
+    r"[?&]query_place_id=([A-Za-z0-9_-]+)",
+    # Legacy style place_id: value (no query)
+    r"place_id[=:]([A-Za-z0-9_-]+)",
+    # /place/Name/@lat,lng,zoom/data=!3m1!...!1s0xHEX:0xHEX or !1sChIJ...
+    r"/place/[^/]+/@[^/]+/data=[^#]*!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)",
+    r"/place/[^/]+/@[^/]+/data=[^#]*!1s(ChIJ[A-Za-z0-9_-]+)",
+    # Embedded in path or data blob (ChIJ format)
+    r"!1s(ChIJ[A-Za-z0-9_-]+)",
+    # Hex format anywhere in URL (e.g. after redirect)
+    r"!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)",
+    # Fallback: ChIJ segment in path (e.g. /place/Name/ChIJ...)
+    r"(?:^|/)(ChIJ[A-Za-z0-9_-]{20,})(?:[?/]|$)",
+]
+
+
+def _normalize_url_for_parsing(url: str) -> str:
+    """Strip whitespace, decode percent-encoding, and drop fragment for robust parsing."""
+    if not url or not isinstance(url, str):
+        return ""
+    s = url.strip()
+    try:
+        s = unquote(s)
+    except (ValueError, TypeError):
+        pass
+    if "#" in s:
+        s = s.split("#", 1)[0]
+    return s
+
 
 def _is_shortened_url(url: str) -> bool:
     """Check if a URL is a known Google Maps shortened link."""
@@ -25,13 +58,19 @@ def _is_shortened_url(url: str) -> bool:
 
 
 async def _resolve_shortened_url(url: str) -> str | None:
-    """Follow redirects on a shortened Google Maps URL and return the final URL."""
+    """Follow redirects on a shortened Google Maps URL and return the final URL.
+    Tries HEAD first; falls back to GET if the server does not redirect on HEAD.
+    """
     try:
         async with httpx.AsyncClient(
             timeout=_REDIRECT_TIMEOUT, follow_redirects=True, max_redirects=5
         ) as client:
+            # Some servers don't redirect on HEAD; try GET if HEAD yields same host
             resp = await client.head(url)
             resolved = str(resp.url)
+            if _is_shortened_url(resolved):
+                resp_get = await client.get(url)
+                resolved = str(resp_get.url)
             logger.info("op=resolve_shortlink success=true resolved=%s", resolved)
             return resolved
     except Exception as exc:
@@ -43,14 +82,17 @@ async def _resolve_shortened_url(url: str) -> str | None:
 
 
 def parse_place_id_from_url(google_maps_url: str) -> str | None:
-    """Extract a place ID from common Google Maps URL formats."""
-    patterns = [
-        r"place_id[=:]([A-Za-z0-9_-]+)",
-        r"/place/[^/]+/@[^/]+/data=.*!1s(0x[0-9a-f]+:[0-9a-fx]+)",
-        r"!1s(ChIJ[A-Za-z0-9_-]+)",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, google_maps_url)
+    """Extract a place ID from common Google Maps URL formats.
+
+    Supports: place_id= / query_place_id= params, google.com/maps/place/.../data=!...!1s...,
+    maps.app.goo.gl (after resolve), and URLs with extra query/fragment.
+    Returns None if no known format is found.
+    """
+    url = _normalize_url_for_parsing(google_maps_url)
+    if not url:
+        return None
+    for pattern in _PLACE_ID_PATTERNS:
+        match = re.search(pattern, url)
         if match:
             return match.group(1)
     return None
@@ -59,15 +101,19 @@ def parse_place_id_from_url(google_maps_url: str) -> str | None:
 async def resolve_place_id_from_url(google_maps_url: str) -> tuple[str | None, str]:
     """Parse a place ID from a Google Maps URL, resolving shortened links first.
 
-    Returns (place_id, resolved_url) — resolved_url may differ from input
-    if the original was a shortened link.
+    Returns (place_id, resolved_url). If the URL was shortened, resolved_url is the
+    final URL after redirects; otherwise it is the normalized input.
+    Fails gracefully: returns (None, url) when no place ID can be extracted.
     """
-    url = google_maps_url
+    url = (google_maps_url or "").strip()
+    if not url:
+        return None, url
     if _is_shortened_url(url):
         resolved = await _resolve_shortened_url(url)
         if resolved:
             url = resolved
-    return parse_place_id_from_url(url), url
+    place_id = parse_place_id_from_url(url)
+    return place_id, url
 
 
 def _extract_name_from_url(google_maps_url: str) -> str | None:

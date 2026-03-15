@@ -49,7 +49,7 @@ Review Insight Tool solves this by:
 Requires only [Docker](https://www.docker.com/).
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/review-insight-tool.git
+git clone https://github.com/YuriShkurko/review-insight-tool.git
 cd review-insight-tool
 cp backend/.env.example backend/.env
 make up
@@ -78,10 +78,12 @@ docker run --name review-insight-db \
 
 **2. Backend**
 
+From the repo root. Use the activation line for your OS:
+
 ```bash
 cd backend
 python -m venv venv
-venv\Scripts\activate       # Windows
+venv\Scripts\activate       # Windows (CMD or PowerShell)
 # source venv/bin/activate  # macOS / Linux
 
 pip install -r requirements.txt
@@ -294,6 +296,7 @@ Interactive docs: http://localhost:8000/docs
 | `make frontend` | Start frontend locally (no Docker) |
 | `make dev` | Start both locally (Windows) |
 | `make test` | Run backend unit tests |
+| `make test-integration` | Run backend integration tests (in-memory SQLite) |
 | `make test-e2e` | Run E2E tests (requires `make up`) |
 | `make lint` | Run linters |
 | `make db-reset` | Drop all tables (backend recreates on restart) |

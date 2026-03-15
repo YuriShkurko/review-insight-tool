@@ -15,6 +15,7 @@ export default function BusinessesPage() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadBusinesses = useCallback(async () => {
     try {
@@ -58,6 +59,20 @@ export default function BusinessesPage() {
       );
     } finally {
       setAdding(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this business and all its reviews, analysis, and competitor links?")) return;
+    setDeletingId(id);
+    setError("");
+    try {
+      await apiFetch(`/businesses/${id}`, { method: "DELETE" });
+      setBusinesses((prev) => prev.filter((b) => b.id !== id));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.detail : "Failed to delete business.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -163,7 +178,12 @@ export default function BusinessesPage() {
       ) : (
         <div className="space-y-3">
           {businesses.map((biz) => (
-            <BusinessCard key={biz.id} business={biz} />
+            <BusinessCard
+              key={biz.id}
+              business={biz}
+              onDelete={handleDelete}
+              deleting={deletingId === biz.id}
+            />
           ))}
         </div>
       )}

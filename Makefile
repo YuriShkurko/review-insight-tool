@@ -1,4 +1,4 @@
-.PHONY: up down logs test test-integration test-e2e lint backend frontend dev stop db-reset db-add-is-competitor clean
+.PHONY: up down logs test test-integration test-e2e lint backend frontend dev stop db-reset db-add-is-competitor seed-offline clean
 
 # ── Docker Compose ──────────────────────────────────────────────
 
@@ -74,6 +74,12 @@ db-add-is-competitor:
 	docker compose exec -T db psql -U postgres -d review_insight \
 		-c "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS is_competitor boolean NOT NULL DEFAULT false;"
 	@echo Column added. Restart backend if needed.
+
+# ── Offline demo data ─────────────────────────────────────────
+
+## Seed database with offline demo businesses and competitor links
+seed-offline:
+	docker compose exec backend python -m scripts.seed_offline
 
 # ── Cleanup ────────────────────────────────────────────────────
 

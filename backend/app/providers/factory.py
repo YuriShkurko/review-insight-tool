@@ -6,7 +6,7 @@ def get_review_provider() -> ReviewProvider:
     """Return the configured review provider instance.
 
     Controlled by the REVIEW_PROVIDER environment variable.
-    Defaults to "mock" when USE_MOCK_REVIEWS is true for backward compatibility.
+    Supported values: mock, offline, outscraper.
     """
     name = settings.REVIEW_PROVIDER
 
@@ -14,6 +14,11 @@ def get_review_provider() -> ReviewProvider:
         from app.providers.mock_provider import MockProvider
 
         return MockProvider()
+
+    if name == "offline":
+        from app.providers.offline_provider import OfflineProvider
+
+        return OfflineProvider()
 
     if name == "outscraper":
         from app.providers.outscraper_provider import OutscraperProvider
@@ -25,7 +30,7 @@ def get_review_provider() -> ReviewProvider:
             cutoff=settings.OUTSCRAPER_CUTOFF,
         )
 
-    supported = ("mock", "outscraper")
+    supported = ("mock", "offline", "outscraper")
     raise ValueError(
         f"Unknown REVIEW_PROVIDER '{name}'. Supported providers: {', '.join(supported)}"
     )

@@ -1,10 +1,5 @@
-# Release notes — v2.2.0
+# v2.2.0 — Outscraper SDK Removal, Competitor UX, and Reliability Fixes
 
-**Title:** `v2.2.0 — Outscraper SDK Removal, Competitor UX, and Reliability Fixes`
-
-**Body (paste into GitHub Releases):**
-
-```markdown
 ## What's New
 
 ### Outscraper SDK Replaced with Direct API Calls
@@ -42,4 +37,3 @@ None. No database schema changes. Existing data is unaffected.
 ## Full Changelog
 
 v2.1.0...v2.2.0
-```

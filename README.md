@@ -13,6 +13,7 @@ Paste a Google Maps link, fetch reviews, and get tailored insights: top complain
 - [Usage](#usage)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
+- [Review Providers](#review-providers)
 - [API](#api)
 - [Configuration](#configuration)
 - [Project Structure](#project-structure)
@@ -43,6 +44,7 @@ Review Insight Tool solves this by:
 - **Secure access** — each user sees only their own businesses and data
 - **Fresh data** — refreshing reviews replaces the old set and clears stale analysis automatically
 - **Competitor comparison (V2)** — link up to 3 competitor businesses, run analysis on them, and generate an AI comparison (strengths, weaknesses, opportunities)
+- **Offline demo mode** — bundled dataset of 595 real reviews across 9 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching
 
 ## Quick Start
 
@@ -57,7 +59,25 @@ make up
 
 Open http://localhost:3000 and register an account.
 
-> The app works immediately with sample data. To use real reviews and AI analysis, add your `OUTSCRAPER_API_KEY` and `OPENAI_API_KEY` to `backend/.env` and restart.
+> **Default mode (mock):** The app works immediately with generated sample reviews — no API keys needed. To use realistic bundled reviews, switch to [offline demo mode](#offline-demo-mode). To fetch live Google Maps reviews, set `REVIEW_PROVIDER=outscraper` and add your `OUTSCRAPER_API_KEY` and `OPENAI_API_KEY` to `backend/.env`.
+
+<details>
+<summary><strong>Quick start with offline demo (recommended for evaluation)</strong></summary>
+
+The fastest way to see the full product with realistic data:
+
+```bash
+git clone https://github.com/YuriShkurko/review-insight-tool.git
+cd review-insight-tool
+cp backend/.env.example backend/.env
+# Edit backend/.env: set REVIEW_PROVIDER=offline and add your OPENAI_API_KEY
+make up
+make seed-offline
+```
+
+Log in as `demo@example.com` / `demo1234`, then fetch reviews and run analysis for each business.
+
+</details>
 
 <details>
 <summary><strong>Local development setup (without Docker Compose)</strong></summary>
@@ -150,7 +170,7 @@ graph TB
     end
 
     subgraph Providers
-        RP["Review Provider Layer<br/>Outscraper · Sample Data"]
+        RP["Review Provider Layer<br/>Outscraper · Offline · Mock"]
     end
 
     subgraph External
@@ -196,8 +216,20 @@ The **Review Provider Layer** separates external review sources from core applic
 | Database | PostgreSQL 16 |
 | AI | OpenAI GPT-4o-mini |
 | Auth | JWT (PyJWT), bcrypt |
-| Review providers | Sample data (built-in), Outscraper |
+| Review providers | Mock (built-in), Offline (bundled real reviews), Outscraper (live) |
 | Infrastructure | Docker, Docker Compose |
+
+## Review Providers
+
+The app uses a pluggable provider architecture for fetching reviews. All providers implement the same `ReviewProvider` interface and return `NormalizedReview` objects, so the rest of the app (analysis, comparison, dashboard) works identically regardless of source.
+
+| Provider | `REVIEW_PROVIDER=` | What it does | API keys needed |
+|----------|-------------------|--------------|-----------------|
+| **Mock** | `mock` | Generates random reviews seeded by place ID | None |
+| **Offline** | `offline` | Loads real review snapshots from `backend/data/offline/` | None (reviews); `OPENAI_API_KEY` for analysis |
+| **Outscraper** | `outscraper` | Fetches live Google Maps reviews via Outscraper REST API | `OUTSCRAPER_API_KEY` + `OPENAI_API_KEY` |
+
+Set the provider in `backend/.env` via the `REVIEW_PROVIDER` variable. Default is `mock`.
 
 ## API
 
@@ -211,6 +243,7 @@ All endpoints are prefixed with `/api`. Protected endpoints require a `Bearer` t
 | `/api/businesses` | POST | Yes | Add business |
 | `/api/businesses` | GET | Yes | List businesses |
 | `/api/businesses/{id}` | GET | Yes | Get business details |
+| `/api/businesses/{id}` | DELETE | Yes | Delete business (cascades) |
 | `/api/businesses/{id}/fetch-reviews` | POST | Yes | Fetch / replace reviews |
 | `/api/businesses/{id}/reviews` | GET | Yes | List reviews |
 | `/api/businesses/{id}/analyze` | POST | Yes | Run AI analysis |
@@ -229,7 +262,7 @@ Interactive docs: http://localhost:8000/docs
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5432/review_insight` |
-| `REVIEW_PROVIDER` | Review source: `mock` or `outscraper` | `mock` |
+| `REVIEW_PROVIDER` | Review source: `mock`, `offline`, or `outscraper` | `mock` |
 | `OUTSCRAPER_API_KEY` | Outscraper API key (required for real reviews) | — |
 | `OUTSCRAPER_REVIEWS_LIMIT` | Max reviews per fetch | `100` |
 | `OUTSCRAPER_SORT` | Order: `newest`, `most_relevant`, `highest_rating`, `lowest_rating` | `newest` |
@@ -260,6 +293,8 @@ Interactive docs: http://localhost:8000/docs
 │   │   ├── services/            # Business logic
 │   │   ├── providers/           # Review source providers
 │   │   └── mock/                # Sample data generators
+│   ├── data/offline/            # Offline demo dataset (JSON)
+│   ├── scripts/                 # Utility scripts (seed, etc.)
 │   ├── tests/                   # pytest suite
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -276,6 +311,8 @@ Interactive docs: http://localhost:8000/docs
 │
 ├── docs/
 │   ├── screenshots/             # README screenshots
+│   ├── BUG_HUNT.md              # Bug hunt test plan
+│   ├── BUG_HUNT_LOG.md          # Bug hunt findings log
 │   └── SPEC.md                  # System specification
 │
 ├── docker-compose.yml           # Full-stack Docker setup
@@ -300,7 +337,67 @@ Interactive docs: http://localhost:8000/docs
 | `make test-e2e` | Run E2E tests (requires `make up`) |
 | `make lint` | Run linters |
 | `make db-reset` | Drop all tables (backend recreates on restart) |
+| `make seed-offline` | Seed database with offline demo businesses |
 | `make clean` | Remove build artifacts and caches |
+
+### Offline demo mode
+
+The app ships with a bundled dataset of **595 real reviews** across **9 businesses** so you can run the full product flow — including competitor comparison — without needing an Outscraper API key.
+
+#### Why it exists
+
+- **Demos**: Show the full product to reviewers, friends, or interviewers with realistic data
+- **Smoke tests**: Validate the complete fetch → analyze → compare pipeline locally
+- **Future CI**: Deterministic dataset with no external dependencies for automated testing
+
+#### How to enable
+
+```bash
+# 1. Start the stack
+make up
+
+# 2. Set the provider to offline in backend/.env
+#    REVIEW_PROVIDER=offline
+#    OPENAI_API_KEY=<your key>   ← still needed for AI analysis
+
+# 3. Seed the database with demo businesses and competitor links
+make seed-offline
+
+# 4. Log in as demo@example.com / demo1234
+# 5. Fetch reviews and run analysis for each business
+# 6. Generate a comparison from the business detail page
+```
+
+> **Note:** Offline mode provides reviews without an external API, but AI analysis still requires an `OPENAI_API_KEY`. Without one, the app falls back to sample analysis data.
+
+#### What's included
+
+The seed script creates a demo user and populates two scenarios:
+
+| Scenario | Main business | Competitors | Reviews |
+|----------|--------------|-------------|---------|
+| **Bar** | Lager & Ale (Rothschild, TLV) | Lager & Ale (Ra'anana), Lager & Ale (Herzliya), Beer Garden | 100 + 100 + 100 + 33 |
+| **Retail** | Rami Levy (Ariel) | Abu Ali Supermarket, Lala Market | 33 + 33 + 33 |
+
+An additional standalone business (Lager & Ale branch, 63 reviews) and Shupersal Deal Ariel (33 reviews) are also seeded.
+
+#### Review providers
+
+| Provider | Reviews source | Needs API key | Best for |
+|----------|---------------|---------------|----------|
+| `mock` | Random generated reviews | No | Quick dev, unit tests |
+| `offline` | Bundled real review snapshots (JSON files) | No (reviews only) | Demos, smoke tests, CI |
+| `outscraper` | Live Google Maps reviews | Yes (`OUTSCRAPER_API_KEY`) | Production use |
+
+All three providers produce the same `NormalizedReview` shape, so the rest of the app (analysis, comparison, dashboard) works identically regardless of provider.
+
+#### Extending the dataset
+
+The dataset lives in `backend/data/offline/`. To add a new business:
+
+1. Create a JSON file with reviews (array of `{author, rating, text, published_at}`)
+2. Add an entry to `manifest.json` pointing to the file
+3. Re-run `make seed-offline`
 
 ### Observability
 
@@ -328,18 +425,29 @@ make db-reset
 Backend tests use **pytest**:
 
 ```bash
-make test           # unit tests (no server required)
-make test-e2e       # end-to-end tests (requires running backend via make up)
+make test                # unit tests (no server required)
+make test-integration    # integration tests (in-memory SQLite, no server required)
+make test-e2e            # end-to-end tests (requires running backend via make up)
 ```
 
-### Unit tests (34 tests)
+### Unit tests
 
 | Area | Coverage |
 |------|----------|
-| Provider normalization | Sample data shape, determinism, field validation, source tagging |
+| Provider normalization | Mock data shape, determinism, field validation, source tagging |
 | Analysis normalization | Insight coercion, string normalization, missing-field defaults |
 | Prompt generation | Business-type-specific prompts for all 8 types + generic fallback |
 | Schema validation | Dashboard response shape, analysis fields, business type enum |
+| URL parsing | Google Maps URL formats, short-link resolution, place ID extraction |
+
+### Integration tests
+
+Backend integration tests (`tests/integration/`) use an in-memory SQLite database and mock providers to test multi-layer flows without external dependencies:
+
+- Full business + review + analysis lifecycle
+- Refresh clears stale analysis
+- Competitor link flow and duplicate/self-link protections
+- Competitor promotion (competitor-only → regular business)
 
 ### End-to-end test
 
@@ -361,7 +469,8 @@ For detailed system behavior, user flows, analysis output shapes, and known limi
 - [x] Competitor comparison — side-by-side insights against linked competitor businesses
 - [ ] Additional review providers — Yelp, TripAdvisor, App Store, Play Store
 - [ ] Database migrations — Alembic for safe schema evolution
-- [ ] Delete/archive businesses
+- [x] Delete businesses
+- [x] Offline demo dataset
 - [ ] Secure auth — refresh tokens, httpOnly cookies
 - [ ] Background jobs — Celery/Redis for async review fetching
 - [ ] Export reports — PDF/CSV

@@ -9,7 +9,6 @@ import uuid
 
 os.environ["REVIEW_PROVIDER"] = "mock"
 os.environ["OPENAI_API_KEY"] = ""
-os.environ["USE_MOCK_REVIEWS"] = "true"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient

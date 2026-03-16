@@ -1,6 +1,6 @@
 # Review Insight Tool — System Specification
 
-Version: 1.2  
+Version: 1.3  
 Last updated: March 2026
 
 ## Overview
@@ -15,7 +15,7 @@ Review Insight Tool is a web application that helps small business owners unders
 | **Review** | A customer review fetched from an external source. Stored with a stable `external_id` and `source` tag. |
 | **Analysis** | AI-generated insights for a business's reviews. Includes summary, complaints, praise, action items, risk areas, and a recommended focus. |
 | **Dashboard** | Aggregated view combining business stats and analysis results. |
-| **Provider** | A pluggable module that fetches reviews from an external source (e.g., Outscraper for Google Maps). |
+| **Provider** | A pluggable module that fetches reviews. Supported: `mock` (generated), `offline` (bundled real review snapshots), `outscraper` (live Google Maps). |
 | **Competitor link** | A directional link from a "target" business to another business (the competitor). Stored in `competitor_links`; competitors are normal businesses owned by the same user. |
 | **Comparison** | AI-generated comparison of the target business vs linked competitors that have analysis. Includes summary, strengths, weaknesses, and opportunities. |
 
@@ -54,7 +54,7 @@ Review Insight Tool is a web application that helps small business owners unders
 ### 4. Fetch Reviews
 
 1. User clicks "Fetch Reviews" on a business detail page
-2. Backend calls the configured review provider (Outscraper or built-in sample data)
+2. Backend calls the configured review provider (mock, offline, or Outscraper)
 3. All existing reviews for this business are **deleted**
 4. All existing analysis for this business is **deleted**
 5. Fetched reviews are inserted as the new review set
@@ -147,8 +147,11 @@ fetch_reviews(place_id, google_maps_url?) → list[NormalizedReview]
 
 | Provider | Source | Configuration |
 |----------|--------|--------------|
-| `MockProvider` | Built-in sample data | `REVIEW_PROVIDER=mock` (default) |
-| `OutscraperProvider` | Google Maps via Outscraper API | `REVIEW_PROVIDER=outscraper` + `OUTSCRAPER_API_KEY` |
+| `MockProvider` | Generated sample reviews seeded by place ID | `REVIEW_PROVIDER=mock` (default) |
+| `OfflineProvider` | Bundled real review snapshots from `backend/data/offline/` | `REVIEW_PROVIDER=offline` |
+| `OutscraperProvider` | Live Google Maps reviews via Outscraper REST API | `REVIEW_PROVIDER=outscraper` + `OUTSCRAPER_API_KEY` |
+
+The offline provider reads from a manifest (`manifest.json`) that maps place IDs to JSON review files. A seed script (`scripts/seed_offline.py`) populates the database with demo businesses and competitor links matching the manifest.
 
 Adding a new provider requires: creating a provider class, normalizing output to `NormalizedReview`, and registering it in the factory.
 
@@ -173,7 +176,7 @@ Every business belongs to exactly one user. All queries are filtered by `user_id
 | No database migrations | Schema changes require a manual table drop and recreate (V2 adds `competitor_links`; reset required when upgrading from pre-V2). |
 | Token in localStorage | Not suitable for production; httpOnly cookies recommended |
 | No password requirements | No minimum length or complexity enforcement |
-| No delete | Businesses cannot be removed once added |
+| No incremental delete | Deleting a business cascades to all its reviews, analyses, and competitor links |
 | Review refresh replaces all | No incremental update; full replace clears analysis |
 | Outscraper is paid | Sample data mode is free and used by default |
 | Single-user focus | No teams, roles, or shared access |
@@ -191,7 +194,6 @@ OPENAI_API_KEY=<your key>
 OUTSCRAPER_REVIEWS_LIMIT=100
 OUTSCRAPER_SORT=newest
 OUTSCRAPER_CUTOFF=
-USE_MOCK_REVIEWS=false
 ```
 
 Restart the backend after changing `.env`.
@@ -263,6 +265,7 @@ op=fetch_reviews ... review_count=...                  # final count
 ## Planned Improvements
 
 - Additional review providers (Yelp, TripAdvisor)
-- Alembic migrations
+- Alembic migrations for safe schema evolution
 - Background job processing for review fetching
 - Export reports (PDF/CSV)
+- CI/CD pipeline (offline dataset supports this)

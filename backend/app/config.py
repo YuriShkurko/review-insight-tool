@@ -16,10 +16,8 @@ class Settings(BaseSettings):
     OUTSCRAPER_REVIEWS_LIMIT: int = 100
     OUTSCRAPER_SORT: str = "newest"
     OUTSCRAPER_CUTOFF: str = ""
-    # Deprecated: API uses "start" as timestamp, not offset. Kept so .env with OUTSCRAPER_SKIP still loads; value is ignored.
+    # Deprecated fields — kept so old .env files don't cause load errors; values are ignored.
     OUTSCRAPER_SKIP: int = 0
-
-    # Backward compat: USE_MOCK_REVIEWS=true → REVIEW_PROVIDER defaults to "mock"
     USE_MOCK_REVIEWS: bool = True
 
     JWT_SECRET_KEY: str = "change-me-in-production"
@@ -34,9 +32,6 @@ class Settings(BaseSettings):
             val = getattr(self, field)
             if val and any(val.lower().startswith(p) for p in _PLACEHOLDER_PREFIXES):
                 object.__setattr__(self, field, "")
-
-        if self.REVIEW_PROVIDER == "mock" and not self.USE_MOCK_REVIEWS:
-            object.__setattr__(self, "REVIEW_PROVIDER", "outscraper")
 
         return self
 

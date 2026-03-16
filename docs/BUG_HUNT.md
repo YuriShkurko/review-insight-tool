@@ -11,7 +11,6 @@ OUTSCRAPER_API_KEY=<your key>
 OPENAI_API_KEY=<your key>
 OUTSCRAPER_REVIEWS_LIMIT=100
 OUTSCRAPER_SORT=newest
-USE_MOCK_REVIEWS=false
 ```
 
 Start the stack (`make up` or `make dev`) and open http://localhost:3000.

@@ -1,0 +1,89 @@
+{
+  "description": "Offline demo dataset — real reviews exported from the production database. Two scenarios: Lager & Ale branches + Beer Garden, and supermarkets in Ariel.",
+  "scenarios": {
+    "bar": {
+      "description": "Lager & Ale (TLV Rothschild) vs Ra'anana branch, Herzliya branch, and Beer Garden",
+      "main": "offline_lager_ale",
+      "competitors": ["offline_lager_ale_raanana", "offline_lager_ale_herzliya", "offline_beer_garden"]
+    },
+    "retail": {
+      "description": "Rami Levy (Ariel) vs Abu Ali Supermarket + Lala Market",
+      "main": "offline_rami_levy",
+      "competitors": ["offline_abu_ali", "offline_lala_market"]
+    }
+  },
+  "businesses": [
+    {
+      "place_id": "offline_lager_ale",
+      "name": "Lager & Ale (Rothschild)",
+      "business_type": "bar",
+      "address": "Rothschild Blvd, Tel Aviv, Israel",
+      "role": "main",
+      "reviews_file": "lager_ale_reviews.json"
+    },
+    {
+      "place_id": "offline_lager_ale_raanana",
+      "name": "Lager & Ale (Ra'anana)",
+      "business_type": "bar",
+      "address": "Ra'anana, Israel",
+      "role": "competitor",
+      "reviews_file": "lager_ale_raanana_reviews.json"
+    },
+    {
+      "place_id": "offline_lager_ale_herzliya",
+      "name": "Lager & Ale (Herzliya)",
+      "business_type": "bar",
+      "address": "Herzliya, Israel",
+      "role": "competitor",
+      "reviews_file": "lager_ale_herzliya_reviews.json"
+    },
+    {
+      "place_id": "offline_lager_ale_branch4",
+      "name": "Lager & Ale (Petah Tikva)",
+      "business_type": "bar",
+      "address": "Petah Tikva, Israel",
+      "role": "main",
+      "reviews_file": "lager_ale_branch4_reviews.json"
+    },
+    {
+      "place_id": "offline_beer_garden",
+      "name": "Beer Garden",
+      "business_type": "bar",
+      "address": "Rothschild Blvd, Tel Aviv, Israel",
+      "role": "competitor",
+      "reviews_file": "beer_garden_reviews.json"
+    },
+    {
+      "place_id": "offline_rami_levy",
+      "name": "Rami Levy - Ariel",
+      "business_type": "retail",
+      "address": "Ariel, Israel",
+      "role": "main",
+      "reviews_file": "rami_levy_reviews.json"
+    },
+    {
+      "place_id": "offline_shupersal",
+      "name": "Shupersal Deal Ariel",
+      "business_type": "retail",
+      "address": "Ariel, Israel",
+      "role": "main",
+      "reviews_file": "shupersal_reviews.json"
+    },
+    {
+      "place_id": "offline_abu_ali",
+      "name": "Abu Ali Supermarket",
+      "business_type": "retail",
+      "address": "Ariel, Israel",
+      "role": "competitor",
+      "reviews_file": "abu_ali_reviews.json"
+    },
+    {
+      "place_id": "offline_lala_market",
+      "name": "Lala Market",
+      "business_type": "retail",
+      "address": "Ariel, Israel",
+      "role": "competitor",
+      "reviews_file": "lala_market_reviews.json"
+    }
+  ]
+}

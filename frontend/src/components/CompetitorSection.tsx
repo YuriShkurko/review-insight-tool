@@ -238,6 +238,11 @@ export default function CompetitorSection({
                 <span className="font-medium text-sm text-gray-900 truncate block">
                   {business.name}
                 </span>
+                {business.address && (
+                  <span className="text-xs text-gray-400 truncate block">
+                    {business.address}
+                  </span>
+                )}
                 <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
                   <span>
                     {business.avg_rating != null
@@ -250,16 +255,20 @@ export default function CompetitorSection({
                 </div>
               </div>
               <StatusBadge hasReviews={has_reviews} hasAnalysis={has_analysis} />
-              {!has_analysis && (
-                <button
-                  type="button"
-                  onClick={() => handlePrepare(business.id, business.name)}
-                  disabled={anyBusy || adding}
-                  className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors shrink-0"
-                >
-                  {preparing === business.id ? "Preparing…" : has_reviews ? "Analyze" : "Fetch & Analyze"}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => handlePrepare(business.id, business.name)}
+                disabled={anyBusy || adding}
+                className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors shrink-0"
+              >
+                {preparing === business.id
+                  ? "Preparing…"
+                  : has_analysis
+                    ? "Refresh"
+                    : has_reviews
+                      ? "Analyze"
+                      : "Fetch & Analyze"}
+              </button>
               <button
                 type="button"
                 onClick={() => handleRemove(business.id)}

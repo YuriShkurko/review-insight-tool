@@ -1,6 +1,6 @@
 # Review Insight Tool — System Specification
 
-Version: 1.3  
+Version: 1.4  
 Last updated: March 2026
 
 ## Overview
@@ -169,11 +169,19 @@ Every business belongs to exactly one user. All queries are filtered by `user_id
 - Users can only see and interact with their own businesses
 - Review and analysis operations check business ownership before proceeding
 
+## Database migrations
+
+- **PostgreSQL (Docker, staging, local dev):** Schema is created and updated with **Alembic**. After starting the DB, run `alembic upgrade head` (or `make db-upgrade` under Docker Compose). The FastAPI app **does not** call `Base.metadata.create_all()` on startup.
+- **Backend integration tests:** Use an in-memory SQLite database and `create_all` for speed and isolation; this path does not use Alembic.
+- **New revisions:** After model changes, run `alembic revision --autogenerate -m "..."`, review the generated file, then `alembic upgrade head`.
+
+See [README.md](../README.md) (Database migrations) and [STAGING.md](STAGING.md) for workflows.
+
 ## Known Limitations
 
 | Limitation | Notes |
 |------------|-------|
-| No database migrations | Schema changes require a manual table drop and recreate (V2 adds `competitor_links`; reset required when upgrading from pre-V2). |
+| Schema evolution | PostgreSQL schema is managed with **Alembic** (`alembic upgrade head`). The app does not run `create_all` on startup. Integration tests use `create_all` on in-memory SQLite only. |
 | Token in localStorage | Not suitable for production; httpOnly cookies recommended |
 | No password requirements | No minimum length or complexity enforcement |
 | No incremental delete | Deleting a business cascades to all its reviews, analyses, and competitor links |
@@ -265,7 +273,6 @@ op=fetch_reviews ... review_count=...                  # final count
 ## Planned Improvements
 
 - Additional review providers (Yelp, TripAdvisor)
-- Alembic migrations for safe schema evolution
 - Background job processing for review fetching
 - Export reports (PDF/CSV)
 - CI/CD pipeline (offline dataset supports this)

@@ -7,7 +7,7 @@ Usage (local):
     cd backend
     python -m scripts.seed_offline
 
-Requires a running PostgreSQL database.
+Requires a running PostgreSQL database with schema applied (`alembic upgrade head` or `make db-upgrade`).
 Creates a demo user, businesses from the offline manifest, and competitor links.
 Safe to re-run — skips entries that already exist.
 """
@@ -19,7 +19,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.database import Base, SessionLocal, engine
+from sqlalchemy import inspect
+
+from app.database import SessionLocal, engine
 from app.models.business import Business
 from app.models.competitor_link import CompetitorLink
 from app.models.user import User
@@ -30,7 +32,14 @@ DEMO_PASSWORD = "demo1234"
 
 
 def seed():
-    Base.metadata.create_all(bind=engine)
+    if not inspect(engine).has_table("users"):
+        print(
+            "ERROR: Database tables not found. Apply migrations first:\n"
+            "  Docker:  make db-upgrade\n"
+            "  Local:   cd backend && alembic upgrade head"
+        )
+        return
+
     db = SessionLocal()
 
     try:

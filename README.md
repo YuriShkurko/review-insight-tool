@@ -18,6 +18,7 @@ Paste a Google Maps link, fetch reviews, and get tailored insights: top complain
 - [Configuration](#configuration)
 - [Project Structure](#project-structure)
 - [Development](#development)
+- [Staging / demo deployment](docs/STAGING.md)
 - [Testing](#testing)
 - [Specification](#specification)
 - [Roadmap](#roadmap)
@@ -55,6 +56,7 @@ git clone https://github.com/YuriShkurko/review-insight-tool.git
 cd review-insight-tool
 cp backend/.env.example backend/.env
 make up
+make db-upgrade
 ```
 
 Open http://localhost:3000 and register an account.
@@ -72,6 +74,7 @@ cd review-insight-tool
 cp backend/.env.example backend/.env
 # Edit backend/.env: set REVIEW_PROVIDER=offline and add your OPENAI_API_KEY
 make up
+make db-upgrade
 make seed-offline
 ```
 
@@ -108,6 +111,7 @@ venv\Scripts\activate       # Windows (CMD or PowerShell)
 
 pip install -r requirements.txt
 cp .env.example .env
+alembic upgrade head
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
@@ -213,7 +217,7 @@ The **Review Provider Layer** separates external review sources from core applic
 |-------|------------|
 | Backend | Python 3.11+, FastAPI, SQLAlchemy 2.0, Pydantic |
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4 |
-| Database | PostgreSQL 16 |
+| Database | PostgreSQL 16, Alembic migrations |
 | AI | OpenAI GPT-4o-mini |
 | Auth | JWT (PyJWT), bcrypt |
 | Review providers | Mock (built-in), Offline (bundled real reviews), Outscraper (live) |
@@ -295,6 +299,8 @@ Interactive docs: http://localhost:8000/docs
 │   │   └── mock/                # Sample data generators
 │   ├── data/offline/            # Offline demo dataset (JSON)
 │   ├── scripts/                 # Utility scripts (seed, etc.)
+│   ├── alembic/                 # Database migration scripts
+│   ├── alembic.ini              # Alembic configuration
 │   ├── tests/                   # pytest suite
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -313,7 +319,8 @@ Interactive docs: http://localhost:8000/docs
 │   ├── screenshots/             # README screenshots
 │   ├── BUG_HUNT.md              # Bug hunt test plan
 │   ├── BUG_HUNT_LOG.md          # Bug hunt findings log
-│   └── SPEC.md                  # System specification
+│   ├── SPEC.md                  # System specification
+│   └── STAGING.md               # Staging / demo deployment notes
 │
 ├── docker-compose.yml           # Full-stack Docker setup
 ├── Makefile                     # Developer shortcuts
@@ -334,11 +341,55 @@ Interactive docs: http://localhost:8000/docs
 | `make dev` | Start both locally (Windows) |
 | `make test` | Run backend unit tests |
 | `make test-integration` | Run backend integration tests (in-memory SQLite) |
-| `make test-e2e` | Run E2E tests (requires `make up`) |
+| `make test-e2e` | Run E2E tests (requires `make up` and `make db-upgrade`) |
 | `make lint` | Run linters |
-| `make db-reset` | Drop all tables (backend recreates on restart) |
-| `make seed-offline` | Seed database with offline demo businesses |
+| `make db-upgrade` | Apply Alembic migrations to head |
+| `make db-downgrade` | Roll back one migration |
+| `make db-current` | Show current Alembic revision |
+| `make db-history` | Show migration history |
+| `make db-revision` | Autogenerate migration: `make db-revision msg="describe change"` |
+| `make db-stamp-head` | Stamp DB at head without running SQL (one-time for legacy DBs) |
+| `make db-reset` | Drop all tables + `alembic_version` (escape hatch; then run `make db-upgrade`) |
+| `make seed-offline` | Seed database with offline demo businesses (requires schema from migrations) |
 | `make clean` | Remove build artifacts and caches |
+
+### Database migrations
+
+Schema changes are managed with **Alembic** (not `create_all` at app startup).
+
+**First-time / fresh database**
+
+1. Start Postgres (e.g. `make up`).
+2. Apply migrations: `make db-upgrade` (Docker) or `cd backend && alembic upgrade head` (local).
+
+**If `make db-upgrade` fails with `DuplicateTable` / `relation "users" already exists`**
+
+Your Postgres volume still has tables from the old `create_all`-on-startup behavior, but Alembic has never recorded a revision. **Do not** keep re-running `upgrade` — run **once**:
+
+```bash
+make db-stamp-head
+```
+
+That writes `alembic_version` at `head` without re-creating tables. After that, `make db-upgrade` is a no-op until new migrations ship.
+
+**Typical schema change**
+
+1. Edit SQLAlchemy models under `backend/app/models/`.
+2. Generate a revision: `make db-revision msg="add column foo"` (review the generated file under `backend/alembic/versions/`).
+3. Apply: `make db-upgrade`.
+4. Run tests and smoke the app to confirm existing data still works.
+
+**Existing database from the pre-Alembic era** (tables already match current models, no `alembic_version` table)
+
+Run once so Alembic does not try to recreate tables:
+
+```bash
+make db-stamp-head
+```
+
+**Escape hatch** (broken or divergent schema): `make db-reset` then `make db-upgrade` (destroys all data).
+
+Integration tests still use `create_all` on an in-memory SQLite database only — production and Docker Postgres always use migrations.
 
 ### Offline demo mode
 
@@ -356,16 +407,19 @@ The app ships with a bundled dataset of **595 real reviews** across **9 business
 # 1. Start the stack
 make up
 
-# 2. Set the provider to offline in backend/.env
+# 2. Apply database migrations
+make db-upgrade
+
+# 3. Set the provider to offline in backend/.env
 #    REVIEW_PROVIDER=offline
 #    OPENAI_API_KEY=<your key>   ← still needed for AI analysis
 
-# 3. Seed the database with demo businesses and competitor links
+# 4. Seed the database with demo businesses and competitor links
 make seed-offline
 
-# 4. Log in as demo@example.com / demo1234
-# 5. Fetch reviews and run analysis for each business
-# 6. Generate a comparison from the business detail page
+# 5. Log in as demo@example.com / demo1234
+# 6. Fetch reviews and run analysis for each business
+# 7. Generate a comparison from the business detail page
 ```
 
 > **Note:** Offline mode provides reviews without an external API, but AI analysis still requires an `OPENAI_API_KEY`. Without one, the app falls back to sample analysis data.
@@ -411,14 +465,16 @@ The backend logs all key operations with structured fields:
 
 Logs use `op=<name> duration_ms=<ms> success=<bool>` format for easy searching and monitoring. External calls (review providers, LLM) have timeouts and payload limits to fail fast instead of hanging.
 
-### Database reset
+### Database reset (escape hatch)
 
-The project uses `create_all` (no Alembic). Schema changes require dropping tables. **V2 adds the `competitor_links` table and `businesses.is_competitor` column** — if you upgrade from a pre-V2 database, run a reset so the schema is recreated:
+If the database is corrupted or out of sync with migrations, drop everything and reapply:
 
 ```bash
 make db-reset
-# Then restart the backend
+make db-upgrade
 ```
+
+Then re-seed if needed (`make seed-offline`) and re-register users.
 
 ## Testing
 
@@ -468,7 +524,7 @@ For detailed system behavior, user flows, analysis output shapes, and known limi
 
 - [x] Competitor comparison — side-by-side insights against linked competitor businesses
 - [ ] Additional review providers — Yelp, TripAdvisor, App Store, Play Store
-- [ ] Database migrations — Alembic for safe schema evolution
+- [x] Database migrations — Alembic for safe schema evolution
 - [x] Delete businesses
 - [x] Offline demo dataset
 - [ ] Secure auth — refresh tokens, httpOnly cookies

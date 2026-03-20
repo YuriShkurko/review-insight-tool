@@ -21,6 +21,7 @@ class Business(Base):
     business_type: Mapped[str] = mapped_column(String(50), nullable=False, default="other")
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
     google_maps_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)  # optional; not in API yet
     avg_rating: Mapped[float | None] = mapped_column(Float, nullable=True)
     total_reviews: Mapped[int] = mapped_column(Integer, default=0)
     is_competitor: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

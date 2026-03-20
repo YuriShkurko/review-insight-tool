@@ -5,7 +5,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.database import Base, engine
 from app.logging_config import setup_logging
 from app.routes import api_router
 
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    # Schema is managed with Alembic (see README: Database migrations).
     logger.info(
         "op=startup review_provider=%s openai_key_set=%s outscraper_key_set=%s",
         settings.REVIEW_PROVIDER,

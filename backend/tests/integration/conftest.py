@@ -35,6 +35,7 @@ def _engine():
 
     import app.models  # noqa: F401
 
+    # In-memory SQLite: no Alembic run; create schema for isolated integration tests.
     Base.metadata.create_all(bind=engine)
     yield engine
     Base.metadata.drop_all(bind=engine)

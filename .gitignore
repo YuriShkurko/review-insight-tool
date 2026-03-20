@@ -28,3 +28,6 @@ Thumbs.db
 # Build
 dist/
 build/
+
+# Local commit message helper (use: git commit -F COMMIT_MSG.txt)
+COMMIT_MSG.txt

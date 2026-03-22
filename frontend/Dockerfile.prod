@@ -1,4 +1,5 @@
 # Production image for PaaS (e.g. Railway). Build with NEXT_PUBLIC_API_URL set to the public backend URL.
+# Uses Next.js "standalone" output so we run `node server.js` (matches Next.js Docker guidance; fewer 502s than npm start).
 FROM node:20-slim AS builder
 WORKDIR /app
 
@@ -13,18 +14,19 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 RUN npm run build
 
-FROM node:20-slim
+FROM node:20-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Next.js `next start` listens on PORT (Railway sets this).
-ENV PORT=3000
+ENV NEXT_TELEMETRY_DISABLED=1
 
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+# Standalone bundle (includes server.js + minimal node_modules)
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+# Railway sets PORT. Linux often sets HOSTNAME to the container id; Next may bind to the wrong interface → 502.
+# Force bind-all for the Node process (see docs/STAGING.md).
+CMD ["sh", "-c", "exec env HOSTNAME=0.0.0.0 node server.js"]

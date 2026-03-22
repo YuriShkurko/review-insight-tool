@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Required for Dockerfile.prod: minimal `node server.js` runner (reliable PORT + Railway proxy).
+  output: "standalone",
 };
 
 export default nextConfig;

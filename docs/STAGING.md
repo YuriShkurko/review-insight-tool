@@ -38,7 +38,7 @@ If you change the backend URL after the first frontend build, **rebuild/redeploy
 
 | Variable | Required | Notes |
 |----------|----------|--------|
-| `DATABASE_URL` | Yes | From PostgreSQL plugin (reference variable) or paste connection string |
+| `DATABASE_URL` | Yes | **Must be Railway’s Postgres URL** — use **Variables → Add → Reference** from the PostgreSQL service (or paste the full `postgresql://…` URL). Never rely on `localhost` in the cloud; the app’s default in code is local-only. |
 | `REVIEW_PROVIDER` | Recommended | `offline` for demos (no Outscraper cost) |
 | `JWT_SECRET_KEY` | Yes | Random string, 32+ characters |
 | `OPENAI_API_KEY` | Optional | Omit for mock analysis; set for real AI output |
@@ -55,6 +55,8 @@ The backend Docker image runs **`alembic upgrade head`** in [`docker-entrypoint.
 
 **Optional:** If you prefer not to migrate on start, you could override the container entrypoint in Railway (advanced); then run `alembic upgrade head` manually in **Shell** after deploys.
 
+**Empty tables are normal.** Migrations only create the schema; they do **not** insert users or businesses. Populate demo data with the seed step below (or use **Register** in the UI for your own account — still no sample businesses until you add them or seed).
+
 ## Frontend environment variables
 
 | Variable | When | Notes |
@@ -63,16 +65,49 @@ The backend Docker image runs **`alembic upgrade head`** in [`docker-entrypoint.
 
 Set this in Railway **before** the first successful build, or the client will call the wrong API.
 
+### Public URL vs `PORT` (not the same thing)
+
+- Your **frontend URL** (e.g. `https://something.up.railway.app`) comes from the **frontend** service → **Settings → Networking → Generate Domain** (or a custom domain). You do **not** need to add a **`PORT` variable** in **Variables** to “get” that URL.
+- **`PORT`** is **internal**: Railway tells the **container** which TCP port your process should listen on; the **edge/proxy** then forwards public HTTPS traffic to that port. Railway usually **injects** `PORT` automatically for web services — you don’t set it to match the backend (`8000`) or to “pick” 3000 vs 8000 for the public link.
+- The app must listen on **`process.env.PORT`** — [`Dockerfile.prod`](../frontend/Dockerfile.prod) does that (`-p ${PORT:-3000}`) and binds **`0.0.0.0`**. Only **remove** a **manually added** `PORT` in Variables if you added one by mistake and see 502s — it can fight Railway’s injected value.
+
+### Railway asks “which port is the app listening on?” (Networking UI)
+
+That prompt is **not** the same as creating a **`PORT`** env var in **Variables**. It’s Railway asking: **which port inside the container should we send traffic to?** so your public URL can reach the process.
+
+**What to enter:**
+
+1. Open that service → **Variables** and look for **`PORT`** (Railway often injects it automatically).
+2. Use **that number** in the Networking / port field — the app and the proxy must agree.
+
+| Service | Typical value |
+|--------|----------------|
+| **Frontend** (Next.js) | Same as **`PORT`** in Variables (often `3000` or whatever Railway assigns). Our image listens on **`${PORT:-3000}`**, so it must match the injected `PORT`. |
+| **Backend** (FastAPI) | Same as **`PORT`** in Variables. [`docker-entrypoint.sh`](../backend/docker-entrypoint.sh) uses **`${PORT:-8000}`** — so often **8000** or Railway’s `PORT`. |
+
+**Do not** put the **backend** port (8000) on the **frontend** service (or the other way around). Each service has its own Networking settings and its own **`PORT`**.
+
+### Still seeing **502 Bad Gateway**?
+
+- **Confirm which URL returns 502** — frontend domain vs backend domain; fix the matching service.
+- **Frontend (Next.js):** The production image runs **`node server.js`** from the **standalone** build and forces **`HOSTNAME=0.0.0.0`** so the app listens on all interfaces (Linux often sets `HOSTNAME` to the container name, which can break the proxy). Redeploy after pulling the latest [`Dockerfile.prod`](../frontend/Dockerfile.prod).
+- **Networking port** must match **`PORT`** for that service (see **Variables**). If they differ, the edge cannot reach your process.
+- **Backend:** Uvicorn uses **`${PORT:-8000}`** — use the same port in Networking as **`PORT`** (often **8000** unless Railway overrides).
+
 ## After first deploy: seed demo data
 
-1. Open Railway → **backend** service → **Shell** (or use a one-off command).
-2. Run:
+1. Set **`REVIEW_PROVIDER=offline`** on the backend if you want the seeded businesses to serve curated offline reviews (recommended for demos; see [README](../README.md#offline-demo-mode)).
+2. Open Railway → **backend** service → **Shell** (or use a one-off command). The shell inherits **`DATABASE_URL`** from the service.
+3. Run:
 
    ```bash
+   cd /app
    python -m scripts.seed_offline
    ```
 
-3. Log in as `demo@example.com` / `demo1234` (see [offline demo](../README.md#offline-demo-mode)).
+4. Log in as `demo@example.com` / `demo1234` (password set by the seed script).
+
+If the command prints errors about missing tables, migrations did not run against this database — fix `DATABASE_URL` and redeploy, then try again.
 
 ## Local Docker Compose (unchanged)
 
@@ -101,6 +136,18 @@ Then run `alembic upgrade head` for future migrations only.
 - [ ] **Remove competitor** succeeds without a false error
 - [ ] **Delete business** from list works
 - [ ] Backend logs visible in Railway (Observability / Logs)
+
+## Troubleshooting
+
+### `connection refused` to `localhost:5432` (Alembic or uvicorn)
+
+The backend container is trying Postgres at **`localhost`**. Inside Docker, that is **this container**, not Railway’s database.
+
+- In **Railway → backend service → Variables**, ensure **`DATABASE_URL`** is set to the **PostgreSQL plugin** connection string (reference `${{Postgres.*}}` variables or copy from the Postgres service).
+- Do **not** paste your laptop’s `.env` value (`postgresql://…@localhost:5432/…`) — it will not work on Railway.
+- If `DATABASE_URL` is missing, the app may fall back to the **default** in [`backend/app/config.py`](../backend/app/config.py) (`localhost`), which causes this error.
+
+Redeploy after fixing variables.
 
 ## What is not automated
 

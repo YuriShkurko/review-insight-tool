@@ -1,9 +1,25 @@
+import os
+from urllib.parse import urlparse
+
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 _PLACEHOLDER_PREFIXES = ("your-", "sk-your-", "change-me", "put-your", "insert-")
 
 _API_KEY_FIELDS = ("OPENAI_API_KEY", "GOOGLE_PLACES_API_KEY", "OUTSCRAPER_API_KEY")
+
+
+def _running_on_railway() -> bool:
+    """Railway injects these; used to catch misconfigured DATABASE_URL."""
+    return bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PROJECT_ID"))
+
+
+def _database_url_looks_localhost(url: str) -> bool:
+    try:
+        host = (urlparse(url).hostname or "").lower()
+        return host in ("localhost", "127.0.0.1", "::1")
+    except Exception:
+        return False
 
 
 class Settings(BaseSettings):
@@ -36,6 +52,18 @@ class Settings(BaseSettings):
             if val and any(val.lower().startswith(p) for p in _PLACEHOLDER_PREFIXES):
                 object.__setattr__(self, field, "")
 
+        return self
+
+    @model_validator(mode="after")
+    def _reject_localhost_db_on_railway(self) -> "Settings":
+        if _running_on_railway() and _database_url_looks_localhost(self.DATABASE_URL):
+            msg = (
+                "DATABASE_URL points to localhost, but on Railway the database is a separate service. "
+                "In Railway → your backend service → Variables, set DATABASE_URL using "
+                '"Reference" from the PostgreSQL plugin (or paste its connection string). '
+                "Do not use localhost inside the container. See docs/STAGING.md."
+            )
+            raise ValueError(msg)
         return self
 
 

@@ -1,0 +1,4 @@
+# Use the production image (standalone Next.js). The default `Dockerfile` is for local docker-compose (dev server).
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.prod"

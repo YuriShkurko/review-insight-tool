@@ -24,7 +24,7 @@ This document describes a **manual** way to run Review Insight Tool on [Railway]
 2. Add the **backend** service (GitHub repo, root directory `backend/`).
 3. **Generate a public URL** for the backend (Settings → Networking → Generate Domain). You need this URL before building the frontend.
 4. Configure backend env vars (see below). Leave **`CORS_ORIGINS` empty** until step 8.
-5. Add the **frontend** service (same repo, root directory `frontend/`, set **`RAILWAY_DOCKERFILE_PATH=Dockerfile.prod`** if both Dockerfiles exist).
+5. Add the **frontend** service (same repo, root directory `frontend/`). This repo includes [`frontend/railway.toml`](../frontend/railway.toml) so Railway builds **`Dockerfile.prod`** (not the dev `Dockerfile`). You can also set **`RAILWAY_DOCKERFILE_PATH=Dockerfile.prod`** in Variables if needed.
 6. Set **`NEXT_PUBLIC_API_URL`** to `https://<your-backend-host>` (must include `https://`).
 7. **Generate a public URL** for the frontend.
 8. Set **`CORS_ORIGINS`** on the backend to `https://<your-frontend-host>` (exact origin, no trailing slash unless your app uses it).
@@ -69,7 +69,7 @@ Set this in Railway **before** the first successful build, or the client will ca
 
 - Your **frontend URL** (e.g. `https://something.up.railway.app`) comes from the **frontend** service → **Settings → Networking → Generate Domain** (or a custom domain). You do **not** need to add a **`PORT` variable** in **Variables** to “get” that URL.
 - **`PORT`** is **internal**: Railway tells the **container** which TCP port your process should listen on; the **edge/proxy** then forwards public HTTPS traffic to that port. Railway usually **injects** `PORT` automatically for web services — you don’t set it to match the backend (`8000`) or to “pick” 3000 vs 8000 for the public link.
-- The app must listen on **`process.env.PORT`** — [`Dockerfile.prod`](../frontend/Dockerfile.prod) does that (`-p ${PORT:-3000}`) and binds **`0.0.0.0`**. Only **remove** a **manually added** `PORT` in Variables if you added one by mistake and see 502s — it can fight Railway’s injected value.
+- The app must listen on **`process.env.PORT`** — [`Dockerfile.prod`](../frontend/Dockerfile.prod) runs **`node server.js`** (standalone build) with **`HOSTNAME=0.0.0.0`**. Only **remove** a **manually added** `PORT` in Variables if you added one by mistake and see 502s — it can fight Railway’s injected value.
 
 ### Railway asks “which port is the app listening on?” (Networking UI)
 
@@ -82,7 +82,7 @@ That prompt is **not** the same as creating a **`PORT`** env var in **Variables*
 
 | Service | Typical value |
 |--------|----------------|
-| **Frontend** (Next.js) | Same as **`PORT`** in Variables (often `3000` or whatever Railway assigns). Our image listens on **`${PORT:-3000}`**, so it must match the injected `PORT`. |
+| **Frontend** (Next.js) | Same as **`PORT`** in Variables (often `3000` or whatever Railway assigns). Standalone **`server.js`** reads **`PORT`**; it must match Networking. |
 | **Backend** (FastAPI) | Same as **`PORT`** in Variables. [`docker-entrypoint.sh`](../backend/docker-entrypoint.sh) uses **`${PORT:-8000}`** — so often **8000** or Railway’s `PORT`. |
 
 **Do not** put the **backend** port (8000) on the **frontend** service (or the other way around). Each service has its own Networking settings and its own **`PORT`**.
@@ -93,6 +93,8 @@ That prompt is **not** the same as creating a **`PORT`** env var in **Variables*
 - **Frontend (Next.js):** The production image runs **`node server.js`** from the **standalone** build and forces **`HOSTNAME=0.0.0.0`** so the app listens on all interfaces (Linux often sets `HOSTNAME` to the container name, which can break the proxy). Redeploy after pulling the latest [`Dockerfile.prod`](../frontend/Dockerfile.prod).
 - **Networking port** must match **`PORT`** for that service (see **Variables**). If they differ, the edge cannot reach your process.
 - **Backend:** Uvicorn uses **`${PORT:-8000}`** — use the same port in Networking as **`PORT`** (often **8000** unless Railway overrides).
+
+**Logs show `Stopping Container` + `npm error` + `SIGTERM`?** That usually means the **old** container was **killed** during a redeploy or restart — npm prints scary lines; it’s not necessarily an app bug. After deploying the **standalone** image, you should see **`node server.js`** in the start command, not **`next start`**.
 
 ## After first deploy: seed demo data
 

@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
+    # Comma-separated extra CORS origins (e.g. https://my-app.up.railway.app). Localhost is always allowed.
+    CORS_ORIGINS: str = ""
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     @model_validator(mode="after")

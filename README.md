@@ -311,7 +311,8 @@ Interactive docs: http://localhost:8000/docs
 │   │   ├── app/                 # Next.js pages
 │   │   ├── components/          # React components
 │   │   └── lib/                 # API client, auth, types
-│   ├── Dockerfile
+│   ├── Dockerfile               # Local dev (docker-compose)
+│   ├── Dockerfile.prod          # Production build for PaaS (e.g. Railway)
 │   ├── package.json
 │   └── .env.local.example
 │
@@ -328,6 +329,8 @@ Interactive docs: http://localhost:8000/docs
 ```
 
 ## Development
+
+For a **remote staging/demo** on Railway (PostgreSQL, `PORT`, `CORS_ORIGINS`, build-time `NEXT_PUBLIC_API_URL`, migrate-on-start), see **[docs/STAGING.md](docs/STAGING.md)**.
 
 ### Makefile commands
 

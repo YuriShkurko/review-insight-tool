@@ -303,6 +303,7 @@ Interactive docs: http://localhost:8000/docs
 │   ├── alembic.ini              # Alembic configuration
 │   ├── tests/                   # pytest suite
 │   ├── Dockerfile
+│   ├── docker-entrypoint.sh     # Alembic then uvicorn (production / Railway)
 │   ├── requirements.txt
 │   └── .env.example
 │
@@ -358,7 +359,7 @@ For a **remote staging/demo** on Railway (PostgreSQL, `PORT`, `CORS_ORIGINS`, bu
 
 ### Database migrations
 
-Schema changes are managed with **Alembic** (not `create_all` at app startup).
+Schema changes are managed with **Alembic** (not `create_all` at app startup). The **production Docker image** runs `alembic upgrade head` in `docker-entrypoint.sh` before uvicorn (PaaS-friendly). Local **`make up`** still benefits from running **`make db-upgrade`** when you change migrations without rebuilding the image.
 
 **First-time / fresh database**
 

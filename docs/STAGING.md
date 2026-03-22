@@ -7,7 +7,7 @@ This document describes a **manual** way to run Review Insight Tool on [Railway]
 - Deploy from GitHub with per-service **root directories** (`backend/`, `frontend/`)
 - Managed **PostgreSQL** plugin
 - **Environment variables** in the dashboard (available at build time for the frontend)
-- **Custom start command** for migrate-on-start on the backend
+- **Migrations on container start** — backend [`docker-entrypoint.sh`](../backend/docker-entrypoint.sh) runs `alembic upgrade head` before uvicorn (no separate Railway command required)
 - Low friction compared to wiring your own VPS
 
 ## Architecture
@@ -23,13 +23,14 @@ This document describes a **manual** way to run Review Insight Tool on [Railway]
 1. Create a Railway project and add the **PostgreSQL** plugin.
 2. Add the **backend** service (GitHub repo, root directory `backend/`).
 3. **Generate a public URL** for the backend (Settings → Networking → Generate Domain). You need this URL before building the frontend.
-4. Configure backend env vars (see below). Leave **`CORS_ORIGINS` empty** until step 7.
-5. Set the backend **custom start command** (see below).
-6. Add the **frontend** service (same repo, root directory `frontend/`, Dockerfile path **`Dockerfile.prod`**).
-7. Set **`NEXT_PUBLIC_API_URL`** to `https://<your-backend-host>` (must include `https://`).
-8. **Generate a public URL** for the frontend.
-9. Set **`CORS_ORIGINS`** on the backend to `https://<your-frontend-host>` (exact origin, no trailing slash unless your app uses it).
-10. **Redeploy** both services if needed so CORS and the frontend build stay in sync.
+4. Configure backend env vars (see below). Leave **`CORS_ORIGINS` empty** until step 8.
+5. Add the **frontend** service (same repo, root directory `frontend/`, set **`RAILWAY_DOCKERFILE_PATH=Dockerfile.prod`** if both Dockerfiles exist).
+6. Set **`NEXT_PUBLIC_API_URL`** to `https://<your-backend-host>` (must include `https://`).
+7. **Generate a public URL** for the frontend.
+8. Set **`CORS_ORIGINS`** on the backend to `https://<your-frontend-host>` (exact origin, no trailing slash unless your app uses it).
+9. **Redeploy** both services if needed so CORS and the frontend build stay in sync.
+
+Do **not** set a custom start command on the backend unless you know what you’re doing — the image already runs migrations then uvicorn. If you previously set `alembic upgrade head && uvicorn ...`, remove it to avoid confusion (running Alembic twice is harmless but redundant).
 
 If you change the backend URL after the first frontend build, **rebuild/redeploy the frontend** so `NEXT_PUBLIC_API_URL` is correct.
 
@@ -46,15 +47,13 @@ If you change the backend URL after the first frontend build, **rebuild/redeploy
 
 Railway injects **`PORT`** — do not set it manually unless debugging.
 
-## Backend custom start command
+## Migrations (backend)
 
-In the backend service: **Settings → Deploy → Custom Start Command**:
-
-```bash
-alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
-```
+The backend Docker image runs **`alembic upgrade head`** in [`docker-entrypoint.sh`](../backend/docker-entrypoint.sh) **before** starting uvicorn. You do **not** need a Railway “Custom Start Command” for normal deploys.
 
 **Migrate-on-start is acceptable for single-instance staging** (one replica). Alembic is a no-op when already at head. For **multiple app instances**, run migrations in a **one-off job** before rolling out new replicas to avoid concurrent migration races.
+
+**Optional:** If you prefer not to migrate on start, you could override the container entrypoint in Railway (advanced); then run `alembic upgrade head` manually in **Shell** after deploys.
 
 ## Frontend environment variables
 

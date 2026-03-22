@@ -11,7 +11,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Railway and other PaaS set PORT; default 8000 for local docker run.
+RUN sed -i 's/\r$//' docker-entrypoint.sh && chmod +x docker-entrypoint.sh
+
+# Railway sets PORT; default 8000 for local docker run.
 EXPOSE 8000
 ENV PORT=8000
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+# Default: uvicorn on $PORT. docker-compose overrides with explicit command (e.g. --reload).
+CMD []

@@ -118,10 +118,18 @@ function InsightColumn({
 }
 
 export default function ComparisonView({ data }: { data: ComparisonResponse }) {
+  const totalCards = 1 + data.competitors.length;
+  const gridCols =
+    totalCards === 1
+      ? "grid-cols-1"
+      : totalCards === 3
+        ? "grid-cols-1 md:grid-cols-3"
+        : "grid-cols-1 md:grid-cols-2";
+
   return (
     <div className="space-y-5">
       {/* Snapshot cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className={`grid ${gridCols} gap-3`}>
         <SnapshotCard snapshot={data.target} isTarget />
         {data.competitors.map((c) => (
           <SnapshotCard key={c.business_id} snapshot={c} isTarget={false} />

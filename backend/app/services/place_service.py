@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import re
 import uuid
@@ -40,10 +41,8 @@ def _normalize_url_for_parsing(url: str) -> str:
     if not url or not isinstance(url, str):
         return ""
     s = url.strip()
-    try:
+    with contextlib.suppress(ValueError, TypeError):
         s = unquote(s)
-    except (ValueError, TypeError):
-        pass
     if "#" in s:
         s = s.split("#", 1)[0]
     return s
@@ -51,10 +50,7 @@ def _normalize_url_for_parsing(url: str) -> str:
 
 def _is_shortened_url(url: str) -> bool:
     """Check if a URL is a known Google Maps shortened link."""
-    for host in _SHORTLINK_HOSTS:
-        if host in url:
-            return True
-    return False
+    return any(host in url for host in _SHORTLINK_HOSTS)
 
 
 async def _resolve_shortened_url(url: str) -> str | None:
@@ -76,7 +72,8 @@ async def _resolve_shortened_url(url: str) -> str | None:
     except Exception as exc:
         logger.warning(
             "op=resolve_shortlink success=false error=%s detail=%s",
-            type(exc).__name__, exc,
+            type(exc).__name__,
+            exc,
         )
         return None
 
@@ -125,9 +122,7 @@ def _extract_name_from_url(google_maps_url: str) -> str | None:
     return None
 
 
-async def resolve_place_details(
-    place_id: str, google_maps_url: str | None = None
-) -> dict:
+async def resolve_place_details(place_id: str, google_maps_url: str | None = None) -> dict:
     """Fetch place name and address from Google Places API.
 
     Falls back to name extracted from URL, or a placeholder.

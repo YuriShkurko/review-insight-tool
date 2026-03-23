@@ -25,12 +25,8 @@ export function setOnUnauthorized(cb: () => void) {
   onUnauthorized = cb;
 }
 
-export async function apiFetch<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -53,8 +49,7 @@ export async function apiFetch<T>(
       onUnauthorized();
     }
     const body = await res.json().catch(() => ({}));
-    const detail =
-      body.detail || FRIENDLY_MESSAGES[res.status] || "Something went wrong.";
+    const detail = body.detail || FRIENDLY_MESSAGES[res.status] || "Something went wrong.";
     throw new ApiError(res.status, detail);
   }
 

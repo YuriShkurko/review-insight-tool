@@ -11,8 +11,8 @@ from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
 from app.models.competitor_link import CompetitorLink
-from app.schemas.comparison import BusinessSnapshot, ComparisonResponse
 from app.schemas.analysis import InsightItem
+from app.schemas.comparison import BusinessSnapshot, ComparisonResponse
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +55,11 @@ def _snapshot_from_business_and_analysis(
     )
 
 
-def _format_snapshots_for_prompt(target: BusinessSnapshot, competitors: list[BusinessSnapshot]) -> str:
+def _format_snapshots_for_prompt(
+    target: BusinessSnapshot, competitors: list[BusinessSnapshot]
+) -> str:
     """Serialize target and competitors into a string for the LLM."""
+
     def snapshot_to_dict(s: BusinessSnapshot) -> dict:
         return {
             "name": s.name,
@@ -70,6 +73,7 @@ def _format_snapshots_for_prompt(target: BusinessSnapshot, competitors: list[Bus
             "risk_areas": s.risk_areas,
             "recommended_focus": s.recommended_focus,
         }
+
     data = {
         "target": snapshot_to_dict(target),
         "competitors": [snapshot_to_dict(c) for c in competitors],
@@ -93,9 +97,12 @@ def _call_openai_comparison(prompt_text: str) -> dict:
     except Exception as exc:
         logger.error(
             "op=comparison_llm success=false error=%s detail=%s",
-            type(exc).__name__, exc,
+            type(exc).__name__,
+            exc,
         )
-        raise ExternalProviderError("Comparison generation failed. Please try again later.") from exc
+        raise ExternalProviderError(
+            "Comparison generation failed. Please try again later."
+        ) from exc
     content = response.choices[0].message.content or "{}"
     try:
         return json.loads(content)
@@ -130,42 +137,28 @@ def generate_comparison(
     Requires: target has analysis, at least one linked competitor has analysis.
     """
     target_business = (
-        db.query(Business)
-        .filter(Business.id == business_id, Business.user_id == user_id)
-        .first()
+        db.query(Business).filter(Business.id == business_id, Business.user_id == user_id).first()
     )
     if not target_business:
         raise BusinessNotFoundError()
 
-    target_analysis = (
-        db.query(Analysis).filter(Analysis.business_id == business_id).first()
-    )
-    target_snapshot = _snapshot_from_business_and_analysis(
-        target_business, target_analysis
-    )
+    target_analysis = db.query(Analysis).filter(Analysis.business_id == business_id).first()
+    target_snapshot = _snapshot_from_business_and_analysis(target_business, target_analysis)
     if not target_snapshot:
         raise ComparisonNotReadyError(
             "Run analysis on this business before generating a comparison."
         )
 
-    links = (
-        db.query(CompetitorLink)
-        .filter(CompetitorLink.target_business_id == business_id)
-        .all()
-    )
+    links = db.query(CompetitorLink).filter(CompetitorLink.target_business_id == business_id).all()
     competitor_snapshots: list[BusinessSnapshot] = []
     for link in links:
         comp_business = (
-            db.query(Business)
-            .filter(Business.id == link.competitor_business_id)
-            .first()
+            db.query(Business).filter(Business.id == link.competitor_business_id).first()
         )
         if not comp_business or comp_business.user_id != user_id:
             continue
         comp_analysis = (
-            db.query(Analysis)
-            .filter(Analysis.business_id == link.competitor_business_id)
-            .first()
+            db.query(Analysis).filter(Analysis.business_id == link.competitor_business_id).first()
         )
         snap = _snapshot_from_business_and_analysis(comp_business, comp_analysis)
         if snap:
@@ -178,7 +171,8 @@ def generate_comparison(
 
     prompt_text = _format_snapshots_for_prompt(target_snapshot, competitor_snapshots)
     with timed_operation(
-        logger, "comparison_llm",
+        logger,
+        "comparison_llm",
         business_id=business_id,
         competitor_count=len(competitor_snapshots),
     ):

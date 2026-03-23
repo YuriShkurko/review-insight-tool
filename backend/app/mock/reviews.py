@@ -2,7 +2,7 @@
 
 import hashlib
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 _POSITIVE_REVIEWS = [
     {
@@ -101,7 +101,7 @@ def generate_mock_reviews(place_id: str, count: int = 15) -> list[dict]:
     rng = random.Random(seed)
 
     selected = rng.choices(_ALL_REVIEWS, k=count)
-    base_date = datetime(2025, 6, 1, tzinfo=timezone.utc)
+    base_date = datetime(2025, 6, 1, tzinfo=UTC)
 
     reviews = []
     for i, review in enumerate(selected):

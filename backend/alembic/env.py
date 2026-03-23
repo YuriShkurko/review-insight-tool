@@ -2,6 +2,7 @@
 
 Uses the same DATABASE_URL as the FastAPI app (from .env / environment).
 """
+
 from __future__ import annotations
 
 from logging.config import fileConfig

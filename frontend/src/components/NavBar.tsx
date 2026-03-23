@@ -16,10 +16,7 @@ export default function NavBar() {
         </Link>
         <div className="flex items-center gap-4 text-sm">
           <span className="text-gray-500">{user.email}</span>
-          <button
-            onClick={logout}
-            className="text-red-600 hover:underline font-medium"
-          >
+          <button onClick={logout} className="text-red-600 hover:underline font-medium">
             Logout
           </button>
         </div>

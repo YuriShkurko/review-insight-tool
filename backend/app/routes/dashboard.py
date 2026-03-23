@@ -16,9 +16,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["dashboard"])
 
 
-@router.get(
-    "/businesses/{business_id}/dashboard", response_model=DashboardResponse
-)
+@router.get("/businesses/{business_id}/dashboard", response_model=DashboardResponse)
 def business_dashboard(
     business_id: uuid.UUID,
     db: Session = Depends(get_db),

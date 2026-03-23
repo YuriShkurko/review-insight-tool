@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict
 
 
-class BusinessType(str, Enum):
+class BusinessType(StrEnum):
     restaurant = "restaurant"
     bar = "bar"
     cafe = "cafe"

@@ -46,6 +46,7 @@ def test_full_business_lifecycle(client: TestClient, auth_headers: dict):
     r = client.get(f"/api/businesses/{biz_id}/dashboard", headers=auth_headers)
     assert r.status_code == 200
     d = r.json()
+    assert d["place_id"]
     assert d["business_name"]
     assert d["business_type"] == "bar"
     assert d["total_reviews"] > 0

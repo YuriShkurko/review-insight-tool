@@ -4,7 +4,13 @@ import { useEffect, useState, useCallback, type FormEvent } from "react";
 import { useRequireAuth } from "@/lib/auth";
 import { apiFetch, ApiError } from "@/lib/api";
 import BusinessCard from "@/components/BusinessCard";
-import { BUSINESS_TYPES, type Business, type BusinessType } from "@/lib/types";
+import SandboxCatalog from "@/components/SandboxCatalog";
+import {
+  BUSINESS_TYPES,
+  type Business,
+  type BusinessType,
+  type CatalogResponse,
+} from "@/lib/types";
 
 export default function BusinessesPage() {
   const { user, isLoading } = useRequireAuth();
@@ -16,6 +22,9 @@ export default function BusinessesPage() {
   const [error, setError] = useState("");
   const [loadError, setLoadError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [catalog, setCatalog] = useState<CatalogResponse | null>(null);
+  const [busyPlaceId, setBusyPlaceId] = useState<string | null>(null);
+  const [resetBusy, setResetBusy] = useState(false);
 
   const loadBusinesses = useCallback(async () => {
     try {
@@ -24,15 +33,72 @@ export default function BusinessesPage() {
       setBusinesses(data);
     } catch {
       setLoadError("Could not load your businesses. Please try refreshing.");
-    } finally {
-      setLoading(false);
     }
   }, []);
 
+  const loadCatalog = useCallback(async () => {
+    try {
+      const data = await apiFetch<CatalogResponse>("/sandbox/catalog");
+      setCatalog(data);
+    } catch {
+      setCatalog(null);
+    }
+  }, []);
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadBusinesses(), loadCatalog()]);
+  }, [loadBusinesses, loadCatalog]);
+
   useEffect(() => {
     if (!user) return;
-    loadBusinesses();
-  }, [user, loadBusinesses]);
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        await refreshAll();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, refreshAll]);
+
+  async function handleImportPlace(placeId: string) {
+    setBusyPlaceId(placeId);
+    setError("");
+    try {
+      await apiFetch<Business>("/sandbox/import", {
+        method: "POST",
+        body: JSON.stringify({ place_id: placeId }),
+      });
+      await refreshAll();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.detail : "Failed to add sample business.");
+    } finally {
+      setBusyPlaceId(null);
+    }
+  }
+
+  async function handleResetSandbox() {
+    if (
+      !confirm(
+        "Remove all offline sample businesses from your account? Reviews and analysis for those businesses will be deleted.",
+      )
+    )
+      return;
+    setResetBusy(true);
+    setError("");
+    try {
+      await apiFetch("/sandbox/reset", { method: "POST" });
+      await refreshAll();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.detail : "Reset failed.");
+    } finally {
+      setResetBusy(false);
+    }
+  }
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
@@ -54,21 +120,21 @@ export default function BusinessesPage() {
       setInput("");
       setBusinessType("other");
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.detail : "Failed to add business."
-      );
+      setError(err instanceof ApiError ? err.detail : "Failed to add business.");
     } finally {
       setAdding(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this business and all its reviews, analysis, and competitor links?")) return;
+    if (!confirm("Delete this business and all its reviews, analysis, and competitor links?"))
+      return;
     setDeletingId(id);
     setError("");
     try {
       await apiFetch(`/businesses/${id}`, { method: "DELETE" });
       setBusinesses((prev) => prev.filter((b) => b.id !== id));
+      await loadCatalog();
     } catch (err) {
       setError(err instanceof ApiError ? err.detail : "Failed to delete business.");
     } finally {
@@ -132,59 +198,85 @@ export default function BusinessesPage() {
         <div className="text-center py-12">
           <p className="text-gray-500 mb-3">{loadError}</p>
           <button
-            onClick={loadBusinesses}
+            onClick={() => refreshAll()}
             className="text-blue-600 hover:underline text-sm font-medium"
           >
             Retry
           </button>
         </div>
       ) : businesses.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-1">
-            Welcome to Review Insight
-          </h2>
-          <p className="text-gray-500 text-sm mb-5">
-            Understand what your customers are saying — in three simple steps.
-          </p>
-          <ol className="space-y-3 text-sm text-gray-700">
-            <li className="flex items-start gap-3">
-              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold shrink-0">
-                1
-              </span>
-              <span>
-                <strong>Add your business</strong> — paste a Google Maps link
-                (full or shortened) or a place ID above.
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold shrink-0">
-                2
-              </span>
-              <span>
-                <strong>Fetch reviews</strong> — we pull your latest Google reviews automatically.
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold shrink-0">
-                3
-              </span>
-              <span>
-                <strong>Run analysis</strong> — AI generates a summary,
-                top complaints, praise, action items, and risk areas.
-              </span>
-            </li>
-          </ol>
+        <div className="space-y-6">
+          {catalog ? (
+            <SandboxCatalog
+              catalog={catalog}
+              onImportPlace={handleImportPlace}
+              busyPlaceId={busyPlaceId}
+              onResetSandbox={handleResetSandbox}
+              resetBusy={resetBusy}
+              variant="full"
+            />
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
+              <h2 className="text-lg font-semibold text-gray-800 mb-1">
+                Welcome to Review Insight
+              </h2>
+              <p className="text-gray-500 text-sm mb-5">
+                Understand what your customers are saying — in three simple steps.
+              </p>
+              <ol className="space-y-3 text-sm text-gray-700">
+                <li className="flex items-start gap-3">
+                  <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold shrink-0">
+                    1
+                  </span>
+                  <span>
+                    <strong>Add your business</strong> — paste a Google Maps link (full or
+                    shortened) or a place ID above.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold shrink-0">
+                    2
+                  </span>
+                  <span>
+                    <strong>Fetch reviews</strong> — we pull your latest Google reviews
+                    automatically.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold shrink-0">
+                    3
+                  </span>
+                  <span>
+                    <strong>Run analysis</strong> — AI generates a summary, top complaints, praise,
+                    action items, and risk areas.
+                  </span>
+                </li>
+              </ol>
+            </div>
+          )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {businesses.map((biz) => (
-            <BusinessCard
-              key={biz.id}
-              business={biz}
-              onDelete={handleDelete}
-              deleting={deletingId === biz.id}
+        <div className="space-y-6">
+          <div className="space-y-3">
+            {businesses.map((biz) => (
+              <BusinessCard
+                key={biz.id}
+                business={biz}
+                onDelete={handleDelete}
+                deleting={deletingId === biz.id}
+              />
+            ))}
+          </div>
+          {catalog && (
+            <SandboxCatalog
+              catalog={catalog}
+              onImportPlace={handleImportPlace}
+              busyPlaceId={busyPlaceId}
+              onResetSandbox={handleResetSandbox}
+              resetBusy={resetBusy}
+              variant="compact"
             />
-          ))}
+          )}
         </div>
       )}
     </div>

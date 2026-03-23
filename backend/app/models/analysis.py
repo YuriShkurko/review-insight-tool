@@ -25,4 +25,4 @@ class Analysis(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    business: Mapped["Business"] = relationship(back_populates="analysis")  # noqa: F821
+    business: Mapped["Business"] = relationship(back_populates="analysis")

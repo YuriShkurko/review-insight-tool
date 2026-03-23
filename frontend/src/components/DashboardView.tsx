@@ -10,16 +10,11 @@ function StatCard({
   label: string;
   accent?: "blue" | "default";
 }) {
-  const ring =
-    accent === "blue"
-      ? "border-blue-200 bg-blue-50/40"
-      : "border-gray-200 bg-white";
+  const ring = accent === "blue" ? "border-blue-200 bg-blue-50/40" : "border-gray-200 bg-white";
   return (
     <div className={`rounded-xl border p-5 text-center ${ring}`}>
       <p className="text-3xl font-bold tracking-tight">{value}</p>
-      <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">
-        {label}
-      </p>
+      <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">{label}</p>
     </div>
   );
 }
@@ -62,8 +57,7 @@ function BulletList({
 }
 
 export default function DashboardView({ data }: { data: Dashboard }) {
-  const hasInsights =
-    data.top_complaints.length > 0 || data.top_praise.length > 0;
+  const hasInsights = data.top_complaints.length > 0 || data.top_praise.length > 0;
   const hasAnalysis = !!data.ai_summary;
 
   return (
@@ -75,16 +69,9 @@ export default function DashboardView({ data }: { data: Dashboard }) {
           label="Avg Rating"
           accent="blue"
         />
+        <StatCard value={String(data.total_reviews)} label="Reviews" />
         <StatCard
-          value={String(data.total_reviews)}
-          label="Reviews"
-        />
-        <StatCard
-          value={
-            hasInsights
-              ? String(data.top_complaints.length + data.top_praise.length)
-              : "—"
-          }
+          value={hasInsights ? String(data.top_complaints.length + data.top_praise.length) : "—"}
           label="Insights"
         />
       </div>
@@ -95,9 +82,7 @@ export default function DashboardView({ data }: { data: Dashboard }) {
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
             AI Summary
           </h3>
-          <p className="text-gray-800 leading-relaxed text-[15px]">
-            {data.ai_summary}
-          </p>
+          <p className="text-gray-800 leading-relaxed text-[15px]">{data.ai_summary}</p>
         </div>
       )}
 
@@ -107,9 +92,7 @@ export default function DashboardView({ data }: { data: Dashboard }) {
           <h3 className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-1">
             Recommended Focus
           </h3>
-          <p className="text-blue-900 text-sm font-medium">
-            {data.recommended_focus}
-          </p>
+          <p className="text-blue-900 text-sm font-medium">{data.recommended_focus}</p>
         </div>
       )}
 

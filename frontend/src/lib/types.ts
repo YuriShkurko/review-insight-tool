@@ -65,7 +65,31 @@ export interface Analysis {
   created_at: string;
 }
 
+/** Offline sandbox catalog (GET /api/sandbox/catalog when REVIEW_PROVIDER=offline). */
+export interface CatalogBusiness {
+  place_id: string;
+  name: string;
+  business_type: string;
+  address: string | null;
+  review_count: number;
+  imported: boolean;
+  business_id: string | null;
+}
+
+export interface CatalogScenario {
+  id: string;
+  description: string;
+  main: CatalogBusiness;
+  competitors: CatalogBusiness[];
+}
+
+export interface CatalogResponse {
+  scenarios: CatalogScenario[];
+  standalone: CatalogBusiness[];
+}
+
 export interface Dashboard {
+  place_id: string;
   business_name: string;
   business_type: string;
   address: string | null;

@@ -1,5 +1,11 @@
 """Seed the database with offline demo businesses and competitor links.
 
+Primary offline/demo UX: use the app with REVIEW_PROVIDER=offline and browse the in-app
+**sandbox catalog** (API: GET/POST /api/sandbox/*) to import samples into your own account.
+
+This script remains useful for **headless smoke tests, CI, and legacy** flows: it creates
+the demo user (demo@example.com), seeds businesses from manifest.json, and competitor links.
+
 Usage (via Docker):
     make seed-offline
 
@@ -8,7 +14,6 @@ Usage (local):
     python -m scripts.seed_offline
 
 Requires a running PostgreSQL database with schema applied (`alembic upgrade head` or `make db-upgrade`).
-Creates a demo user, businesses from the offline manifest, and competitor links.
 Safe to re-run — skips entries that already exist.
 """
 
@@ -54,6 +59,7 @@ def seed():
         user = db.query(User).filter(User.email == DEMO_EMAIL).first()
         if not user:
             import bcrypt
+
             pw_hash = bcrypt.hashpw(DEMO_PASSWORD.encode(), bcrypt.gensalt()).decode()
             user = User(id=uuid.uuid4(), email=DEMO_EMAIL, hashed_password=pw_hash)
             db.add(user)
@@ -99,7 +105,9 @@ def seed():
             main_id = scenario["main"]
             main_biz = biz_map.get(main_id)
             if not main_biz:
-                print(f"\n  WARN: main business {main_id} not found for scenario '{scenario_name}'")
+                print(
+                    f"\n  WARN: main business {main_id} not found for scenario '{scenario_name}'"
+                )
                 continue
 
             for comp_id in scenario.get("competitors", []):

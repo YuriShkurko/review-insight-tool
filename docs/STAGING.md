@@ -55,7 +55,7 @@ The backend Docker image runs **`alembic upgrade head`** in [`docker-entrypoint.
 
 **Optional:** If you prefer not to migrate on start, you could override the container entrypoint in Railway (advanced); then run `alembic upgrade head` manually in **Shell** after deploys.
 
-**Empty tables are normal.** Migrations only create the schema; they do **not** insert users or businesses. Populate demo data with the seed step below (or use **Register** in the UI for your own account — still no sample businesses until you add them or seed).
+**Empty tables are normal.** Migrations only create the schema; they do **not** insert users or businesses. With **`REVIEW_PROVIDER=offline`**, use the in-app **offline sandbox** on `/businesses` to import sample businesses into **your own account** (see below). Optional: run `seed_offline` for a pre-built demo user (CI / legacy).
 
 ## Frontend environment variables
 
@@ -91,25 +91,31 @@ That prompt is **not** the same as creating a **`PORT`** env var in **Variables*
 
 - **Confirm which URL returns 502** — frontend domain vs backend domain; fix the matching service.
 - **Frontend (Next.js):** The production image runs **`node server.js`** from the **standalone** build and forces **`HOSTNAME=0.0.0.0`** so the app listens on all interfaces (Linux often sets `HOSTNAME` to the container name, which can break the proxy). Redeploy after pulling the latest [`Dockerfile.prod`](../frontend/Dockerfile.prod).
+- **Networking port must match what the app prints.** If logs say **`Network: http://0.0.0.0:8080`**, Railway set **`PORT=8080`** — set **Networking → port** to **`8080`**, not **3000**. A default of 3000 while the app listens on 8080 causes **502** (proxy hits the wrong port).
 - **Networking port** must match **`PORT`** for that service (see **Variables**). If they differ, the edge cannot reach your process.
 - **Backend:** Uvicorn uses **`${PORT:-8000}`** — use the same port in Networking as **`PORT`** (often **8000** unless Railway overrides).
 
 **Logs show `Stopping Container` + `npm error` + `SIGTERM`?** That usually means the **old** container was **killed** during a redeploy or restart — npm prints scary lines; it’s not necessarily an app bug. After deploying the **standalone** image, you should see **`node server.js`** in the start command, not **`next start`**.
 
-## After first deploy: seed demo data
+**`Ready` then immediately `Stopping Container`?** Often either (1) a **new deploy** replacing this instance, or (2) **healthcheck / routing failure** — most commonly **Networking port ≠ `PORT`** (e.g. app on **8080**, UI still **3000**). Fix the Networking port, redeploy, and try again.
 
-1. Set **`REVIEW_PROVIDER=offline`** on the backend if you want the seeded businesses to serve curated offline reviews (recommended for demos; see [README](../README.md#offline-demo-mode)).
-2. Open Railway → **backend** service → **Shell** (or use a one-off command). The shell inherits **`DATABASE_URL`** from the service.
-3. Run:
+## After first deploy: offline sandbox (recommended)
 
-   ```bash
-   cd /app
-   python -m scripts.seed_offline
-   ```
+1. Set **`REVIEW_PROVIDER=offline`** on the backend (curated JSON reviews; no Outscraper cost).
+2. **Register** a normal user in the UI (or log in).
+3. On **`/businesses`**, use **Offline sandbox** — pick sample businesses from the catalog, then open a business and run **Fetch reviews → Run analysis → Add competitors / Generate comparison** yourself.
 
-4. Log in as `demo@example.com` / `demo1234` (password set by the seed script).
+Optional **POST `/api/sandbox/reset`** (or the **Reset offline samples** control in the catalog when shown) removes all `offline_*` businesses for the current user so you can re-run the flow.
 
-If the command prints errors about missing tables, migrations did not run against this database — fix `DATABASE_URL` and redeploy, then try again.
+### Optional: `seed_offline` (CI / headless / legacy)
+
+For a pre-seeded **`demo@example.com`** account and linked businesses (bypasses the catalog UX):
+
+1. Railway → **backend** → **Shell**.
+2. `cd /app && python -m scripts.seed_offline`
+3. Log in as `demo@example.com` / `demo1234`.
+
+If the command errors on missing tables, fix **`DATABASE_URL`** and redeploy.
 
 ## Local Docker Compose (unchanged)
 
@@ -128,15 +134,12 @@ Then run `alembic upgrade head` for future migrations only.
 ## Staging smoke test checklist
 
 - [ ] Frontend loads at the public URL (no blank page)
-- [ ] Register works; or login works with seeded demo user
-- [ ] Demo login: `demo@example.com` / `demo1234` (after seed)
-- [ ] `/businesses` lists businesses; no CORS errors in browser console
-- [ ] Business detail page loads (metadata, actions)
-- [ ] **Fetch reviews** returns data in offline mode for seeded businesses
+- [ ] Register / login works
+- [ ] With **`REVIEW_PROVIDER=offline`**: sandbox catalog on `/businesses`; import a sample; no CORS errors
+- [ ] **Fetch reviews** returns data in offline mode
 - [ ] **Run analysis** works (with `OPENAI_API_KEY`) or falls back to mock
-- [ ] **Competitors** section loads; **Generate comparison** works when prerequisites are met
-- [ ] **Remove competitor** succeeds without a false error
-- [ ] **Delete business** from list works
+- [ ] **Competitors** — quick-add samples or manual add; **Generate comparison** when prerequisites are met
+- [ ] **Remove competitor** / **Delete business** / optional **Reset offline samples**
 - [ ] Backend logs visible in Railway (Observability / Logs)
 
 ## Troubleshooting
@@ -155,7 +158,7 @@ Redeploy after fixing variables.
 
 - No GitHub Actions / deploy pipeline in this repo
 - No custom domain (use Railway-generated URLs or add a domain in Railway manually)
-- Seeding is **manual** via Shell after deploy
+- **`seed_offline`** is optional (Shell); primary offline UX is the **sandbox catalog** in the app
 - E2E tests default to `localhost:8000`; point `BASE_URL` at staging if you run them remotely
 
 ## Related

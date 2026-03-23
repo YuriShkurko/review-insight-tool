@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from app.providers.base import NormalizedReview, ReviewProvider
@@ -50,30 +51,32 @@ class OfflineProvider(ReviewProvider):
             raw_reviews: list[dict] = json.load(f)
 
         result: list[NormalizedReview] = []
-        fallback_date = datetime(2026, 3, 1, tzinfo=timezone.utc)
+        fallback_date = datetime(2026, 3, 1, tzinfo=UTC)
         for i, raw in enumerate(raw_reviews):
             ext_id = hashlib.sha256(f"{place_id}:{i}".encode()).hexdigest()[:16]
 
             pub_at: datetime | None = None
             if raw.get("published_at"):
-                try:
+                with contextlib.suppress(ValueError, TypeError):
                     pub_at = datetime.fromisoformat(raw["published_at"])
-                except (ValueError, TypeError):
-                    pass
             if pub_at is None:
                 pub_at = fallback_date - timedelta(days=i * 3, hours=i * 5)
 
-            result.append(NormalizedReview(
-                external_id=f"offline_{ext_id}",
-                source="offline",
-                author=raw.get("author"),
-                rating=raw["rating"],
-                text=raw.get("text"),
-                published_at=pub_at,
-            ))
+            result.append(
+                NormalizedReview(
+                    external_id=f"offline_{ext_id}",
+                    source="offline",
+                    author=raw.get("author"),
+                    rating=raw["rating"],
+                    text=raw.get("text"),
+                    published_at=pub_at,
+                )
+            )
 
         logger.info(
             "op=offline_fetch place_id=%s reviews=%d file=%s",
-            place_id, len(result), entry["reviews_file"],
+            place_id,
+            len(result),
+            entry["reviews_file"],
         )
         return result

@@ -2,7 +2,7 @@
 
 from fastapi.testclient import TestClient
 
-from .conftest import SAMPLE_MAPS_URL, SAMPLE_MAPS_URL_2, SAMPLE_MAPS_URL_3
+from .conftest import SAMPLE_MAPS_URL, SAMPLE_MAPS_URL_2
 
 
 def _create_business(client: TestClient, headers: dict, url: str = SAMPLE_MAPS_URL) -> str:

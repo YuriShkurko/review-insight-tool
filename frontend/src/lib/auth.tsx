@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { apiFetch, setOnUnauthorized } from "./api";
 import type { User } from "./types";
@@ -46,43 +39,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOnUnauthorized(logout);
   }, [logout]);
 
-  const fetchUser = useCallback(
-    async (t: string) => {
-      try {
-        localStorage.setItem("token", t);
-        const me = await apiFetch<User>("/auth/me");
-        setUser(me);
-        setToken(t);
-      } catch {
+  useEffect(() => {
+    let cancelled = false;
+    const stored = localStorage.getItem("token");
+    const pending = stored
+      ? apiFetch<User>("/auth/me")
+          .then((me) => ({ me, t: stored }))
+          .catch(() => null)
+      : Promise.resolve(null);
+
+    pending.then((result) => {
+      if (cancelled) return;
+      if (result) {
+        setUser(result.me);
+        setToken(result.t);
+      } else if (stored) {
         clearAuth();
       }
-    },
-    [clearAuth]
-  );
-
-  useEffect(() => {
-    const stored = localStorage.getItem("token");
-    if (stored) {
-      fetchUser(stored).finally(() => setIsLoading(false));
-    } else {
       setIsLoading(false);
-    }
-  }, [fetchUser]);
+    });
 
-  const login = useCallback(
-    async (newToken: string) => {
-      await fetchUser(newToken);
-    },
-    [fetchUser]
-  );
+    return () => {
+      cancelled = true;
+    };
+  }, [clearAuth]);
+
+  const login = useCallback(async (newToken: string) => {
+    localStorage.setItem("token", newToken);
+    const me = await apiFetch<User>("/auth/me");
+    setUser(me);
+    setToken(newToken);
+  }, []);
 
   const isPublicPage = PUBLIC_PATHS.includes(pathname);
 
   if (isLoading && !isPublicPage) {
     return (
-      <AuthContext.Provider
-        value={{ user, token, isLoading, login, logout }}
-      >
+      <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
         <div className="flex justify-center items-center min-h-screen">
           <div className="text-center">
             <div className="inline-block h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />

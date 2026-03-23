@@ -9,12 +9,7 @@ interface AuthFormProps {
   footer?: React.ReactNode;
 }
 
-export default function AuthForm({
-  title,
-  submitLabel,
-  onSubmit,
-  footer,
-}: AuthFormProps) {
+export default function AuthForm({ title, submitLabel, onSubmit, footer }: AuthFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -39,9 +34,7 @@ export default function AuthForm({
         <h1 className="text-2xl font-semibold text-center mb-6">{title}</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
               required
@@ -51,9 +44,7 @@ export default function AuthForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
               type="password"
               required

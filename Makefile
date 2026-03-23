@@ -1,4 +1,4 @@
-.PHONY: up down logs test test-integration test-e2e lint backend frontend dev stop db-reset db-add-is-competitor seed-offline clean db-upgrade db-downgrade db-current db-revision db-history db-stamp-head
+.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check backend frontend dev stop db-reset db-add-is-competitor seed-offline clean db-upgrade db-downgrade db-current db-revision db-history db-stamp-head
 
 # ── Docker Compose ──────────────────────────────────────────────
 
@@ -54,10 +54,41 @@ test-integration:
 test-e2e:
 	cd backend && python -m pytest tests/e2e/ -v
 
-## Run linters
+## Check all linters (ruff + eslint + prettier) — fails on any violation
 lint:
-	cd backend && python -m py_compile app/main.py
+	@echo ── Python (ruff check) ──────────────────────────────
+	cd backend && python -m ruff check .
+	@echo ── Python (ruff format --check) ─────────────────────
+	cd backend && python -m ruff format --check .
+	@echo ── TypeScript (eslint) ──────────────────────────────
 	cd frontend && npm run lint
+	@echo ── TypeScript (prettier --check) ────────────────────
+	cd frontend && npm run format:check
+	@echo ✓ All checks passed.
+
+## Auto-fix lint issues (ruff + eslint --fix)
+lint-fix:
+	@echo ── Python (ruff check --fix) ────────────────────────
+	cd backend && python -m ruff check --fix .
+	@echo ── TypeScript (eslint --fix) ────────────────────────
+	cd frontend && npm run lint:fix
+	@echo ✓ Lint fixes applied.
+
+## Auto-format all code (ruff format + prettier)
+format:
+	@echo ── Python (ruff format) ─────────────────────────────
+	cd backend && python -m ruff format .
+	@echo ── TypeScript (prettier --write) ────────────────────
+	cd frontend && npm run format
+	@echo ✓ All code formatted.
+
+## Check formatting without modifying files
+format-check:
+	@echo ── Python (ruff format --check) ─────────────────────
+	cd backend && python -m ruff format --check .
+	@echo ── TypeScript (prettier --check) ────────────────────
+	cd frontend && npm run format:check
+	@echo ✓ Formatting OK.
 
 # ── Database ───────────────────────────────────────────────────
 

@@ -10,7 +10,7 @@ import uuid
 os.environ["REVIEW_PROVIDER"] = "mock"
 os.environ["OPENAI_API_KEY"] = ""
 
-import pytest  # noqa: E402
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
@@ -54,8 +54,8 @@ def _clean_tables(_engine):
 
 @pytest.fixture()
 def db_session(_engine):
-    Session = sessionmaker(bind=_engine)
-    session = Session()
+    session_factory = sessionmaker(bind=_engine)
+    session = session_factory()
     yield session
     session.close()
 
@@ -63,8 +63,8 @@ def db_session(_engine):
 @pytest.fixture()
 def client(db_session, _engine):
     """FastAPI TestClient wired to the test database with mock providers."""
-    import app.database as db_mod
     import app.config as config_mod
+    import app.database as db_mod
 
     original_engine = db_mod.engine
     db_mod.engine = _engine
@@ -75,6 +75,7 @@ def client(db_session, _engine):
     object.__setattr__(config_mod.settings, "OPENAI_API_KEY", "")
 
     from app.main import create_app
+
     app = create_app()
 
     def _override_db():
@@ -100,16 +101,13 @@ def auth_headers(client: TestClient) -> dict[str, str]:
 
 
 SAMPLE_MAPS_URL = (
-    "https://www.google.com/maps/place/Test+Business/"
-    "@0,0,17z/data=!4m2!3m1!1s0x0:0x1"
+    "https://www.google.com/maps/place/Test+Business/@0,0,17z/data=!4m2!3m1!1s0x0:0x1"
 )
 
 SAMPLE_MAPS_URL_2 = (
-    "https://www.google.com/maps/place/Other+Business/"
-    "@0,0,17z/data=!4m2!3m1!1s0x0:0x2"
+    "https://www.google.com/maps/place/Other+Business/@0,0,17z/data=!4m2!3m1!1s0x0:0x2"
 )
 
 SAMPLE_MAPS_URL_3 = (
-    "https://www.google.com/maps/place/Third+Business/"
-    "@0,0,17z/data=!4m2!3m1!1s0x0:0x3"
+    "https://www.google.com/maps/place/Third+Business/@0,0,17z/data=!4m2!3m1!1s0x0:0x3"
 )

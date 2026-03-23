@@ -1,7 +1,7 @@
 """Shared fixtures for backend tests."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -26,7 +26,7 @@ def sample_raw_reviews() -> list[dict]:
             "author": "Alice",
             "rating": 5,
             "text": "Fantastic place!",
-            "published_at": datetime(2025, 6, 1, tzinfo=timezone.utc),
+            "published_at": datetime(2025, 6, 1, tzinfo=UTC),
         },
         {
             "external_id": "test_002",
@@ -34,7 +34,7 @@ def sample_raw_reviews() -> list[dict]:
             "author": "Bob",
             "rating": 2,
             "text": "Too slow.",
-            "published_at": datetime(2025, 5, 15, tzinfo=timezone.utc),
+            "published_at": datetime(2025, 5, 15, tzinfo=UTC),
         },
         {
             "external_id": "test_003",

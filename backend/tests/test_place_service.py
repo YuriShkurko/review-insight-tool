@@ -15,7 +15,9 @@ class TestParsePlaceIdFromUrl:
         assert parse_place_id_from_url(url) == "ChIJN1t_tDeuEmsRUsoyG83frY4"
 
     def test_query_place_id_param(self):
-        url = "https://www.google.com/maps/search/?api=1&query_place_id=ChIJwS1PVYVLHRURO1XNXZw12AA"
+        url = (
+            "https://www.google.com/maps/search/?api=1&query_place_id=ChIJwS1PVYVLHRURO1XNXZw12AA"
+        )
         assert parse_place_id_from_url(url) == "ChIJwS1PVYVLHRURO1XNXZw12AA"
 
     def test_place_id_legacy_colon(self):
@@ -37,10 +39,7 @@ class TestParsePlaceIdFromUrl:
         assert parse_place_id_from_url(url) == "ChIJwS1PVYVLHRURO1XNXZw12AA"
 
     def test_integration_sample_url_hex(self):
-        url = (
-            "https://www.google.com/maps/place/Test+Business/"
-            "@0,0,17z/data=!4m2!3m1!1s0x0:0x1"
-        )
+        url = "https://www.google.com/maps/place/Test+Business/@0,0,17z/data=!4m2!3m1!1s0x0:0x1"
         assert parse_place_id_from_url(url) == "0x0:0x1"
 
     def test_bare_1s_chij(self):

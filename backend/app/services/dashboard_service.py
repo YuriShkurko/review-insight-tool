@@ -8,26 +8,21 @@ from app.models.business import Business
 from app.schemas.dashboard import DashboardResponse
 
 
-def get_dashboard(
-    db: Session, business_id: uuid.UUID, user_id: uuid.UUID
-) -> DashboardResponse:
+def get_dashboard(db: Session, business_id: uuid.UUID, user_id: uuid.UUID) -> DashboardResponse:
     """Aggregate business data, review stats, and analysis into a single response.
 
     Never crashes on missing data -- returns clean defaults for every field.
     """
     business = (
-        db.query(Business)
-        .filter(Business.id == business_id, Business.user_id == user_id)
-        .first()
+        db.query(Business).filter(Business.id == business_id, Business.user_id == user_id).first()
     )
     if not business:
         raise BusinessNotFoundError()
 
-    analysis = (
-        db.query(Analysis).filter(Analysis.business_id == business_id).first()
-    )
+    analysis = db.query(Analysis).filter(Analysis.business_id == business_id).first()
 
     return DashboardResponse(
+        place_id=business.place_id,
         business_name=business.name,
         business_type=business.business_type,
         address=business.address,

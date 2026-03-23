@@ -6,6 +6,7 @@ from app.schemas.analysis import InsightItem
 
 
 class DashboardResponse(BaseModel):
+    place_id: str
     business_name: str
     business_type: str
     address: str | None

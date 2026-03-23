@@ -1,5 +1,7 @@
 """Tests for dashboard and analysis schema validation."""
 
+from datetime import UTC
+
 from app.schemas.analysis import AnalysisRead, InsightItem
 from app.schemas.dashboard import DashboardResponse
 
@@ -14,6 +16,7 @@ class TestInsightItem:
 class TestDashboardResponse:
     def test_full_dashboard(self):
         data = DashboardResponse(
+            place_id="ChIJtest",
             business_name="Test Cafe",
             business_type="cafe",
             address="123 Main St",
@@ -37,6 +40,7 @@ class TestDashboardResponse:
 
     def test_dashboard_with_no_analysis(self):
         data = DashboardResponse(
+            place_id="ChIJnew",
             business_name="New Place",
             business_type="other",
             address=None,
@@ -57,6 +61,7 @@ class TestDashboardResponse:
 
     def test_dashboard_serialization(self):
         data = DashboardResponse(
+            place_id="ChIJgym",
             business_name="Test",
             business_type="gym",
             address=None,
@@ -81,7 +86,7 @@ class TestAnalysisRead:
     def test_includes_new_v11_fields(self):
         """Ensure the schema accepts the V1.1 analysis fields."""
         import uuid
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         data = AnalysisRead(
             id=uuid.uuid4(),
@@ -92,7 +97,7 @@ class TestAnalysisRead:
             action_items=["Do this", "Do that"],
             risk_areas=["Watch out for this"],
             recommended_focus="Focus here.",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         assert len(data.action_items) == 2
         assert data.recommended_focus == "Focus here."

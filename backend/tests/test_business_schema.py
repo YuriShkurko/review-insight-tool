@@ -5,7 +5,17 @@ from app.schemas.business import BusinessCreate, BusinessType
 
 class TestBusinessType:
     def test_all_types_exist(self):
-        expected = {"restaurant", "bar", "cafe", "gym", "salon", "hotel", "clinic", "retail", "other"}
+        expected = {
+            "restaurant",
+            "bar",
+            "cafe",
+            "gym",
+            "salon",
+            "hotel",
+            "clinic",
+            "retail",
+            "other",
+        }
         actual = {t.value for t in BusinessType}
         assert actual == expected
 

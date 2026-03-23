@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from fastapi import HTTPException
@@ -42,8 +43,10 @@ class OutscraperProvider(ReviewProvider):
         cutoff_ts = int(self._cutoff) if self._cutoff.isdigit() else None
         logger.info(
             "op=outscraper_fetch query_len=%d query_preview=%s reviews_limit=%d sort=%s cutoff=%s",
-            len(query), query[:80] if len(query) > 80 else query,
-            self._reviews_limit, self._sort,
+            len(query),
+            query[:80] if len(query) > 80 else query,
+            self._reviews_limit,
+            self._sort,
             cutoff_ts if cutoff_ts is not None else "none",
         )
 
@@ -70,7 +73,8 @@ class OutscraperProvider(ReviewProvider):
         except httpx.TimeoutException as exc:
             logger.error(
                 "op=outscraper_fetch success=false error=Timeout detail=%s timeout=%ds",
-                exc, _REQUEST_TIMEOUT,
+                exc,
+                _REQUEST_TIMEOUT,
             )
             raise HTTPException(
                 status_code=504,
@@ -79,7 +83,8 @@ class OutscraperProvider(ReviewProvider):
         except httpx.HTTPStatusError as exc:
             logger.error(
                 "op=outscraper_fetch success=false error=HTTPStatus detail=%d %s",
-                exc.response.status_code, exc.response.text[:200],
+                exc.response.status_code,
+                exc.response.text[:200],
             )
             raise HTTPException(
                 status_code=502,
@@ -88,7 +93,8 @@ class OutscraperProvider(ReviewProvider):
         except Exception as exc:
             logger.error(
                 "op=outscraper_fetch success=false error=%s detail=%s",
-                type(exc).__name__, exc,
+                type(exc).__name__,
+                exc,
             )
             raise HTTPException(
                 status_code=502,
@@ -126,10 +132,8 @@ class OutscraperProvider(ReviewProvider):
         published_at = None
         ts = raw.get("review_timestamp")
         if ts:
-            try:
-                published_at = datetime.fromtimestamp(int(ts), tz=timezone.utc)
-            except (ValueError, TypeError, OSError):
-                pass
+            with contextlib.suppress(ValueError, TypeError, OSError):
+                published_at = datetime.fromtimestamp(int(ts), tz=UTC)
 
         return NormalizedReview(
             external_id=external_id,

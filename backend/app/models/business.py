@@ -1,7 +1,17 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -32,9 +42,13 @@ class Business(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    owner: Mapped["User"] = relationship(back_populates="businesses")  # noqa: F821
-    reviews: Mapped[list["Review"]] = relationship(back_populates="business", cascade="all, delete-orphan")  # noqa: F821
-    analysis: Mapped["Analysis | None"] = relationship(back_populates="business", uselist=False, cascade="all, delete-orphan")  # noqa: F821
+    owner: Mapped["User"] = relationship(back_populates="businesses")
+    reviews: Mapped[list["Review"]] = relationship(
+        back_populates="business", cascade="all, delete-orphan"
+    )
+    analysis: Mapped["Analysis | None"] = relationship(
+        back_populates="business", uselist=False, cascade="all, delete-orphan"
+    )
     competitor_links_out: Mapped[list["CompetitorLink"]] = relationship(
         CompetitorLink,
         foreign_keys=[CompetitorLink.target_business_id],

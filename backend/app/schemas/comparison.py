@@ -8,6 +8,7 @@ from app.schemas.business import BusinessRead, BusinessType
 
 class CompetitorAdd(BaseModel):
     """Payload to add a competitor (same shape as adding a business)."""
+
     google_maps_url: str | None = None
     place_id: str | None = None
     business_type: BusinessType = BusinessType.other
@@ -15,6 +16,7 @@ class CompetitorAdd(BaseModel):
 
 class CompetitorRead(BaseModel):
     """A linked competitor: the link id plus the competitor business and readiness status."""
+
     link_id: uuid.UUID
     business: BusinessRead
     has_reviews: bool
@@ -23,6 +25,7 @@ class CompetitorRead(BaseModel):
 
 class BusinessSnapshot(BaseModel):
     """Subset of business + analysis data for comparison display."""
+
     business_id: uuid.UUID
     name: str
     business_type: str
@@ -38,6 +41,7 @@ class BusinessSnapshot(BaseModel):
 
 class ComparisonResponse(BaseModel):
     """Full comparison: target + competitors snapshots + AI-generated insights."""
+
     target: BusinessSnapshot
     competitors: list[BusinessSnapshot]
     comparison_summary: str

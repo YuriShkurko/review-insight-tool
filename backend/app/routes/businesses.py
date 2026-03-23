@@ -39,7 +39,9 @@ async def create_business(
         )
 
     try:
-        with timed_operation(logger, "create_business", user_id=current_user.id, type=payload.business_type.value):
+        with timed_operation(
+            logger, "create_business", user_id=current_user.id, type=payload.business_type.value
+        ):
             business = await get_or_create_business(
                 db, place_id, current_user.id, google_maps_url, payload.business_type.value
             )

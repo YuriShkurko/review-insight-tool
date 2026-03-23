@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, type FormEvent } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import {
   BUSINESS_TYPES,
+  type CatalogBusiness,
   type CompetitorRead,
   type BusinessType,
   type Review,
@@ -39,9 +40,12 @@ function StatusBadge({ hasReviews, hasAnalysis }: { hasReviews: boolean; hasAnal
 export default function CompetitorSection({
   businessId,
   onCompetitorsChange,
+  catalogCompetitors,
 }: {
   businessId: string;
   onCompetitorsChange?: (competitors: CompetitorRead[]) => void;
+  /** When offline sandbox is active: scenario competitors for quick-add (main business only). */
+  catalogCompetitors?: CatalogBusiness[];
 }) {
   const [competitors, setCompetitors] = useState<CompetitorRead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,12 +56,11 @@ export default function CompetitorSection({
   const [successMsg, setSuccessMsg] = useState("");
   const [input, setInput] = useState("");
   const [businessType, setBusinessType] = useState<BusinessType>("other");
+  const [quickAddBusy, setQuickAddBusy] = useState<string | null>(null);
 
   const loadCompetitors = useCallback(async () => {
     try {
-      const data = await apiFetch<CompetitorRead[]>(
-        `/businesses/${businessId}/competitors`
-      );
+      const data = await apiFetch<CompetitorRead[]>(`/businesses/${businessId}/competitors`);
       setCompetitors(data);
       onCompetitorsChange?.(data);
     } catch {
@@ -83,17 +86,15 @@ export default function CompetitorSection({
       ? { google_maps_url: trimmed, place_id: null, business_type: businessType }
       : { place_id: trimmed, google_maps_url: null, business_type: businessType };
     try {
-      await apiFetch<CompetitorRead>(
-        `/businesses/${businessId}/competitors`,
-        { method: "POST", body: JSON.stringify(body) }
-      );
+      await apiFetch<CompetitorRead>(`/businesses/${businessId}/competitors`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
       await loadCompetitors();
       setInput("");
       setBusinessType("other");
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.detail : "Failed to add competitor."
-      );
+      setError(err instanceof ApiError ? err.detail : "Failed to add competitor.");
     } finally {
       setAdding(false);
     }
@@ -104,17 +105,39 @@ export default function CompetitorSection({
     setSuccessMsg("");
     setRemoving(competitorBusinessId);
     try {
-      await apiFetch(
-        `/businesses/${businessId}/competitors/${competitorBusinessId}`,
-        { method: "DELETE" }
-      );
+      await apiFetch(`/businesses/${businessId}/competitors/${competitorBusinessId}`, {
+        method: "DELETE",
+      });
       await loadCompetitors();
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.detail : "Failed to remove competitor."
-      );
+      setError(err instanceof ApiError ? err.detail : "Failed to remove competitor.");
     } finally {
       setRemoving(null);
+    }
+  }
+
+  function isLinkedPlace(placeId: string): boolean {
+    return competitors.some((c) => c.business.place_id === placeId);
+  }
+
+  async function handleQuickAddSample(placeId: string) {
+    setError("");
+    setSuccessMsg("");
+    setQuickAddBusy(placeId);
+    try {
+      await apiFetch(`/sandbox/import`, {
+        method: "POST",
+        body: JSON.stringify({
+          place_id: placeId,
+          as_competitor_for: businessId,
+        }),
+      });
+      await loadCompetitors();
+      setSuccessMsg("Sample competitor added. Fetch reviews & analyze when ready.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.detail : "Failed to add sample competitor.");
+    } finally {
+      setQuickAddBusy(null);
     }
   }
 
@@ -125,7 +148,7 @@ export default function CompetitorSection({
     try {
       const reviews = await apiFetch<Review[]>(
         `/businesses/${competitorBusinessId}/fetch-reviews`,
-        { method: "POST" }
+        { method: "POST" },
       );
       await apiFetch(`/businesses/${competitorBusinessId}/analyze`, {
         method: "POST",
@@ -133,11 +156,7 @@ export default function CompetitorSection({
       await loadCompetitors();
       setSuccessMsg(`${name}: ${reviews.length} reviews fetched & analyzed.`);
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? `${name}: ${err.detail}`
-          : `Failed to prepare ${name}.`
-      );
+      setError(err instanceof ApiError ? `${name}: ${err.detail}` : `Failed to prepare ${name}.`);
     } finally {
       setPreparing(null);
     }
@@ -155,10 +174,40 @@ export default function CompetitorSection({
   }
 
   const atLimit = competitors.length >= MAX_COMPETITORS;
-  const anyBusy = !!removing || !!preparing;
+  const anyBusy = !!removing || !!preparing || !!quickAddBusy;
+  const samples = catalogCompetitors ?? [];
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+      {samples.length > 0 && !atLimit && (
+        <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-4 space-y-2">
+          <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">
+            Quick add from samples
+          </p>
+          <p className="text-xs text-blue-800/80">
+            Add curated offline competitors for this scenario. You still run Fetch &amp; Analyze
+            yourself.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {samples.map((row) => {
+              const linked = isLinkedPlace(row.place_id);
+              const busy = quickAddBusy === row.place_id;
+              return (
+                <button
+                  key={row.place_id}
+                  type="button"
+                  disabled={linked || busy || anyBusy || adding}
+                  onClick={() => handleQuickAddSample(row.place_id)}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-blue-200 bg-white text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {busy ? "Adding…" : linked ? `${row.name} (added)` : row.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Add form */}
       {!atLimit && (
         <form onSubmit={handleAdd} className="space-y-2">
@@ -183,7 +232,9 @@ export default function CompetitorSection({
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm capitalize focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {BUSINESS_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
                 ))}
               </select>
             </div>
@@ -195,9 +246,7 @@ export default function CompetitorSection({
               {adding ? "Adding…" : "Add Competitor"}
             </button>
           </div>
-          <p className="text-xs text-gray-400">
-            Add up to {MAX_COMPETITORS} competitors.
-          </p>
+          <p className="text-xs text-gray-400">Add up to {MAX_COMPETITORS} competitors.</p>
         </form>
       )}
       {atLimit && (
@@ -220,12 +269,8 @@ export default function CompetitorSection({
       {/* Competitor list */}
       {competitors.length === 0 ? (
         <div className="text-center py-6 border border-dashed border-gray-200 rounded-xl">
-          <p className="text-sm text-gray-400">
-            No competitors linked yet
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            Add a competitor above to start comparing
-          </p>
+          <p className="text-sm text-gray-400">No competitors linked yet</p>
+          <p className="text-xs text-gray-400 mt-1">Add a competitor above to start comparing</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -239,9 +284,7 @@ export default function CompetitorSection({
                   {business.name}
                 </span>
                 {business.address && (
-                  <span className="text-xs text-gray-400 truncate block">
-                    {business.address}
-                  </span>
+                  <span className="text-xs text-gray-400 truncate block">{business.address}</span>
                 )}
                 <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
                   <span>

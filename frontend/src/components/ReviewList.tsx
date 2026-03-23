@@ -26,19 +26,12 @@ export default function ReviewList({ reviews }: { reviews: Review[] }) {
     <div className="bg-white border border-gray-200 rounded-xl p-5">
       <div className="space-y-3">
         {visible.map((r) => (
-          <div
-            key={r.id}
-            className="border-b border-gray-100 pb-3 last:border-0 last:pb-0"
-          >
+          <div key={r.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-gray-800">
-                {r.author || "Anonymous"}
-              </span>
+              <span className="text-sm font-medium text-gray-800">{r.author || "Anonymous"}</span>
               <StarRating rating={r.rating} />
             </div>
-            {r.text && (
-              <p className="text-sm text-gray-600 leading-relaxed">{r.text}</p>
-            )}
+            {r.text && <p className="text-sm text-gray-600 leading-relaxed">{r.text}</p>}
           </div>
         ))}
       </div>

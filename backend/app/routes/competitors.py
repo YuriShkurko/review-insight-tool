@@ -13,12 +13,15 @@ from app.models.competitor_link import CompetitorLink
 from app.models.review import Review
 from app.models.user import User
 from app.schemas.comparison import (
+    ComparisonResponse,
     CompetitorAdd,
     CompetitorRead,
-    ComparisonResponse,
 )
 from app.services.comparison_service import generate_comparison
-from app.services.place_service import get_or_create_business_for_competitor, resolve_place_id_from_url
+from app.services.place_service import (
+    get_or_create_business_for_competitor,
+    resolve_place_id_from_url,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/businesses/{business_id}/competitors", tags=["competitors"])
@@ -28,7 +31,9 @@ MAX_COMPETITORS = 3
 
 def _build_competitor_read(link: CompetitorLink, comp: Business, db: Session) -> CompetitorRead:
     has_reviews = db.query(Review.id).filter(Review.business_id == comp.id).limit(1).count() > 0
-    has_analysis = db.query(Analysis.id).filter(Analysis.business_id == comp.id).limit(1).count() > 0
+    has_analysis = (
+        db.query(Analysis.id).filter(Analysis.business_id == comp.id).limit(1).count() > 0
+    )
     return CompetitorRead(
         link_id=link.id,
         business=comp,
@@ -37,13 +42,9 @@ def _build_competitor_read(link: CompetitorLink, comp: Business, db: Session) ->
     )
 
 
-def _get_target_business(
-    business_id: uuid.UUID, user: User, db: Session
-) -> Business:
+def _get_target_business(business_id: uuid.UUID, user: User, db: Session) -> Business:
     business = (
-        db.query(Business)
-        .filter(Business.id == business_id, Business.user_id == user.id)
-        .first()
+        db.query(Business).filter(Business.id == business_id, Business.user_id == user.id).first()
     )
     if not business:
         raise HTTPException(status_code=404, detail="Business not found.")
@@ -68,9 +69,7 @@ async def add_competitor(
             detail="Could not extract a place identifier. Paste a full or shortened Google Maps URL, or a place ID.",
         )
     existing_count = (
-        db.query(CompetitorLink)
-        .filter(CompetitorLink.target_business_id == business_id)
-        .count()
+        db.query(CompetitorLink).filter(CompetitorLink.target_business_id == business_id).count()
     )
     if existing_count >= MAX_COMPETITORS:
         raise HTTPException(
@@ -112,18 +111,10 @@ def list_competitors(
     current_user: User = Depends(get_current_user),
 ):
     _get_target_business(business_id, current_user, db)
-    links = (
-        db.query(CompetitorLink)
-        .filter(CompetitorLink.target_business_id == business_id)
-        .all()
-    )
+    links = db.query(CompetitorLink).filter(CompetitorLink.target_business_id == business_id).all()
     result = []
     for link in links:
-        comp = (
-            db.query(Business)
-            .filter(Business.id == link.competitor_business_id)
-            .first()
-        )
+        comp = db.query(Business).filter(Business.id == link.competitor_business_id).first()
         if comp and comp.user_id == current_user.id:
             result.append(_build_competitor_read(link, comp, db))
     return result

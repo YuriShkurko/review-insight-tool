@@ -22,12 +22,12 @@ class CompetitorLink(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    target_business: Mapped["Business"] = relationship(  # noqa: F821
+    target_business: Mapped["Business"] = relationship(
         "Business",
         foreign_keys=[target_business_id],
         back_populates="competitor_links_out",
     )
-    competitor_business: Mapped["Business"] = relationship(  # noqa: F821
+    competitor_business: Mapped["Business"] = relationship(
         "Business",
         foreign_keys=[competitor_business_id],
         back_populates="competitor_links_in",

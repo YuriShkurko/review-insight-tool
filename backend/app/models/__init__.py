@@ -4,4 +4,4 @@ from app.models.competitor_link import CompetitorLink
 from app.models.review import Review
 from app.models.user import User
 
-__all__ = ["User", "Business", "Review", "Analysis", "CompetitorLink"]
+__all__ = ["Analysis", "Business", "CompetitorLink", "Review", "User"]

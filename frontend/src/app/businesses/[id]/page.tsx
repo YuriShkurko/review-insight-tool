@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRequireAuth } from "@/lib/auth";
@@ -9,7 +9,14 @@ import DashboardView from "@/components/DashboardView";
 import ReviewList from "@/components/ReviewList";
 import CompetitorSection from "@/components/CompetitorSection";
 import ComparisonView from "@/components/ComparisonView";
-import type { Dashboard, Review, ComparisonResponse, CompetitorRead } from "@/lib/types";
+import type {
+  CatalogBusiness,
+  CatalogResponse,
+  Dashboard,
+  Review,
+  ComparisonResponse,
+  CompetitorRead,
+} from "@/lib/types";
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -36,6 +43,17 @@ export default function BusinessDetailPage() {
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
   const [comparing, setComparing] = useState(false);
   const [comparisonError, setComparisonError] = useState("");
+  const [sandboxCatalog, setSandboxCatalog] = useState<CatalogResponse | null>(null);
+
+  const catalogCompetitors = useMemo((): CatalogBusiness[] => {
+    if (!sandboxCatalog || !dashboard?.place_id) return [];
+    for (const s of sandboxCatalog.scenarios) {
+      if (s.main.place_id === dashboard.place_id) {
+        return s.competitors;
+      }
+    }
+    return [];
+  }, [sandboxCatalog, dashboard?.place_id]);
 
   const busy = fetchingReviews || analyzing || comparing;
 
@@ -67,7 +85,7 @@ export default function BusinessDetailPage() {
       setLoadError(
         err instanceof ApiError && err.status === 404
           ? "Business not found."
-          : "Failed to load business data."
+          : "Failed to load business data.",
       );
     } finally {
       setLoading(false);
@@ -78,6 +96,22 @@ export default function BusinessDetailPage() {
     if (!user) return;
     loadAll();
   }, [user, loadAll]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const c = await apiFetch<CatalogResponse>("/sandbox/catalog");
+        if (!cancelled) setSandboxCatalog(c);
+      } catch {
+        if (!cancelled) setSandboxCatalog(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   function clearMessages() {
     setActionError("");
@@ -94,12 +128,10 @@ export default function BusinessDetailPage() {
       setReviews(r);
       await loadDashboard();
       setActionSuccess(
-        `Fetched ${r.length} review${r.length !== 1 ? "s" : ""}. Previous analysis was cleared — run analysis again for updated insights.`
+        `Fetched ${r.length} review${r.length !== 1 ? "s" : ""}. Previous analysis was cleared — run analysis again for updated insights.`,
       );
     } catch (err) {
-      setActionError(
-        err instanceof ApiError ? err.detail : "Failed to fetch reviews."
-      );
+      setActionError(err instanceof ApiError ? err.detail : "Failed to fetch reviews.");
     } finally {
       setFetchingReviews(false);
     }
@@ -113,11 +145,7 @@ export default function BusinessDetailPage() {
       await loadDashboard();
       setActionSuccess("Analysis complete.");
     } catch (err) {
-      setActionError(
-        err instanceof ApiError
-          ? err.detail
-          : "Failed to run analysis."
-      );
+      setActionError(err instanceof ApiError ? err.detail : "Failed to run analysis.");
     } finally {
       setAnalyzing(false);
     }
@@ -128,17 +156,12 @@ export default function BusinessDetailPage() {
     setComparisonError("");
     setComparison(null);
     try {
-      const data = await apiFetch<ComparisonResponse>(
-        `/businesses/${id}/competitors/comparison`,
-        { method: "POST" }
-      );
+      const data = await apiFetch<ComparisonResponse>(`/businesses/${id}/competitors/comparison`, {
+        method: "POST",
+      });
       setComparison(data);
     } catch (err) {
-      setComparisonError(
-        err instanceof ApiError
-          ? err.detail
-          : "Failed to generate comparison."
-      );
+      setComparisonError(err instanceof ApiError ? err.detail : "Failed to generate comparison.");
     } finally {
       setComparing(false);
     }
@@ -163,10 +186,7 @@ export default function BusinessDetailPage() {
         </Link>
         <div className="text-center py-16 bg-white border border-gray-200 rounded-xl">
           <p className="text-gray-500 mb-3">{loadError}</p>
-          <button
-            onClick={loadAll}
-            className="text-blue-600 hover:underline text-sm font-medium"
-          >
+          <button onClick={loadAll} className="text-blue-600 hover:underline text-sm font-medium">
             Retry
           </button>
         </div>
@@ -175,7 +195,7 @@ export default function BusinessDetailPage() {
   }
 
   const hasReviews = reviews.length > 0;
-  const hasAnalysis = !!(dashboard?.ai_summary);
+  const hasAnalysis = !!dashboard?.ai_summary;
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
@@ -203,9 +223,7 @@ export default function BusinessDetailPage() {
                     </span>
                   )}
                 </div>
-                {dashboard.address && (
-                  <p className="text-gray-500 text-sm">{dashboard.address}</p>
-                )}
+                {dashboard.address && <p className="text-gray-500 text-sm">{dashboard.address}</p>}
               </div>
 
               {/* Actions */}
@@ -227,11 +245,7 @@ export default function BusinessDetailPage() {
                   title={!hasReviews ? "Fetch reviews first" : undefined}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
-                  {analyzing
-                    ? "Analyzing..."
-                    : hasAnalysis
-                      ? "Re-run Analysis"
-                      : "Run Analysis"}
+                  {analyzing ? "Analyzing..." : hasAnalysis ? "Re-run Analysis" : "Run Analysis"}
                 </button>
               </div>
             </div>
@@ -257,19 +271,25 @@ export default function BusinessDetailPage() {
                 {hasAnalysis && dashboard.analysis_created_at && (
                   <span>
                     Analysis:{" "}
-                    {new Date(dashboard.analysis_created_at).toLocaleDateString(
-                      undefined,
-                      { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }
-                    )}
+                    {new Date(dashboard.analysis_created_at).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 )}
                 {dashboard.last_updated_at && (
                   <span>
                     Updated:{" "}
-                    {new Date(dashboard.last_updated_at).toLocaleDateString(
-                      undefined,
-                      { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }
-                    )}
+                    {new Date(dashboard.last_updated_at).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 )}
               </div>
@@ -279,8 +299,14 @@ export default function BusinessDetailPage() {
           {/* ── Guidance ── */}
           {!hasReviews && !hasAnalysis && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-sm text-blue-800 space-y-1">
-              <p><strong>Step 1:</strong> Click <strong>Fetch Reviews</strong> to pull reviews for this business.</p>
-              <p><strong>Step 2:</strong> Click <strong>Run Analysis</strong> to generate AI-powered insights.</p>
+              <p>
+                <strong>Step 1:</strong> Click <strong>Fetch Reviews</strong> to pull reviews for
+                this business.
+              </p>
+              <p>
+                <strong>Step 2:</strong> Click <strong>Run Analysis</strong> to generate AI-powered
+                insights.
+              </p>
             </div>
           )}
           {hasReviews && !hasAnalysis && (
@@ -303,6 +329,7 @@ export default function BusinessDetailPage() {
             <CompetitorSection
               businessId={id}
               onCompetitorsChange={handleCompetitorsChange}
+              catalogCompetitors={catalogCompetitors.length > 0 ? catalogCompetitors : undefined}
             />
           </section>
 

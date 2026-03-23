@@ -17,4 +17,6 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    businesses: Mapped[list["Business"]] = relationship(back_populates="owner", cascade="all, delete-orphan")  # noqa: F821
+    businesses: Mapped[list["Business"]] = relationship(
+        back_populates="owner", cascade="all, delete-orphan"
+    )

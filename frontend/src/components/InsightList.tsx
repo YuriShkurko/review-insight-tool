@@ -44,9 +44,7 @@ export default function InsightList({
             <li key={i} className="space-y-1">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-800">{item.label}</span>
-                <span
-                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${palette.badge}`}
-                >
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${palette.badge}`}>
                   {item.count}
                 </span>
               </div>

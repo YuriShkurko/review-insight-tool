@@ -20,11 +20,9 @@ class Review(Base):
     author: Mapped[str | None] = mapped_column(String(255), nullable=True)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str | None] = mapped_column(Text, nullable=True)
-    published_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
-    business: Mapped["Business"] = relationship(back_populates="reviews")  # noqa: F821
+    business: Mapped["Business"] = relationship(back_populates="reviews")

@@ -4,9 +4,7 @@ import logging
 import time
 from contextlib import contextmanager
 
-LOG_FORMAT = (
-    "%(asctime)s | %(levelname)-5s | %(name)s | %(message)s"
-)
+LOG_FORMAT = "%(asctime)s | %(levelname)-5s | %(name)s | %(message)s"
 
 
 def setup_logging(level: int = logging.INFO) -> None:
@@ -28,6 +26,9 @@ def timed_operation(logger: logging.Logger, operation: str, **extra: object):
         error_type = type(exc).__name__
         logger.error(
             "op=%s %s duration_ms=%d success=false error=%s",
-            operation, context, duration_ms, error_type,
+            operation,
+            context,
+            duration_ms,
+            error_type,
         )
         raise

@@ -20,13 +20,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/businesses/{business_id}", tags=["reviews"])
 
 
-def _get_business_for_user(
-    business_id: uuid.UUID, user: User, db: Session
-) -> Business:
+def _get_business_for_user(business_id: uuid.UUID, user: User, db: Session) -> Business:
     business = (
-        db.query(Business)
-        .filter(Business.id == business_id, Business.user_id == user.id)
-        .first()
+        db.query(Business).filter(Business.id == business_id, Business.user_id == user.id).first()
     )
     if not business:
         raise HTTPException(status_code=404, detail="Business not found.")

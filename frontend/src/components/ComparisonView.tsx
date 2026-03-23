@@ -2,19 +2,11 @@
 
 import type { ComparisonResponse, BusinessSnapshot } from "@/lib/types";
 
-function SnapshotCard({
-  snapshot,
-  isTarget,
-}: {
-  snapshot: BusinessSnapshot;
-  isTarget: boolean;
-}) {
+function SnapshotCard({ snapshot, isTarget }: { snapshot: BusinessSnapshot; isTarget: boolean }) {
   return (
     <div
       className={`rounded-xl border p-5 ${
-        isTarget
-          ? "border-blue-200 bg-blue-50/40 ring-1 ring-blue-100"
-          : "border-gray-200 bg-white"
+        isTarget ? "border-blue-200 bg-blue-50/40 ring-1 ring-blue-100" : "border-gray-200 bg-white"
       }`}
     >
       {/* Header */}
@@ -35,9 +27,7 @@ function SnapshotCard({
       {/* Stats row */}
       <div className="flex items-center gap-4 text-sm mb-3">
         <span className="font-semibold text-gray-900">
-          {snapshot.avg_rating != null
-            ? `★ ${snapshot.avg_rating.toFixed(1)}`
-            : "—"}
+          {snapshot.avg_rating != null ? `★ ${snapshot.avg_rating.toFixed(1)}` : "—"}
         </span>
         <span className="text-gray-400 text-xs">
           {snapshot.total_reviews} review{snapshot.total_reviews !== 1 ? "s" : ""}
@@ -45,9 +35,7 @@ function SnapshotCard({
       </div>
 
       {/* Summary */}
-      <p className="text-sm text-gray-600 leading-relaxed line-clamp-3 mb-3">
-        {snapshot.summary}
-      </p>
+      <p className="text-sm text-gray-600 leading-relaxed line-clamp-3 mb-3">{snapshot.summary}</p>
 
       {/* Complaints & Praise compact */}
       {(snapshot.top_complaints.length > 0 || snapshot.top_praise.length > 0) && (
@@ -56,7 +44,10 @@ function SnapshotCard({
             <div className="flex items-start gap-2 text-xs">
               <span className="text-red-400 shrink-0 mt-px">&#x25CF;</span>
               <span className="text-gray-600">
-                {snapshot.top_complaints.slice(0, 3).map((c) => c.label).join(" · ")}
+                {snapshot.top_complaints
+                  .slice(0, 3)
+                  .map((c) => c.label)
+                  .join(" · ")}
               </span>
             </div>
           )}
@@ -64,7 +55,10 @@ function SnapshotCard({
             <div className="flex items-start gap-2 text-xs">
               <span className="text-green-400 shrink-0 mt-px">&#x25CF;</span>
               <span className="text-gray-600">
-                {snapshot.top_praise.slice(0, 3).map((p) => p.label).join(" · ")}
+                {snapshot.top_praise
+                  .slice(0, 3)
+                  .map((p) => p.label)
+                  .join(" · ")}
               </span>
             </div>
           )}
@@ -140,9 +134,7 @@ export default function ComparisonView({ data }: { data: ComparisonResponse }) {
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
             Comparison Summary
           </h3>
-          <p className="text-gray-800 leading-relaxed text-[15px]">
-            {data.comparison_summary}
-          </p>
+          <p className="text-gray-800 leading-relaxed text-[15px]">{data.comparison_summary}</p>
         </div>
       )}
 

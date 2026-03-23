@@ -49,7 +49,9 @@ Return ONLY valid JSON, no markdown fences or extra text."""
 def _build_system_prompt(business_type: str) -> str:
     focus_areas = _TYPE_FOCUS.get(business_type, "")
     if focus_areas:
-        focus_instruction = f"Pay special attention to these areas relevant to a {business_type}: {focus_areas}."
+        focus_instruction = (
+            f"Pay special attention to these areas relevant to a {business_type}: {focus_areas}."
+        )
     else:
         focus_instruction = "Evaluate all standard customer experience dimensions."
     return _BASE_PROMPT.format(
@@ -71,7 +73,9 @@ def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
     if len(reviews) > MAX_REVIEWS_FOR_ANALYSIS:
         logger.warning(
             "op=analyze business_id=%s review_count=%d truncated_to=%d",
-            business_id, len(reviews), MAX_REVIEWS_FOR_ANALYSIS,
+            business_id,
+            len(reviews),
+            MAX_REVIEWS_FOR_ANALYSIS,
         )
         reviews = reviews[:MAX_REVIEWS_FOR_ANALYSIS]
 
@@ -83,9 +87,7 @@ def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
         result = _call_openai(system_prompt, review_texts)
     result = _normalize_result(result)
 
-    existing = (
-        db.query(Analysis).filter(Analysis.business_id == business_id).first()
-    )
+    existing = db.query(Analysis).filter(Analysis.business_id == business_id).first()
     if existing:
         existing.summary = result["summary"]
         existing.top_complaints = result["top_complaints"]
@@ -129,10 +131,12 @@ def _normalize_insights(items: list) -> list[dict]:
     normalized = []
     for item in items:
         if isinstance(item, dict):
-            normalized.append({
-                "label": str(item.get("label", "")),
-                "count": int(item.get("count", 0)),
-            })
+            normalized.append(
+                {
+                    "label": str(item.get("label", "")),
+                    "count": int(item.get("count", 0)),
+                }
+            )
         elif isinstance(item, str):
             normalized.append({"label": item, "count": 0})
     return normalized

@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback, type FormEvent } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useImperativeHandle,
+  forwardRef,
+  type FormEvent,
+} from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import {
   BUSINESS_TYPES,
@@ -12,12 +19,31 @@ import {
 
 const MAX_COMPETITORS = 3;
 
-function StatusBadge({ hasReviews, hasAnalysis }: { hasReviews: boolean; hasAnalysis: boolean }) {
+function StatusBadge({
+  hasReviews,
+  hasAnalysis,
+  analysisAt,
+}: {
+  hasReviews: boolean;
+  hasAnalysis: boolean;
+  analysisAt?: string | null;
+}) {
   if (hasAnalysis) {
+    const dateStr = analysisAt
+      ? new Date(analysisAt).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null;
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 px-2.5 py-0.5 rounded-full">
+      <span
+        className="inline-flex items-center gap-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 px-2.5 py-0.5 rounded-full"
+        title={dateStr ? `Analyzed ${dateStr}` : undefined}
+      >
         <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-        Analyzed
+        Ready{dateStr ? ` · ${dateStr}` : ""}
       </span>
     );
   }
@@ -32,21 +58,27 @@ function StatusBadge({ hasReviews, hasAnalysis }: { hasReviews: boolean; hasAnal
   return (
     <span className="inline-flex items-center gap-1 text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 px-2.5 py-0.5 rounded-full">
       <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-      Needs reviews
+      No reviews
     </span>
   );
 }
 
-export default function CompetitorSection({
-  businessId,
-  onCompetitorsChange,
-  catalogCompetitors,
-}: {
-  businessId: string;
-  onCompetitorsChange?: (competitors: CompetitorRead[]) => void;
-  /** When offline sandbox is active: scenario competitors for quick-add (main business only). */
-  catalogCompetitors?: CatalogBusiness[];
-}) {
+export interface CompetitorSectionHandle {
+  reload: () => Promise<void>;
+}
+
+const CompetitorSection = forwardRef<
+  CompetitorSectionHandle,
+  {
+    businessId: string;
+    onCompetitorsChange?: (competitors: CompetitorRead[]) => void;
+    onCompetitorAnalyzed?: () => void;
+    catalogCompetitors?: CatalogBusiness[];
+  }
+>(function CompetitorSection(
+  { businessId, onCompetitorsChange, onCompetitorAnalyzed, catalogCompetitors },
+  ref,
+) {
   const [competitors, setCompetitors] = useState<CompetitorRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -70,6 +102,8 @@ export default function CompetitorSection({
       setLoading(false);
     }
   }, [businessId, onCompetitorsChange]);
+
+  useImperativeHandle(ref, () => ({ reload: loadCompetitors }), [loadCompetitors]);
 
   useEffect(() => {
     loadCompetitors();
@@ -155,6 +189,7 @@ export default function CompetitorSection({
       });
       await loadCompetitors();
       setSuccessMsg(`${name}: ${reviews.length} reviews fetched & analyzed.`);
+      onCompetitorAnalyzed?.();
     } catch (err) {
       setError(err instanceof ApiError ? `${name}: ${err.detail}` : `Failed to prepare ${name}.`);
     } finally {
@@ -274,56 +309,64 @@ export default function CompetitorSection({
         </div>
       ) : (
         <div className="space-y-2">
-          {competitors.map(({ link_id, business, has_reviews, has_analysis }) => (
-            <div
-              key={link_id}
-              className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex-1 min-w-0">
-                <span className="font-medium text-sm text-gray-900 truncate block">
-                  {business.name}
-                </span>
-                {business.address && (
-                  <span className="text-xs text-gray-400 truncate block">{business.address}</span>
-                )}
-                <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
-                  <span>
-                    {business.avg_rating != null
-                      ? `★ ${business.avg_rating.toFixed(1)}`
-                      : "No rating"}
+          {competitors.map(
+            ({ link_id, business, has_reviews, has_analysis, analysis_created_at }) => (
+              <div
+                key={link_id}
+                className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-sm text-gray-900 truncate block">
+                    {business.name}
                   </span>
-                  <span>
-                    {business.total_reviews} review{business.total_reviews !== 1 ? "s" : ""}
-                  </span>
+                  {business.address && (
+                    <span className="text-xs text-gray-400 truncate block">{business.address}</span>
+                  )}
+                  <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                    <span>
+                      {business.avg_rating != null
+                        ? `★ ${business.avg_rating.toFixed(1)}`
+                        : "No rating"}
+                    </span>
+                    <span>
+                      {business.total_reviews} review{business.total_reviews !== 1 ? "s" : ""}
+                    </span>
+                  </div>
                 </div>
+                <StatusBadge
+                  hasReviews={has_reviews}
+                  hasAnalysis={has_analysis}
+                  analysisAt={analysis_created_at}
+                />
+                <button
+                  type="button"
+                  onClick={() => handlePrepare(business.id, business.name)}
+                  disabled={anyBusy || adding}
+                  className={`text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors shrink-0 ${preparing === business.id ? "animate-pulse-slow" : ""}`}
+                >
+                  {preparing === business.id
+                    ? "Preparing…"
+                    : has_analysis
+                      ? "Refresh"
+                      : has_reviews
+                        ? "Analyze"
+                        : "Fetch & Analyze"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(business.id)}
+                  disabled={anyBusy || adding}
+                  className="text-xs text-gray-400 hover:text-red-600 disabled:opacity-50 transition-colors shrink-0"
+                >
+                  {removing === business.id ? "Removing…" : "Remove"}
+                </button>
               </div>
-              <StatusBadge hasReviews={has_reviews} hasAnalysis={has_analysis} />
-              <button
-                type="button"
-                onClick={() => handlePrepare(business.id, business.name)}
-                disabled={anyBusy || adding}
-                className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors shrink-0"
-              >
-                {preparing === business.id
-                  ? "Preparing…"
-                  : has_analysis
-                    ? "Refresh"
-                    : has_reviews
-                      ? "Analyze"
-                      : "Fetch & Analyze"}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRemove(business.id)}
-                disabled={anyBusy || adding}
-                className="text-xs text-gray-400 hover:text-red-600 disabled:opacity-50 transition-colors shrink-0"
-              >
-                {removing === business.id ? "Removing…" : "Remove"}
-              </button>
-            </div>
-          ))}
+            ),
+          )}
         </div>
       )}
     </div>
   );
-}
+});
+
+export default CompetitorSection;

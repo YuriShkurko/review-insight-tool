@@ -31,14 +31,13 @@ MAX_COMPETITORS = 3
 
 def _build_competitor_read(link: CompetitorLink, comp: Business, db: Session) -> CompetitorRead:
     has_reviews = db.query(Review.id).filter(Review.business_id == comp.id).limit(1).count() > 0
-    has_analysis = (
-        db.query(Analysis.id).filter(Analysis.business_id == comp.id).limit(1).count() > 0
-    )
+    analysis = db.query(Analysis).filter(Analysis.business_id == comp.id).first()
     return CompetitorRead(
         link_id=link.id,
         business=comp,
         has_reviews=has_reviews,
-        has_analysis=has_analysis,
+        has_analysis=analysis is not None,
+        analysis_created_at=analysis.created_at.isoformat() if analysis else None,
     )
 
 

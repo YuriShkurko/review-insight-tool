@@ -21,6 +21,7 @@ class CompetitorRead(BaseModel):
     business: BusinessRead
     has_reviews: bool
     has_analysis: bool
+    analysis_created_at: str | None = None
 
 
 class BusinessSnapshot(BaseModel):

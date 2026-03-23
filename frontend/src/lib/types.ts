@@ -110,6 +110,7 @@ export interface CompetitorRead {
   business: Business;
   has_reviews: boolean;
   has_analysis: boolean;
+  analysis_created_at: string | null;
 }
 
 export interface BusinessSnapshot {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRequireAuth } from "@/lib/auth";
@@ -9,6 +9,7 @@ import DashboardView from "@/components/DashboardView";
 import ReviewList from "@/components/ReviewList";
 import CompetitorSection from "@/components/CompetitorSection";
 import ComparisonView from "@/components/ComparisonView";
+import Toast from "@/components/Toast";
 import type {
   CatalogBusiness,
   CatalogResponse,
@@ -18,11 +19,40 @@ import type {
   CompetitorRead,
 } from "@/lib/types";
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
+function CollapsibleSection({
+  title,
+  defaultOpen = true,
+  children,
+  id,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  id?: string;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-      {children}
-    </h2>
+    <section id={id}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 mb-4 group w-full text-left"
+      >
+        <span
+          className={`text-gray-300 text-xs transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+        >
+          &#9654;
+        </span>
+        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest group-hover:text-gray-600 transition-colors">
+          {title}
+        </h2>
+      </button>
+      <div
+        className={`transition-all duration-200 overflow-hidden ${open ? "max-h-[5000px] opacity-100" : "max-h-0 opacity-0"}`}
+      >
+        {children}
+      </div>
+    </section>
   );
 }
 
@@ -31,6 +61,8 @@ export default function BusinessDetailPage() {
   const params = useParams();
   const id = params.id as string;
 
+  const reviewsRef = useRef<HTMLDivElement>(null);
+
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,12 +70,13 @@ export default function BusinessDetailPage() {
   const [fetchingReviews, setFetchingReviews] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [actionError, setActionError] = useState("");
-  const [actionSuccess, setActionSuccess] = useState("");
   const [competitors, setCompetitors] = useState<CompetitorRead[]>([]);
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
   const [comparing, setComparing] = useState(false);
   const [comparisonError, setComparisonError] = useState("");
   const [sandboxCatalog, setSandboxCatalog] = useState<CatalogResponse | null>(null);
+  const [analyzeAllBusy, setAnalyzeAllBusy] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const catalogCompetitors = useMemo((): CatalogBusiness[] => {
     if (!sandboxCatalog || !dashboard?.place_id) return [];
@@ -55,7 +88,9 @@ export default function BusinessDetailPage() {
     return [];
   }, [sandboxCatalog, dashboard?.place_id]);
 
-  const busy = fetchingReviews || analyzing || comparing;
+  const busy = fetchingReviews || analyzing || comparing || analyzeAllBusy;
+
+  const competitorSectionRef = useRef<{ reload: () => Promise<void> }>(null);
 
   const handleCompetitorsChange = useCallback((comps: CompetitorRead[]) => {
     setCompetitors(comps);
@@ -113,23 +148,20 @@ export default function BusinessDetailPage() {
     };
   }, [user]);
 
-  function clearMessages() {
-    setActionError("");
-    setActionSuccess("");
+  function showToast(message: string, type: "success" | "error" = "success") {
+    setToast({ message, type });
   }
 
   async function handleFetchReviews() {
     setFetchingReviews(true);
-    clearMessages();
+    setActionError("");
     try {
       const r = await apiFetch<Review[]>(`/businesses/${id}/fetch-reviews`, {
         method: "POST",
       });
       setReviews(r);
       await loadDashboard();
-      setActionSuccess(
-        `Fetched ${r.length} review${r.length !== 1 ? "s" : ""}. Previous analysis was cleared — run analysis again for updated insights.`,
-      );
+      showToast(`Fetched ${r.length} review${r.length !== 1 ? "s" : ""}.`);
     } catch (err) {
       setActionError(err instanceof ApiError ? err.detail : "Failed to fetch reviews.");
     } finally {
@@ -139,11 +171,11 @@ export default function BusinessDetailPage() {
 
   async function handleAnalyze() {
     setAnalyzing(true);
-    clearMessages();
+    setActionError("");
     try {
       await apiFetch(`/businesses/${id}/analyze`, { method: "POST" });
       await loadDashboard();
-      setActionSuccess("Analysis complete.");
+      showToast("Analysis complete.");
     } catch (err) {
       setActionError(err instanceof ApiError ? err.detail : "Failed to run analysis.");
     } finally {
@@ -160,11 +192,53 @@ export default function BusinessDetailPage() {
         method: "POST",
       });
       setComparison(data);
+      showToast("Comparison generated.");
     } catch (err) {
       setComparisonError(err instanceof ApiError ? err.detail : "Failed to generate comparison.");
     } finally {
       setComparing(false);
     }
+  }
+
+  async function handleAnalyzeAllAndCompare() {
+    setAnalyzeAllBusy(true);
+    setActionError("");
+    setComparisonError("");
+    setComparison(null);
+    try {
+      const hasMainAnalysis = !!dashboard?.ai_summary;
+      if (!hasMainAnalysis) {
+        await apiFetch(`/businesses/${id}/analyze`, { method: "POST" });
+        await loadDashboard();
+      }
+
+      for (const comp of competitors) {
+        if (!comp.has_reviews) {
+          await apiFetch(`/businesses/${comp.business.id}/fetch-reviews`, { method: "POST" });
+        }
+        if (!comp.has_analysis || !comp.has_reviews) {
+          await apiFetch(`/businesses/${comp.business.id}/analyze`, { method: "POST" });
+        }
+      }
+
+      await competitorSectionRef.current?.reload();
+
+      const data = await apiFetch<ComparisonResponse>(`/businesses/${id}/competitors/comparison`, {
+        method: "POST",
+      });
+      setComparison(data);
+      showToast("All competitors analyzed & comparison generated.");
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.detail : "Failed to analyze & compare.";
+      setComparisonError(msg);
+      showToast(msg, "error");
+    } finally {
+      setAnalyzeAllBusy(false);
+    }
+  }
+
+  function scrollToReviews() {
+    reviewsRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
   if (authLoading || loading) {
@@ -197,8 +271,14 @@ export default function BusinessDetailPage() {
   const hasReviews = reviews.length > 0;
   const hasAnalysis = !!dashboard?.ai_summary;
 
+  const mainReady = hasAnalysis;
+  const anyCompReady = competitors.some((c) => c.has_analysis);
+  const allCompReady = competitors.length > 0 && competitors.every((c) => c.has_analysis);
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
+      {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
+
       {/* Navigation */}
       <Link
         href="/businesses"
@@ -226,26 +306,22 @@ export default function BusinessDetailPage() {
                 {dashboard.address && <p className="text-gray-500 text-sm">{dashboard.address}</p>}
               </div>
 
-              {/* Actions */}
+              {/* Actions (Fitts's Law: prominent size for primary actions) */}
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={handleFetchReviews}
                   disabled={busy}
-                  className="border border-gray-300 bg-white text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  className={`border border-gray-300 bg-white text-gray-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors ${fetchingReviews ? "animate-pulse-slow" : ""}`}
                 >
-                  {fetchingReviews
-                    ? "Fetching..."
-                    : hasReviews
-                      ? "Refresh Reviews"
-                      : "Fetch Reviews"}
+                  {fetchingReviews ? "Fetching…" : hasReviews ? "Refresh Reviews" : "Fetch Reviews"}
                 </button>
                 <button
                   onClick={handleAnalyze}
                   disabled={busy || !hasReviews}
                   title={!hasReviews ? "Fetch reviews first" : undefined}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className={`bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors ${analyzing ? "animate-pulse-slow" : ""}`}
                 >
-                  {analyzing ? "Analyzing..." : hasAnalysis ? "Re-run Analysis" : "Run Analysis"}
+                  {analyzing ? "Analyzing…" : hasAnalysis ? "Re-run Analysis" : "Run Analysis"}
                 </button>
               </div>
             </div>
@@ -256,17 +332,18 @@ export default function BusinessDetailPage() {
                 {actionError}
               </p>
             )}
-            {actionSuccess && !actionError && (
-              <p className="mt-4 text-green-700 text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                {actionSuccess}
-              </p>
-            )}
 
             {/* Metadata strip */}
             {(hasReviews || hasAnalysis) && (
               <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-gray-400">
                 {dashboard.total_reviews > 0 && (
-                  <span>{dashboard.total_reviews} reviews stored</span>
+                  <button
+                    type="button"
+                    onClick={scrollToReviews}
+                    className="hover:text-blue-600 transition-colors cursor-pointer"
+                  >
+                    {dashboard.total_reviews} reviews stored ↓
+                  </button>
                 )}
                 {hasAnalysis && dashboard.analysis_created_at && (
                   <span>
@@ -317,57 +394,68 @@ export default function BusinessDetailPage() {
 
           {/* ── Dashboard Insights ── */}
           {(hasReviews || hasAnalysis) && (
-            <section>
-              <SectionHeading>Insights</SectionHeading>
-              <DashboardView data={dashboard} />
-            </section>
+            <CollapsibleSection title="Insights">
+              <DashboardView data={dashboard} onReviewsClick={scrollToReviews} />
+            </CollapsibleSection>
           )}
 
           {/* ── Competitors ── */}
-          <section>
-            <SectionHeading>Competitors</SectionHeading>
+          <CollapsibleSection title="Competitors">
             <CompetitorSection
+              ref={competitorSectionRef}
               businessId={id}
               onCompetitorsChange={handleCompetitorsChange}
+              onCompetitorAnalyzed={handleGenerateComparison}
               catalogCompetitors={catalogCompetitors.length > 0 ? catalogCompetitors : undefined}
             />
-          </section>
+          </CollapsibleSection>
 
           {/* ── Comparison ── */}
           {competitors.length > 0 && (
-            <section>
-              <SectionHeading>Comparison</SectionHeading>
+            <CollapsibleSection title="Comparison" id="comparison-section">
               <div className="space-y-4">
-                {!hasAnalysis && (
-                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                    Run analysis on this business before generating a comparison.
+                {/* Prerequisites checklist */}
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Comparison prerequisites
                   </p>
-                )}
-                {hasAnalysis && !competitors.some((c) => c.has_analysis) && (
-                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                    Fetch reviews and run analysis on at least one competitor before comparing.
-                  </p>
-                )}
-                <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                    <span className={mainReady ? "text-green-700" : "text-gray-400"}>
+                      {mainReady ? "✓" : "○"} Your business analyzed
+                    </span>
+                    <span className={anyCompReady ? "text-green-700" : "text-gray-400"}>
+                      {allCompReady ? "✓" : anyCompReady ? "◐" : "○"}{" "}
+                      {allCompReady
+                        ? "All competitors analyzed"
+                        : anyCompReady
+                          ? "Some competitors analyzed"
+                          : "At least one competitor analyzed"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    onClick={handleGenerateComparison}
-                    disabled={busy || !hasAnalysis || !competitors.some((c) => c.has_analysis)}
-                    title={
-                      !hasAnalysis
-                        ? "Run analysis on this business first"
-                        : !competitors.some((c) => c.has_analysis)
-                          ? "At least one competitor needs analysis"
-                          : undefined
-                    }
-                    className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                    onClick={handleAnalyzeAllAndCompare}
+                    disabled={busy || competitors.length === 0}
+                    className={`bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors ${analyzeAllBusy ? "animate-pulse-slow" : ""}`}
                   >
-                    {comparing ? "Generating…" : "Generate Comparison"}
+                    {analyzeAllBusy
+                      ? "Analyzing & Comparing…"
+                      : allCompReady && mainReady
+                        ? "Re-run Comparison"
+                        : "Analyze All & Compare"}
                   </button>
-                  {!comparing && !comparison && (
-                    <span className="text-xs text-gray-400">
-                      Compares with competitors that have analysis.
-                    </span>
+                  {!analyzeAllBusy && !comparison && mainReady && anyCompReady && (
+                    <button
+                      type="button"
+                      onClick={handleGenerateComparison}
+                      disabled={busy}
+                      className={`border border-indigo-300 text-indigo-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 transition-colors ${comparing ? "animate-pulse-slow" : ""}`}
+                    >
+                      {comparing ? "Generating…" : "Compare Ready Only"}
+                    </button>
                   )}
                 </div>
                 {comparisonError && (
@@ -377,7 +465,7 @@ export default function BusinessDetailPage() {
                 )}
                 {comparison && <ComparisonView data={comparison} />}
               </div>
-            </section>
+            </CollapsibleSection>
           )}
 
           {/* Competitor hint when analysis done but no competitors */}
@@ -389,10 +477,11 @@ export default function BusinessDetailPage() {
 
           {/* ── Reviews ── */}
           {hasReviews && (
-            <section>
-              <SectionHeading>Reviews</SectionHeading>
-              <ReviewList reviews={reviews} />
-            </section>
+            <CollapsibleSection title="Reviews">
+              <div ref={reviewsRef}>
+                <ReviewList reviews={reviews} />
+              </div>
+            </CollapsibleSection>
           )}
         </>
       )}

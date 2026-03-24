@@ -21,7 +21,7 @@ jobs:
         working-directory: backend
     env:
       # Required so app.database can import before integration tests swap the engine.
-      DATABASE_URL: sqlite:///:memory:
+      DATABASE_URL: "sqlite:///:memory:"
       REVIEW_PROVIDER: mock
       OPENAI_API_KEY: ""
 

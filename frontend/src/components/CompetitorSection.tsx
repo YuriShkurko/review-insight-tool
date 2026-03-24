@@ -9,6 +9,7 @@ import {
   type FormEvent,
 } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { trailEvent } from "@/lib/debugTrail";
 import {
   BUSINESS_TYPES,
   type CatalogBusiness,
@@ -111,6 +112,7 @@ const CompetitorSection = forwardRef<
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
+    trailEvent("comp:add", { businessId });
     setError("");
     setSuccessMsg("");
     setAdding(true);
@@ -135,6 +137,7 @@ const CompetitorSection = forwardRef<
   }
 
   async function handleRemove(competitorBusinessId: string) {
+    trailEvent("comp:remove", { businessId, competitorBusinessId });
     setError("");
     setSuccessMsg("");
     setRemoving(competitorBusinessId);
@@ -155,6 +158,7 @@ const CompetitorSection = forwardRef<
   }
 
   async function handleQuickAddSample(placeId: string) {
+    trailEvent("comp:quick-add", { businessId, placeId });
     setError("");
     setSuccessMsg("");
     setQuickAddBusy(placeId);
@@ -176,6 +180,7 @@ const CompetitorSection = forwardRef<
   }
 
   async function handlePrepare(competitorBusinessId: string, name: string) {
+    trailEvent("comp:prepare", { businessId, competitorBusinessId, name });
     setError("");
     setSuccessMsg("");
     setPreparing(competitorBusinessId);

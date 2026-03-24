@@ -156,12 +156,17 @@ Redeploy after fixing variables.
 
 ## What is not automated
 
-- No GitHub Actions / deploy pipeline in this repo
+- **No CD** — nothing in this repo builds Docker images for Railway or deploys on merge; you deploy from Railway’s UI or CLI yourself
 - No custom domain (use Railway-generated URLs or add a domain in Railway manually)
 - **`seed_offline`** is optional (Shell); primary offline UX is the **sandbox catalog** in the app
 - E2E tests default to `localhost:8000`; point `BASE_URL` at staging if you run them remotely
 
+## CI (validation only)
+
+GitHub Actions runs **lint, tests, and frontend build** on pushes and PRs — see [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) and [DEVELOPMENT.md](DEVELOPMENT.md). This does **not** deploy to Railway or set secrets for staging.
+
 ## Related
 
 - [README.md](../README.md) — Database migrations, offline demo, Makefile
+- [DEVELOPMENT.md](DEVELOPMENT.md) — CI behavior, `make validate`, local vs Docker DB helpers
 - [backend/.env.example](../backend/.env.example) — all backend variables including `CORS_ORIGINS`

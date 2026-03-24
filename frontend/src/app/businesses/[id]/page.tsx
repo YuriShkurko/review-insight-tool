@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRequireAuth } from "@/lib/auth";
 import { apiFetch, ApiError } from "@/lib/api";
+import { trailEvent } from "@/lib/debugTrail";
 import DashboardView from "@/components/DashboardView";
 import ReviewList from "@/components/ReviewList";
 import CompetitorSection from "@/components/CompetitorSection";
@@ -62,6 +63,9 @@ export default function BusinessDetailPage() {
   const id = params.id as string;
 
   const reviewsRef = useRef<HTMLDivElement>(null);
+  /** Ignore late responses if the route `id` changed while a fetch was in flight. */
+  const activeRouteIdRef = useRef(id);
+  activeRouteIdRef.current = id;
 
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -99,38 +103,74 @@ export default function BusinessDetailPage() {
   }, []);
 
   const loadDashboard = useCallback(async () => {
-    const d = await apiFetch<Dashboard>(`/businesses/${id}/dashboard`);
+    const routeId = id;
+    const d = await apiFetch<Dashboard>(`/businesses/${routeId}/dashboard`);
+    if (activeRouteIdRef.current !== routeId) return;
     setDashboard(d);
   }, [id]);
 
   const loadReviews = useCallback(async () => {
-    try {
-      const r = await apiFetch<Review[]>(`/businesses/${id}/reviews`);
-      setReviews(r);
-    } catch {
-      /* reviews may not exist yet */
-    }
+    const routeId = id;
+    const r = await apiFetch<Review[]>(`/businesses/${routeId}/reviews`);
+    if (activeRouteIdRef.current !== routeId) return;
+    setReviews(r);
   }, [id]);
 
   const loadAll = useCallback(async () => {
+    const routeId = id;
+    trailEvent("biz:load-start", { businessId: routeId });
+    setLoading(true);
     setLoadError("");
     try {
       await Promise.all([loadDashboard(), loadReviews()]);
+      if (activeRouteIdRef.current !== routeId) return;
+      trailEvent("biz:load-ok", { businessId: routeId });
     } catch (err) {
-      setLoadError(
-        err instanceof ApiError && err.status === 404
-          ? "Business not found."
-          : "Failed to load business data.",
-      );
+      if (activeRouteIdRef.current !== routeId) return;
+      setDashboard(null);
+      setReviews([]);
+      setCompetitors([]);
+      setComparison(null);
+      if (err instanceof ApiError) {
+        if (err.status === 404) {
+          trailEvent("biz:load-fail", { businessId: routeId, status: 404, detail: err.detail });
+          setLoadError(
+            "This business is no longer available. It may have been deleted or the link is out of date.",
+          );
+        } else if (err.status === 422) {
+          trailEvent("biz:load-fail", { businessId: routeId, status: 422, detail: err.detail });
+          setLoadError("Invalid business link. Go back and open the business from your list.");
+        } else {
+          trailEvent("biz:load-fail", {
+            businessId: routeId,
+            status: err.status,
+            detail: err.detail,
+          });
+          setLoadError(err.detail || "Failed to load business data.");
+        }
+      } else {
+        trailEvent("biz:load-fail", { businessId: routeId, detail: "unknown error" });
+        setLoadError("Failed to load business data.");
+      }
     } finally {
-      setLoading(false);
+      if (activeRouteIdRef.current === routeId) {
+        setLoading(false);
+      }
     }
-  }, [loadDashboard, loadReviews]);
+  }, [loadDashboard, loadReviews, id]);
 
   useEffect(() => {
     if (!user) return;
+    setDashboard(null);
+    setReviews([]);
+    setCompetitors([]);
+    setComparison(null);
+    setComparisonError("");
+    setActionError("");
+    setLoadError("");
+    setLoading(true);
     loadAll();
-  }, [user, loadAll]);
+  }, [user, id, loadAll]);
 
   useEffect(() => {
     if (!user) return;
@@ -153,6 +193,7 @@ export default function BusinessDetailPage() {
   }
 
   async function handleFetchReviews() {
+    trailEvent("biz:fetch-reviews", { businessId: id });
     setFetchingReviews(true);
     setActionError("");
     try {
@@ -170,6 +211,7 @@ export default function BusinessDetailPage() {
   }
 
   async function handleAnalyze() {
+    trailEvent("biz:analyze", { businessId: id });
     setAnalyzing(true);
     setActionError("");
     try {
@@ -184,6 +226,7 @@ export default function BusinessDetailPage() {
   }
 
   async function handleGenerateComparison() {
+    trailEvent("biz:compare", { businessId: id, competitorCount: competitors.length });
     setComparing(true);
     setComparisonError("");
     setComparison(null);
@@ -201,6 +244,7 @@ export default function BusinessDetailPage() {
   }
 
   async function handleAnalyzeAllAndCompare() {
+    trailEvent("biz:analyze-all-compare", { businessId: id, competitorCount: competitors.length });
     setAnalyzeAllBusy(true);
     setActionError("");
     setComparisonError("");
@@ -258,11 +302,26 @@ export default function BusinessDetailPage() {
         >
           <span aria-hidden>&larr;</span> Back to businesses
         </Link>
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-xl">
-          <p className="text-gray-500 mb-3">{loadError}</p>
-          <button onClick={loadAll} className="text-blue-600 hover:underline text-sm font-medium">
-            Retry
-          </button>
+        <div className="text-center py-16 bg-white border border-gray-200 rounded-xl px-4">
+          <p className="text-gray-700 mb-6 max-w-md mx-auto leading-relaxed">{loadError}</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/businesses"
+              className="inline-flex items-center justify-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Back to your businesses
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                trailEvent("biz:retry", { businessId: id });
+                loadAll();
+              }}
+              className="inline-flex items-center justify-center border border-gray-300 bg-white text-gray-800 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            >
+              Retry loading
+            </button>
+          </div>
         </div>
       </div>
     );

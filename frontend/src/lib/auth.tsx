@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { apiFetch, setOnUnauthorized } from "./api";
+import { trailEvent } from "./debugTrail";
 import type { User } from "./types";
 
 interface AuthContextType {
@@ -31,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    trailEvent("auth:logout");
     clearAuth();
     router.push("/login");
   }, [clearAuth, router]);
@@ -51,9 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     pending.then((result) => {
       if (cancelled) return;
       if (result) {
+        trailEvent("auth:restore", { email: result.me.email });
         setUser(result.me);
         setToken(result.t);
       } else if (stored) {
+        trailEvent("auth:restore-fail");
         clearAuth();
       }
       setIsLoading(false);
@@ -67,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (newToken: string) => {
     localStorage.setItem("token", newToken);
     const me = await apiFetch<User>("/auth/me");
+    trailEvent("auth:login", { email: me.email });
     setUser(me);
     setToken(newToken);
   }, []);

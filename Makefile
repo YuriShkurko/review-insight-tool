@@ -1,4 +1,4 @@
-.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check backend frontend dev stop db-reset db-add-is-competitor seed-offline clean db-upgrade db-downgrade db-current db-revision db-history db-stamp-head
+.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check validate frontend-build ci-local backend frontend dev stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head
 
 # ── Docker Compose ──────────────────────────────────────────────
 
@@ -90,11 +90,27 @@ format-check:
 	cd frontend && npm run format:check
 	@echo ✓ Formatting OK.
 
+## Run the same validation as GitHub Actions (requires Python + Node deps installed locally)
+## Order: lint (includes format checks) → unit tests → integration tests → frontend production build
+validate: lint test test-integration frontend-build
+	@echo ✓ validate complete.
+
+## Same as validate (alias)
+ci-local: validate
+
+## Frontend production build (set NEXT_PUBLIC_API_URL in frontend/.env.local if needed)
+frontend-build:
+	cd frontend && npm run build
+
 # ── Database ───────────────────────────────────────────────────
 
 ## Apply all pending Alembic migrations (run after `make up`)
 db-upgrade:
 	docker compose exec backend alembic upgrade head
+
+## Apply migrations using local `alembic` (uses `backend/.env` DATABASE_URL; Postgres must be reachable)
+db-upgrade-local:
+	cd backend && alembic upgrade head
 
 ## Roll back one migration revision
 db-downgrade:
@@ -136,6 +152,10 @@ db-add-is-competitor:
 ## Seed database with offline demo businesses and competitor links
 seed-offline:
 	docker compose exec backend python -m scripts.seed_offline
+
+## Same as seed-offline but runs local Python (requires schema from migrations; DB from backend/.env)
+seed-offline-local:
+	cd backend && python -m scripts.seed_offline
 
 # ── Cleanup ────────────────────────────────────────────────────
 

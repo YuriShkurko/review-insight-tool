@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, type FormEvent } from "react";
 import { useRequireAuth } from "@/lib/auth";
 import { apiFetch, ApiError } from "@/lib/api";
+import { trailEvent } from "@/lib/debugTrail";
 import BusinessCard from "@/components/BusinessCard";
 import SandboxCatalog from "@/components/SandboxCatalog";
 import {
@@ -66,6 +67,7 @@ export default function BusinessesPage() {
   }, [user, refreshAll]);
 
   async function handleImportPlace(placeId: string) {
+    trailEvent("sandbox:import", { placeId });
     setBusyPlaceId(placeId);
     setError("");
     try {
@@ -88,6 +90,7 @@ export default function BusinessesPage() {
       )
     )
       return;
+    trailEvent("sandbox:reset");
     setResetBusy(true);
     setError("");
     try {
@@ -111,6 +114,7 @@ export default function BusinessesPage() {
       ? { google_maps_url: trimmed, place_id: null, business_type: businessType }
       : { place_id: trimmed, google_maps_url: null, business_type: businessType };
 
+    trailEvent("biz:add", { isUrl, businessType });
     try {
       const biz = await apiFetch<Business>("/businesses", {
         method: "POST",
@@ -129,6 +133,7 @@ export default function BusinessesPage() {
   async function handleDelete(id: string) {
     if (!confirm("Delete this business and all its reviews, analysis, and competitor links?"))
       return;
+    trailEvent("biz:delete", { businessId: id });
     setDeletingId(id);
     setError("");
     try {

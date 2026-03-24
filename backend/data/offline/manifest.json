@@ -7,9 +7,9 @@
       "competitors": ["offline_lager_ale_raanana", "offline_lager_ale_herzliya", "offline_beer_garden"]
     },
     "retail": {
-      "description": "Rami Levy (Ariel) vs Abu Ali Supermarket + Lala Market",
+      "description": "Rami Levy (Ariel) vs Lala Market",
       "main": "offline_rami_levy",
-      "competitors": ["offline_abu_ali", "offline_lala_market"]
+      "competitors": ["offline_lala_market"]
     }
   },
   "businesses": [
@@ -68,14 +68,6 @@
       "address": "Ariel, Israel",
       "role": "main",
       "reviews_file": "shupersal_reviews.json"
-    },
-    {
-      "place_id": "offline_abu_ali",
-      "name": "Abu Ali Supermarket",
-      "business_type": "retail",
-      "address": "Ariel, Israel",
-      "role": "competitor",
-      "reviews_file": "abu_ali_reviews.json"
     },
     {
       "place_id": "offline_lala_market",

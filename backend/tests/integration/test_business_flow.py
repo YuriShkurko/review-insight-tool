@@ -116,7 +116,9 @@ def test_duplicate_business_returns_409(client: TestClient, auth_headers: dict):
 
 
 def test_business_not_found_returns_404(client: TestClient, auth_headers: dict):
-    """Accessing a non-existent business returns 404."""
+    """Accessing a non-existent business returns 404 on dashboard and reviews."""
     fake_id = "00000000-0000-0000-0000-000000000000"
     r = client.get(f"/api/businesses/{fake_id}/dashboard", headers=auth_headers)
     assert r.status_code == 404
+    r2 = client.get(f"/api/businesses/{fake_id}/reviews", headers=auth_headers)
+    assert r2.status_code == 404

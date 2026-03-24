@@ -18,6 +18,8 @@ Paste a Google Maps link, fetch reviews, and get tailored insights: top complain
 - [Configuration](#configuration)
 - [Project Structure](#project-structure)
 - [Development](#development)
+- [Development automation](docs/DEVELOPMENT.md)
+- [Debug event trail](docs/DEVELOPMENT.md#debug-event-trail)
 - [Staging / demo deployment](docs/STAGING.md)
 - [Testing](#testing)
 - [Specification](#specification)
@@ -45,7 +47,7 @@ Review Insight Tool solves this by:
 - **Secure access** — each user sees only their own businesses and data
 - **Fresh data** — refreshing reviews replaces the old set and clears stale analysis automatically
 - **Competitor comparison (V2)** — link up to 3 competitor businesses, run analysis on them, and generate an AI comparison (strengths, weaknesses, opportunities)
-- **Offline demo mode** — bundled dataset of 595 real reviews across 9 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching
+- **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching
 
 ## Quick Start
 
@@ -322,7 +324,12 @@ Interactive docs: http://localhost:8000/docs
 │   ├── BUG_HUNT.md              # Bug hunt test plan
 │   ├── BUG_HUNT_LOG.md          # Bug hunt findings log
 │   ├── SPEC.md                  # System specification
-│   └── STAGING.md               # Staging / demo deployment notes
+│   ├── STAGING.md               # Staging / demo deployment notes
+│   └── DEVELOPMENT.md           # CI, Makefile automation, debug event trail
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # Push/PR: lint, tests, frontend build
 │
 ├── docker-compose.yml           # Full-stack Docker setup
 ├── Makefile                     # Developer shortcuts
@@ -332,6 +339,10 @@ Interactive docs: http://localhost:8000/docs
 ## Development
 
 For a **remote staging/demo** on Railway (PostgreSQL, `PORT`, `CORS_ORIGINS`, build-time `NEXT_PUBLIC_API_URL`, migrate-on-start), see **[docs/STAGING.md](docs/STAGING.md)**.
+
+**CI and local automation** (what runs on GitHub vs `make validate`): **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
+
+**Debug event trail** (debug-only floating panel for inspecting API calls, state transitions, and user actions): **[docs/DEVELOPMENT.md#debug-event-trail](docs/DEVELOPMENT.md#debug-event-trail)**.
 
 ### Makefile commands
 
@@ -343,18 +354,23 @@ For a **remote staging/demo** on Railway (PostgreSQL, `PORT`, `CORS_ORIGINS`, bu
 | `make backend` | Start backend locally (no Docker) |
 | `make frontend` | Start frontend locally (no Docker) |
 | `make dev` | Start both locally (Windows) |
+| `make validate` | Same checks as GitHub Actions: `lint` + unit tests + integration tests + `npm run build` (frontend) |
+| `make ci-local` | Alias for `make validate` |
 | `make test` | Run backend unit tests |
 | `make test-integration` | Run backend integration tests (in-memory SQLite) |
 | `make test-e2e` | Run E2E tests (requires `make up` and `make db-upgrade`) |
-| `make lint` | Run linters |
-| `make db-upgrade` | Apply Alembic migrations to head |
+| `make lint` | Run linters (ruff + eslint + prettier checks) |
+| `make frontend-build` | `npm run build` in `frontend/` only |
+| `make db-upgrade` | Apply Alembic migrations to head (via Docker Compose `exec`) |
+| `make db-upgrade-local` | Apply migrations with local `alembic` (`backend/.env` `DATABASE_URL`) |
 | `make db-downgrade` | Roll back one migration |
 | `make db-current` | Show current Alembic revision |
 | `make db-history` | Show migration history |
 | `make db-revision` | Autogenerate migration: `make db-revision msg="describe change"` |
 | `make db-stamp-head` | Stamp DB at head without running SQL (one-time for legacy DBs) |
 | `make db-reset` | Drop all tables + `alembic_version` (escape hatch; then run `make db-upgrade`) |
-| `make seed-offline` | Seed database with offline demo businesses (requires schema from migrations) |
+| `make seed-offline` | Seed offline demo data (Docker Compose `exec` backend) |
+| `make seed-offline-local` | Same seed using local Python (`backend/.env` database) |
 | `make clean` | Remove build artifacts and caches |
 
 ### Database migrations
@@ -397,13 +413,13 @@ Integration tests still use `create_all` on an in-memory SQLite database only �
 
 ### Offline demo mode
 
-The app ships with a bundled dataset of **595 real reviews** across **9 businesses** so you can run the full product flow — including competitor comparison — without needing an Outscraper API key.
+The app ships with a bundled dataset of **495 real reviews** across **8 businesses** so you can run the full product flow — including competitor comparison — without needing an Outscraper API key.
 
 #### Why it exists
 
 - **Demos**: Show the full product to reviewers, friends, or interviewers with realistic data
 - **Smoke tests**: Validate the complete fetch → analyze → compare pipeline locally
-- **Future CI**: Deterministic dataset with no external dependencies for automated testing
+- **CI**: Push/PR workflows run lint, tests, and frontend build (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md))
 
 #### How to enable
 
@@ -435,7 +451,7 @@ The seed script creates a demo user and populates two scenarios:
 | Scenario | Main business | Competitors | Reviews |
 |----------|--------------|-------------|---------|
 | **Bar** | Lager & Ale (Rothschild, TLV) | Lager & Ale (Ra'anana), Lager & Ale (Herzliya), Beer Garden | 100 + 100 + 100 + 33 |
-| **Retail** | Rami Levy (Ariel) | Abu Ali Supermarket, Lala Market | 33 + 33 + 33 |
+| **Retail** | Rami Levy (Ariel) | Lala Market | 33 + 33 |
 
 An additional standalone business (Lager & Ale branch, 63 reviews) and Shupersal Deal Ariel (33 reviews) are also seeded.
 
@@ -488,6 +504,16 @@ Backend tests use **pytest**:
 make test                # unit tests (no server required)
 make test-integration    # integration tests (in-memory SQLite, no server required)
 make test-e2e            # end-to-end tests (requires running backend via make up)
+```
+
+### Continuous integration
+
+On every push and pull request to `main` / `master`, **GitHub Actions** runs backend lint (`ruff`), backend tests (unit + integration), and frontend lint + production build. E2E tests are not run in CI (they need a live server). Details: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
+
+To match CI locally before you push:
+
+```bash
+make validate
 ```
 
 ### Unit tests

@@ -1,3 +1,5 @@
+import { trailEvent } from "./debugTrail";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const FRIENDLY_MESSAGES: Record<number, string> = {
@@ -37,10 +39,14 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  const method = (options.method ?? "GET").toUpperCase();
+  trailEvent("api:start", { method, path });
+
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}/api${path}`, { ...options, headers });
   } catch {
+    trailEvent("api:fail", { method, path, status: 0, detail: "Network error" });
     throw new ApiError(0, "Network error. Please check your connection.");
   }
 
@@ -50,9 +56,11 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     }
     const body = await res.json().catch(() => ({}));
     const detail = body.detail || FRIENDLY_MESSAGES[res.status] || "Something went wrong.";
+    trailEvent("api:fail", { method, path, status: res.status, detail });
     throw new ApiError(res.status, detail);
   }
 
+  trailEvent("api:ok", { method, path, status: res.status });
   if (res.status === 204) return undefined as T;
   return res.json();
 }

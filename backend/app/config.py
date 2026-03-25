@@ -1,5 +1,8 @@
 import os
+from pathlib import Path
 from urllib.parse import urlparse
+
+_BACKEND_DIR = Path(__file__).resolve().parents[1]
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
@@ -43,7 +46,7 @@ class Settings(BaseSettings):
     # Comma-separated extra CORS origins (e.g. https://my-app.up.railway.app). Localhost is always allowed.
     CORS_ORIGINS: str = ""
 
-    model_config = {"env_file": ".env", "extra": "ignore"}
+    model_config = {"env_file": str(_BACKEND_DIR / ".env"), "extra": "ignore"}
 
     @model_validator(mode="after")
     def _resolve_provider_and_keys(self) -> "Settings":

@@ -21,6 +21,9 @@ frontend/.env.local
 *.swp
 *.swo
 
+# Scribe (local seed scripts)
+.scribe/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -86,6 +86,69 @@ When enabled, a small **"◉ Debug ▼"** button appears in the **bottom-left co
 
 On Railway, build the frontend with `NEXT_PUBLIC_DEBUG_TRAIL=true` in the service's environment variables to get the panel in staging. **Remove it before switching to production traffic** (or keep a separate staging service env).
 
+## MCP debug server
+
+A project-specific backend introspection server for local debugging and staging triage. Not a product feature — never deployed to Railway.
+
+### What it is
+
+A small [MCP](https://modelcontextprotocol.io) server (`backend/debug/`) that Cursor connects to over stdio. It exposes 8 tools for inspecting the live database, config, Alembic state, and sandbox catalog — all reusing the existing app models and config, with no new infrastructure.
+
+It is **not** part of the FastAPI app. It runs as a separate local process and is ignored by Docker and Railway.
+
+### How to start it
+
+```bash
+cd backend/
+DEBUG_MCP=true python -m debug.mcp_server
+```
+
+The `DEBUG_MCP=true` flag is required. Without it the server exits immediately. Cursor connects automatically when the server is listed in `.cursor/mcp.json`.
+
+### Tool catalog
+
+| Tool | R/W | What it returns |
+|------|-----|-----------------|
+| `system_status` | read | `REVIEW_PROVIDER`, API keys present (bool only), CORS origins, DB reachable, Railway flag, JWT expiry, whether JWT secret is still the default |
+| `migration_status` | read | Current Alembic revision(s), expected head, whether schema is at head |
+| `sandbox_catalog_summary` | read | Offline manifest: business count, scenario structure, review counts per file |
+| `business_snapshot` | read | Name, place_id, type, rating, review count, analysis state, competitor names, owner email — for any business by UUID |
+| `user_summary` | read | Email, business count, total reviews stored — by email or user_id |
+| `recent_businesses` | read | Last N businesses created (default 10, max 50) with owner and analysis state |
+| `db_table_counts` | read | Row counts for users, businesses, reviews, analyses, competitor_links |
+| `sandbox_reset_user` | **write** | Deletes `offline_*` businesses for a user. Requires `confirm=True` and `REVIEW_PROVIDER=offline` |
+
+### Safety
+
+Never exposed: `JWT_SECRET_KEY`, `DATABASE_URL`, any API key value, or password hashes. Raw review text is never returned.
+
+`sandbox_reset_user` is the only mutating tool. It has two hard gates:
+1. `confirm=True` must be explicitly passed
+2. `REVIEW_PROVIDER` must be `"offline"`
+
+Stdio transport only — no HTTP listener, not reachable over the network.
+
+### Example: debugging a broken business detail page
+
+```
+You: business_snapshot(business_id="<id from URL>")
+→ shows review count, has_analysis, competitor state, owner
+
+You: system_status()
+→ confirms provider, DB reachable, migration state
+
+You: migration_status()
+→ confirms schema is at head
+```
+
+### What it is NOT for
+
+- No production use — local and staging debug only
+- No log tailing or request interception
+- No OpenAI prompt replay
+- No review content inspection
+- No changes to non-sandbox user data
+
 ## Staging / Railway
 
 Manual deploy and env configuration are unchanged; see [STAGING.md](STAGING.md). CI does not push images or touch Railway.

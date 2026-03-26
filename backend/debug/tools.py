@@ -8,6 +8,38 @@ Sensitive data rules (enforced throughout):
 - Never return password hashes
 - Never return raw review text (PII risk)
 - API key presence is always reported as a boolean only
+
+Tool inventory (13 total):
+
+System / config:
+  system_status()              — provider, keys-set flags, DB reachable, Railway
+  migration_status()           — Alembic current vs head revisions
+  health_probe()               — DB ping + provider + trace buffer (DEBUG_TRACE)
+
+Sandbox / data:
+  sandbox_catalog_summary()    — offline manifest: businesses, scenarios, review counts
+  recent_businesses(limit)     — N most recent businesses with owner/analysis info
+  db_table_counts()            — row counts for users/businesses/reviews/analyses/links
+
+Business / user:
+  business_snapshot(id)        — full debug view for one business UUID
+  user_summary(email|id)       — business count, review totals, account info
+
+Tracing dipstick (require DEBUG_TRACE=true):
+  trace_journey(trace_id)      — ordered span tree: route→db→llm→exit
+  recent_traces(limit)         — newest-first trace summaries with span counts
+  mutation_log(entity_id)      — all write-flagged spans for an entity
+  llm_call_log(business_id)    — all LLM call spans for a business
+
+Mutating (guarded):
+  sandbox_reset_user(confirm, email|id) — deletes offline_* businesses (confirm=True required)
+
+Example session:
+    health_probe()                          # is everything alive?
+    recent_traces(limit=5)                  # what just happened?
+    trace_journey("abc-123-def")            # deep dive on one request
+    llm_call_log("biz-uuid-here")          # why was that analysis slow?
+    mutation_log("biz-uuid-here")          # what did we write to the DB?
 """
 
 from __future__ import annotations
@@ -413,6 +445,90 @@ def register_tools(mcp: Any) -> None:
             return {"error": str(exc).split("\n")[0][:120]}
         finally:
             db.close()
+
+    # ── Dipstick tools (require DEBUG_TRACE for meaningful data) ──────────────
+
+    from debug.dipstick import (
+        get_health_probe,
+        get_llm_call_log,
+        get_mutation_log,
+        get_recent_traces,
+        get_trace_journey,
+        get_ui_snapshot,
+    )
+    from app.tracing import trace_context as _trace_ctx
+
+    @mcp.tool(
+        name="trace_journey",
+        description=(
+            "Returns the ordered span tree for a single request trace. "
+            "Requires DEBUG_TRACE=true. Pass the trace_id from an X-Trace-Id response header "
+            "or from recent_traces. Shows every span: route_enter, db_query, llm_call, route_exit."
+        ),
+    )
+    def trace_journey(trace_id: str) -> dict:
+        return get_trace_journey(_trace_ctx, trace_id)
+
+    @mcp.tool(
+        name="health_probe",
+        description=(
+            "Checks the liveness of all backend components: database (live SELECT 1), "
+            "review provider (from config), and trace buffer (enabled/disabled + size). "
+            "Quick engine-oil check — call this first when something feels off."
+        ),
+    )
+    def health_probe() -> dict:
+        return get_health_probe()
+
+    @mcp.tool(
+        name="recent_traces",
+        description=(
+            "Returns the N most recent request traces, newest first. "
+            "Each entry shows trace_id, endpoint, started_at, and span_count. "
+            "Requires DEBUG_TRACE=true."
+        ),
+    )
+    def recent_traces(limit: int = 20) -> dict:
+        return get_recent_traces(_trace_ctx, limit=limit)
+
+    @mcp.tool(
+        name="mutation_log",
+        description=(
+            "Returns all mutation spans recorded for a given entity_id (e.g. a business UUID). "
+            "A span is a mutation when its metadata contains mutation=true. "
+            "Shows every write operation with trace_id, operation name, and timestamp. "
+            "Requires DEBUG_TRACE=true."
+        ),
+    )
+    def mutation_log(entity_id: str) -> dict:
+        return get_mutation_log(_trace_ctx, entity_id=entity_id)
+
+    @mcp.tool(
+        name="llm_call_log",
+        description=(
+            "Returns all LLM call spans for a given business_id. "
+            "Shows model call duration, success, and which trace each call belongs to. "
+            "Useful for diagnosing slow analysis or runaway token usage. "
+            "Requires DEBUG_TRACE=true."
+        ),
+    )
+    def llm_call_log(business_id: str) -> dict:
+        return get_llm_call_log(_trace_ctx, business_id=business_id)
+
+    @mcp.tool(
+        name="ui_snapshot",
+        description=(
+            "Fetches the latest frontend UI element snapshot captured by the debug selector. "
+            "To populate it: hold CTRL and click any element in the browser (requires "
+            "NEXT_PUBLIC_DEBUG_TRAIL=true). Returns the selected element tree: tag, CSS path, "
+            "React component name, bounding rect, text content, data-* attributes, and "
+            "immediate children. Multi-select is supported — each CTRL+click adds an element. "
+            "Double-tap CTRL in the browser to clear the selection. "
+            "Requires DEBUG_TRACE=true on the backend."
+        ),
+    )
+    def ui_snapshot() -> dict:
+        return get_ui_snapshot()
 
     # ── 8. sandbox_reset_user (guarded mutating) ──────────────────────────────
 

@@ -8,6 +8,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { getTrail, clearTrail, dumpTrail, type DebugEvent } from "@/lib/debugTrail";
+import { getSelected, clearSelection, type ElementNode } from "@/lib/debugSelector";
 
 const KIND_COLORS: Record<string, string> = {
   "api:start": "bg-blue-100 text-blue-700",
@@ -44,13 +45,18 @@ function detailSummary(detail?: Record<string, unknown>): string {
     .join(" ");
 }
 
+type Tab = "trail" | "selector";
+
 export default function DebugPanel() {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>("trail");
   const [events, setEvents] = useState<DebugEvent[]>([]);
+  const [selected, setSelected] = useState<ElementNode[]>([]);
   const [copied, setCopied] = useState(false);
 
   const refresh = useCallback(() => {
     setEvents([...getTrail()].reverse()); // most recent first
+    setSelected([...getSelected()]);
   }, []);
 
   // Poll every 2s while open; initial refresh is triggered by the toggle button handler
@@ -82,6 +88,11 @@ export default function DebugPanel() {
     setEvents([]);
   }
 
+  function handleClearSelection() {
+    clearSelection();
+    setSelected([]);
+  }
+
   const count = events.length;
 
   return (
@@ -89,87 +100,108 @@ export default function DebugPanel() {
       {/* Floating toggle button */}
       <button
         type="button"
+        data-debug-panel
         onClick={() => {
           setOpen((o) => !o);
           if (!open) refresh();
         }}
         className="fixed bottom-4 left-4 z-50 text-xs font-mono bg-gray-900 text-green-400 border border-green-700 px-3 py-1.5 rounded-full shadow-lg opacity-80 hover:opacity-100 transition-opacity"
-        title="Toggle debug event trail"
+        title="Toggle debug panel"
       >
         ◉ Debug {open ? "▲" : "▼"}
         {count > 0 && (
           <span className="ml-1 bg-green-700 text-white px-1.5 rounded-full">{count}</span>
         )}
+        {selected.length > 0 && (
+          <span className="ml-1 bg-purple-700 text-white px-1.5 rounded-full">{selected.length}⬡</span>
+        )}
       </button>
 
       {/* Panel overlay */}
       {open && (
-        <div className="fixed bottom-14 left-4 z-50 w-96 max-h-[480px] flex flex-col bg-gray-950 border border-gray-700 rounded-xl shadow-2xl text-xs font-mono overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-3 py-2 bg-gray-900 border-b border-gray-700 shrink-0">
-            <span className="text-green-400 font-semibold tracking-wide">Debug Trail</span>
-            <div className="flex gap-1">
-              <button
-                type="button"
-                onClick={refresh}
-                className="text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-gray-700 transition-colors"
-                title="Refresh"
-              >
-                ↺
-              </button>
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-gray-700 transition-colors"
-                title="Copy JSON to clipboard"
-              >
-                {copied ? "✓" : "Copy"}
-              </button>
-              <button
-                type="button"
-                onClick={handleDownload}
-                className="text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-gray-700 transition-colors"
-                title="Download JSON file"
-              >
-                ↓ Save
-              </button>
-              <button
-                type="button"
-                onClick={handleClear}
-                className="text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-gray-700 transition-colors"
-                title="Clear trail"
-              >
-                Clear
-              </button>
+        <div data-debug-panel className="fixed bottom-14 left-4 z-50 w-[420px] max-h-[520px] flex flex-col bg-gray-950 border border-gray-700 rounded-xl shadow-2xl text-xs font-mono overflow-hidden">
+          {/* Tabs */}
+          <div className="flex items-center border-b border-gray-700 shrink-0 bg-gray-900">
+            <button
+              type="button"
+              onClick={() => setTab("trail")}
+              className={`px-3 py-2 font-semibold tracking-wide transition-colors ${tab === "trail" ? "text-green-400 border-b-2 border-green-500" : "text-gray-500 hover:text-gray-300"}`}
+            >
+              Trail {count > 0 && <span className="ml-1 text-[10px] text-green-600">{count}</span>}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("selector")}
+              className={`px-3 py-2 font-semibold tracking-wide transition-colors ${tab === "selector" ? "text-purple-400 border-b-2 border-purple-500" : "text-gray-500 hover:text-gray-300"}`}
+            >
+              Selector {selected.length > 0 && <span className="ml-1 text-[10px] text-purple-400">{selected.length}</span>}
+            </button>
+            <div className="ml-auto flex gap-1 pr-2">
+              <button type="button" onClick={refresh} className="text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-gray-700" title="Refresh">↺</button>
+              {tab === "trail" && <>
+                <button type="button" onClick={handleCopy} className="text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-gray-700">{copied ? "✓" : "Copy"}</button>
+                <button type="button" onClick={handleDownload} className="text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-gray-700">↓</button>
+                <button type="button" onClick={handleClear} className="text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-gray-700">Clear</button>
+              </>}
+              {tab === "selector" && selected.length > 0 && (
+                <button type="button" onClick={handleClearSelection} className="text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-gray-700">Clear</button>
+              )}
             </div>
           </div>
 
-          {/* Event list */}
-          <div className="overflow-y-auto flex-1">
-            {events.length === 0 ? (
-              <p className="text-gray-500 text-center py-6">No events yet.</p>
-            ) : (
-              events.map((ev, i) => (
-                <div
-                  key={i}
-                  className="px-3 py-1.5 border-b border-gray-800 hover:bg-gray-900 transition-colors"
-                >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${kindColor(ev.kind)}`}
-                    >
-                      {ev.kind}
-                    </span>
-                    <span className="text-gray-500 text-[10px]">{relativeTime(ev.ts)}</span>
-                    <span className="text-gray-600 text-[10px] truncate">{ev.route}</span>
+          {/* Trail tab */}
+          {tab === "trail" && (
+            <div className="overflow-y-auto flex-1">
+              {events.length === 0 ? (
+                <p className="text-gray-500 text-center py-6">No events yet.</p>
+              ) : (
+                events.map((ev, i) => (
+                  <div key={i} className="px-3 py-1.5 border-b border-gray-800 hover:bg-gray-900 transition-colors">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${kindColor(ev.kind)}`}>{ev.kind}</span>
+                      <span className="text-gray-500 text-[10px]">{relativeTime(ev.ts)}</span>
+                      <span className="text-gray-600 text-[10px] truncate">{ev.route}</span>
+                    </div>
+                    {ev.detail && <p className="text-gray-400 mt-0.5 truncate">{detailSummary(ev.detail)}</p>}
                   </div>
-                  {ev.detail && (
-                    <p className="text-gray-400 mt-0.5 truncate">{detailSummary(ev.detail)}</p>
-                  )}
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Selector tab */}
+          {tab === "selector" && (
+            <div className="overflow-y-auto flex-1">
+              {selected.length === 0 ? (
+                <div className="text-gray-500 text-center py-6 px-4 leading-relaxed">
+                  <p className="text-purple-400 font-semibold mb-1">Element Selector</p>
+                  <p>Hold <kbd className="bg-gray-800 text-gray-300 px-1 rounded">CTRL</kbd> and click any element to inspect it.</p>
+                  <p className="mt-1 text-[10px]">Double-tap CTRL to deselect all.</p>
                 </div>
-              ))
-            )}
-          </div>
+              ) : (
+                selected.map((el, i) => (
+                  <div key={i} className="px-3 py-2 border-b border-gray-800">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-purple-400 font-semibold">&lt;{el.tag}&gt;</span>
+                      {el.reactComponent && (
+                        <span className="text-fuchsia-400 text-[10px] bg-fuchsia-950 px-1.5 rounded">⚛ {el.reactComponent}</span>
+                      )}
+                      {el.id && <span className="text-gray-400 text-[10px]">#{el.id}</span>}
+                    </div>
+                    <p className="text-gray-500 text-[10px] truncate mb-1">{el.path}</p>
+                    {el.text && (
+                      <p className="text-gray-400 text-[10px] truncate italic">"{el.text.slice(0, 80)}"</p>
+                    )}
+                    <div className="flex gap-3 mt-1 text-[10px] text-gray-600">
+                      <span>{el.rect.width}×{el.rect.height}</span>
+                      <span>({el.rect.x}, {el.rect.y})</span>
+                      {el.children.length > 0 && <span>{el.children.length} children</span>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
     </>

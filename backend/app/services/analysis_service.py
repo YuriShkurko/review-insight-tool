@@ -11,6 +11,7 @@ from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
 from app.models.review import Review
+from app.tracing import get_current_trace_id, trace_context, trace_span
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ def _build_system_prompt(business_type: str) -> str:
     )
 
 
-def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
+def analyze_reviews(db: Session, business_id: uuid.UUID, trace_id: str | None = None) -> Analysis:
     """Run analysis on stored reviews and persist the result.
 
     Overwrites any existing analysis for this business.
@@ -83,8 +84,15 @@ def analyze_reviews(db: Session, business_id: uuid.UUID) -> Analysis:
     system_prompt = _build_system_prompt(business_type)
     review_texts = _format_reviews_for_prompt(reviews)
 
+    tid = trace_id or get_current_trace_id()
     with timed_operation(logger, "llm_call", business_id=business_id, review_count=len(reviews)):
-        result = _call_openai(system_prompt, review_texts)
+        with trace_span(
+            trace_context,
+            tid,
+            "llm_call",
+            metadata={"business_id": str(business_id), "review_count": len(reviews)},
+        ):
+            result = _call_openai(system_prompt, review_texts)
     result = _normalize_result(result)
 
     existing = db.query(Analysis).filter(Analysis.business_id == business_id).first()

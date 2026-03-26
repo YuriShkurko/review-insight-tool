@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.logging_config import setup_logging
 from app.routes import api_router
+from app.tracing import TraceMiddleware
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -38,6 +39,9 @@ def create_app() -> FastAPI:
     ]
     if settings.CORS_ORIGINS:
         cors_origins.extend(o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip())
+
+    if settings.DEBUG_TRACE:
+        app.add_middleware(TraceMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

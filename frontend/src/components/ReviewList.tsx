@@ -4,6 +4,25 @@ import { useState } from "react";
 import type { Review } from "@/lib/types";
 
 const PREVIEW_COUNT = 5;
+const HEBREW_RE = /[\u0590-\u05FF]/g;
+const MOJIBAKE_HINT_RE = /(Ã|Â|Î|ð|�)/;
+
+function hebrewScore(value: string): number {
+  return (value.match(HEBREW_RE) ?? []).length;
+}
+
+function repairMojibake(value: string | null | undefined): string {
+  if (!value) return "";
+  if (!MOJIBAKE_HINT_RE.test(value)) return value;
+
+  try {
+    const bytes = Uint8Array.from(Array.from(value).map((ch) => ch.charCodeAt(0) & 0xff));
+    const decoded = new TextDecoder("utf-8").decode(bytes);
+    return hebrewScore(decoded) > hebrewScore(value) ? decoded : value;
+  } catch {
+    return value;
+  }
+}
 
 function StarRating({ rating }: { rating: number }) {
   const clamped = Math.min(Math.max(rating, 0), 5);
@@ -28,10 +47,16 @@ export default function ReviewList({ reviews }: { reviews: Review[] }) {
         {visible.map((r) => (
           <div key={r.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-gray-800">{r.author || "Anonymous"}</span>
+              <span className="text-sm font-medium text-gray-800">
+                {repairMojibake(r.author) || "Anonymous"}
+              </span>
               <StarRating rating={r.rating} />
             </div>
-            {r.text && <p className="text-sm text-gray-600 leading-relaxed">{r.text}</p>}
+            {r.text && (
+              <p className="text-sm text-gray-600 leading-relaxed" dir="auto">
+                {repairMojibake(r.text)}
+              </p>
+            )}
           </div>
         ))}
       </div>

@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     # Comma-separated extra CORS origins (e.g. https://my-app.up.railway.app). Localhost is always allowed.
     CORS_ORIGINS: str = ""
 
+    # Debug tracing — set to "true" to enable E2E request tracing ring buffer.
+    DEBUG_TRACE: bool = False
+
     model_config = {"env_file": str(_BACKEND_DIR / ".env"), "extra": "ignore"}
 
     @model_validator(mode="after")

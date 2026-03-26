@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth";
 import NavBar from "@/components/NavBar";
 import { isTrailEnabled, trailEvent } from "@/lib/debugTrail";
 import DebugPanel from "@/components/DebugPanel";
+import { mountDebugSelector } from "@/lib/debugSelector";
 
 function RouteWatcher() {
   const pathname = usePathname();
@@ -22,12 +23,18 @@ function RouteWatcher() {
   return null;
 }
 
+function DebugSelectorMount() {
+  useEffect(() => mountDebugSelector(), []);
+  return null;
+}
+
 export function Providers({ children }: { children: ReactNode }) {
   const debugEnabled = isTrailEnabled();
 
   return (
     <AuthProvider>
       {debugEnabled && <RouteWatcher />}
+      {debugEnabled && <DebugSelectorMount />}
       <NavBar />
       <main>{children}</main>
       {debugEnabled && <DebugPanel />}

@@ -4,6 +4,7 @@ import contextlib
 import hashlib
 import json
 import logging
+import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -12,6 +13,8 @@ from app.providers.base import NormalizedReview, ReviewProvider
 logger = logging.getLogger(__name__)
 
 _DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "offline"
+_HEBREW_RE = re.compile(r"[\u0590-\u05FF]")
+_MOJIBAKE_HINT_RE = re.compile(r"(?:Ã|Â|Î|ð|�)")
 
 
 class OfflineProvider(ReviewProvider):
@@ -33,6 +36,32 @@ class OfflineProvider(ReviewProvider):
         with open(manifest_path, encoding="utf-8") as f:
             data = json.load(f)
         return {b["place_id"]: b for b in data.get("businesses", [])}
+
+    @staticmethod
+    def _hebrew_score(text: str) -> int:
+        return len(_HEBREW_RE.findall(text))
+
+    @staticmethod
+    def _repair_mojibake(text: str | None) -> str | None:
+        """Best-effort mojibake repair for offline demo text.
+
+        We only replace when a candidate decode increases Hebrew character count.
+        This keeps valid English/ASCII text unchanged.
+        """
+        if not text or not _MOJIBAKE_HINT_RE.search(text):
+            return text
+
+        candidates = [text]
+        for src_enc, dst_enc in (
+            ("latin-1", "utf-8"),
+            ("cp1252", "utf-8"),
+            ("cp1255", "utf-8"),
+        ):
+            with contextlib.suppress(UnicodeEncodeError, UnicodeDecodeError):
+                candidates.append(text.encode(src_enc).decode(dst_enc))
+
+        best = max(candidates, key=OfflineProvider._hebrew_score)
+        return best
 
     def fetch_reviews(
         self, place_id: str, google_maps_url: str | None = None
@@ -66,9 +95,9 @@ class OfflineProvider(ReviewProvider):
                 NormalizedReview(
                     external_id=f"offline_{ext_id}",
                     source="offline",
-                    author=raw.get("author"),
+                    author=self._repair_mojibake(raw.get("author")),
                     rating=raw["rating"],
-                    text=raw.get("text"),
+                    text=self._repair_mojibake(raw.get("text")),
                     published_at=pub_at,
                 )
             )

@@ -60,7 +60,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     throw new ApiError(res.status, detail);
   }
 
-  trailEvent("api:ok", { method, path, status: res.status });
+  const traceId = res.headers.get("x-trace-id") ?? undefined;
+  trailEvent("api:ok", { method, path, status: res.status, trace_id: traceId });
   if (res.status === 204) return undefined as T;
   return res.json();
 }

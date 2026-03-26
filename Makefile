@@ -1,4 +1,4 @@
-.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check validate frontend-build ci-local backend frontend dev stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head
+.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check validate frontend-build ci-local backend frontend dev debug debug-mcp stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head
 
 # ── Docker Compose ──────────────────────────────────────────────
 
@@ -31,6 +31,20 @@ dev:
 	cmd /C "cd /d $(CURDIR)\backend && start /B python -m uvicorn app.main:app --reload --port 8000"
 	@echo Starting frontend on http://localhost:3000 ...
 	cd frontend && npm run dev
+
+## Start the full stack in DEBUG mode — enables E2E tracing + UI element selector
+## Backend: DEBUG_TRACE=true  →  X-Trace-Id headers, trace ring buffer, /api/debug/ui-snapshot
+## Frontend: NEXT_PUBLIC_DEBUG_TRAIL=true  →  debug panel (bottom-left), CTRL+click selector
+## Run make debug-mcp in a third terminal to also start the MCP debug server.
+debug:
+	@echo Starting backend in DEBUG mode on http://localhost:8000 ...
+	cmd /C "cd /d $(CURDIR)\backend && start /B cmd /C set DEBUG_TRACE=true && python -m uvicorn app.main:app --reload --port 8000"
+	@echo Starting frontend in DEBUG mode on http://localhost:3000 ...
+	cd frontend && set NEXT_PUBLIC_DEBUG_TRAIL=true && npm run dev
+
+## Start the MCP debug server (stdio). Run in a separate terminal alongside make debug.
+debug-mcp:
+	cd backend && set DEBUG_MCP=true && python -m debug.mcp_server
 
 ## Stop local backend and frontend processes
 stop:

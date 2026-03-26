@@ -17,8 +17,10 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _fresh_ctx(enabled: bool = True):
     from app.tracing import TraceContext
+
     return TraceContext(enabled=enabled)
 
 
@@ -26,9 +28,11 @@ def _fresh_ctx(enabled: bool = True):
 # T1.3a — basic span recording
 # ---------------------------------------------------------------------------
 
+
 class TestTraceSpanBasic:
     def test_span_recorded_in_trace(self):
         from app.tracing import trace_span
+
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
@@ -42,6 +46,7 @@ class TestTraceSpanBasic:
 
     def test_span_duration_positive(self):
         from app.tracing import trace_span
+
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
@@ -53,6 +58,7 @@ class TestTraceSpanBasic:
 
     def test_span_success_true_on_clean_exit(self):
         from app.tracing import trace_span
+
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
@@ -63,6 +69,7 @@ class TestTraceSpanBasic:
 
     def test_span_success_false_on_exception(self):
         from app.tracing import trace_span
+
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
@@ -75,6 +82,7 @@ class TestTraceSpanBasic:
 
     def test_span_exception_reraised(self):
         from app.tracing import trace_span
+
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
@@ -83,6 +91,7 @@ class TestTraceSpanBasic:
 
     def test_span_metadata_stored(self):
         from app.tracing import trace_span
+
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
@@ -98,9 +107,11 @@ class TestTraceSpanBasic:
 # T1.3b — nested spans
 # ---------------------------------------------------------------------------
 
+
 class TestTraceSpanNested:
     def test_nested_spans_all_in_same_trace(self):
         from app.tracing import trace_span
+
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
@@ -119,6 +130,7 @@ class TestTraceSpanNested:
 
     def test_outer_span_duration_includes_inner(self):
         from app.tracing import trace_span
+
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
@@ -135,9 +147,11 @@ class TestTraceSpanNested:
 # T1.3c — disabled no-op
 # ---------------------------------------------------------------------------
 
+
 class TestTraceSpanDisabled:
     def test_noop_when_context_disabled(self):
         from app.tracing import trace_span
+
         ctx = _fresh_ctx(enabled=False)
         ctx.add_trace("tid-1", endpoint="/api/test")
 
@@ -149,6 +163,7 @@ class TestTraceSpanDisabled:
 
     def test_exception_still_reraised_when_disabled(self):
         from app.tracing import trace_span
+
         ctx = _fresh_ctx(enabled=False)
 
         with pytest.raises(KeyError), trace_span(ctx, "tid-1", "x"):

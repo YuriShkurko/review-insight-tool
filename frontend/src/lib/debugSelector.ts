@@ -128,13 +128,15 @@ function serializeElement(el: Element): ElementNode {
       dataAttrs[attr.name] = attr.value;
     }
   }
-  const directChildren = Array.from(el.children).slice(0, 20).map((child) => ({
-    tag: child.tagName.toLowerCase(),
-    id: child.id || "",
-    classes: Array.from(child.classList),
-    text: (child.textContent ?? "").trim().slice(0, 80),
-    reactComponent: getReactComponent(child),
-  }));
+  const directChildren = Array.from(el.children)
+    .slice(0, 20)
+    .map((child) => ({
+      tag: child.tagName.toLowerCase(),
+      id: child.id || "",
+      classes: Array.from(child.classList),
+      text: (child.textContent ?? "").trim().slice(0, 80),
+      reactComponent: getReactComponent(child),
+    }));
 
   return {
     tag: el.tagName.toLowerCase(),
@@ -142,7 +144,12 @@ function serializeElement(el: Element): ElementNode {
     classes: Array.from(el.classList).filter((c) => !c.startsWith("_debug")),
     text: (el.textContent ?? "").trim().slice(0, 200),
     path: cssPath(el),
-    rect: { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) },
+    rect: {
+      x: Math.round(r.x),
+      y: Math.round(r.y),
+      width: Math.round(r.width),
+      height: Math.round(r.height),
+    },
     dataAttrs,
     reactComponent: getReactComponent(el),
     children: directChildren,

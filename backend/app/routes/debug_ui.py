@@ -40,12 +40,14 @@ def get_ui_snapshot() -> dict:
 
 # ── Trace data endpoints (read from the live in-process ring buffer) ──────────
 
+
 @router.get("/traces", include_in_schema=False)
 def get_recent_traces(limit: int = 20) -> dict:
     """Return the N most recent traces from the in-process ring buffer."""
     if not settings.DEBUG_TRACE:
         return {"ok": False, "reason": "DEBUG_TRACE not enabled", "count": 0, "traces": []}
     from app.tracing import trace_context
+
     traces = trace_context.list_recent(limit=limit)
     summaries = [
         {
@@ -65,6 +67,7 @@ def get_trace(trace_id: str) -> dict:
     if not settings.DEBUG_TRACE:
         return {"ok": False, "reason": "DEBUG_TRACE not enabled"}
     from app.tracing import trace_context
+
     trace = trace_context.get_trace(trace_id)
     if trace is None:
         return {"ok": False, "error": f"trace_id {trace_id!r} not found"}
@@ -84,21 +87,29 @@ def get_mutations(entity_id: str) -> dict:
     if not settings.DEBUG_TRACE:
         return {"ok": False, "reason": "DEBUG_TRACE not enabled", "mutations": []}
     from app.tracing import trace_context
+
     all_traces = trace_context.list_recent(limit=None)  # type: ignore[arg-type]
     mutations = []
     for trace in all_traces:
         for span in trace["spans"]:
             meta = span.get("metadata") or {}
             if meta.get("entity_id") == entity_id and meta.get("mutation"):
-                mutations.append({
-                    "trace_id": trace["trace_id"],
-                    "name": span["name"],
-                    "duration_ms": span["duration_ms"],
-                    "success": span["success"],
-                    "started_at": span.get("started_at"),
-                    "metadata": meta,
-                })
-    return {"ok": True, "entity_id": entity_id, "mutation_count": len(mutations), "mutations": mutations}
+                mutations.append(
+                    {
+                        "trace_id": trace["trace_id"],
+                        "name": span["name"],
+                        "duration_ms": span["duration_ms"],
+                        "success": span["success"],
+                        "started_at": span.get("started_at"),
+                        "metadata": meta,
+                    }
+                )
+    return {
+        "ok": True,
+        "entity_id": entity_id,
+        "mutation_count": len(mutations),
+        "mutations": mutations,
+    }
 
 
 @router.get("/llm-calls/{business_id}", include_in_schema=False)
@@ -107,6 +118,7 @@ def get_llm_calls(business_id: str) -> dict:
     if not settings.DEBUG_TRACE:
         return {"ok": False, "reason": "DEBUG_TRACE not enabled", "llm_calls": []}
     from app.tracing import trace_context
+
     all_traces = trace_context.list_recent(limit=None)  # type: ignore[arg-type]
     calls = []
     for trace in all_traces:
@@ -116,12 +128,14 @@ def get_llm_calls(business_id: str) -> dict:
             meta = span.get("metadata") or {}
             if meta.get("business_id") != business_id:
                 continue
-            calls.append({
-                "trace_id": trace["trace_id"],
-                "name": span["name"],
-                "duration_ms": span["duration_ms"],
-                "success": span["success"],
-                "started_at": span.get("started_at"),
-                "metadata": meta,
-            })
+            calls.append(
+                {
+                    "trace_id": trace["trace_id"],
+                    "name": span["name"],
+                    "duration_ms": span["duration_ms"],
+                    "success": span["success"],
+                    "started_at": span.get("started_at"),
+                    "metadata": meta,
+                }
+            )
     return {"ok": True, "business_id": business_id, "call_count": len(calls), "llm_calls": calls}

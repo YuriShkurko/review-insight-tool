@@ -39,6 +39,7 @@ def _get(path: str, **params: Any) -> dict[str, Any]:
 # 1. trace_journey
 # ---------------------------------------------------------------------------
 
+
 def get_trace_journey(trace_id: str) -> dict[str, Any]:
     """Return the ordered span tree for a single trace from the live backend."""
     return _get(f"/api/debug/traces/{trace_id}")
@@ -47,6 +48,7 @@ def get_trace_journey(trace_id: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # 2. health_probe
 # ---------------------------------------------------------------------------
+
 
 def get_health_probe() -> dict[str, Any]:
     """Return a liveness map for DB, review provider, and trace buffer."""
@@ -81,6 +83,7 @@ def get_health_probe() -> dict[str, Any]:
 # 3. recent_traces
 # ---------------------------------------------------------------------------
 
+
 def get_recent_traces(limit: int = 20) -> dict[str, Any]:
     """Return the N most recent traces from the live backend ring buffer."""
     return _get("/api/debug/traces", limit=limit)
@@ -89,6 +92,7 @@ def get_recent_traces(limit: int = 20) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # 4. mutation_log
 # ---------------------------------------------------------------------------
+
 
 def get_mutation_log(entity_id: str) -> dict[str, Any]:
     """Return all write-flagged spans for a given entity_id from the live backend."""
@@ -99,6 +103,7 @@ def get_mutation_log(entity_id: str) -> dict[str, Any]:
 # 5. llm_call_log
 # ---------------------------------------------------------------------------
 
+
 def get_llm_call_log(business_id: str) -> dict[str, Any]:
     """Return all LLM-tagged spans for a given business_id from the live backend."""
     return _get(f"/api/debug/llm-calls/{business_id}")
@@ -107,6 +112,7 @@ def get_llm_call_log(business_id: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # 6. ui_snapshot
 # ---------------------------------------------------------------------------
+
 
 def get_ui_snapshot() -> dict[str, Any]:
     """Fetch the latest frontend UI element snapshot from the backend."""

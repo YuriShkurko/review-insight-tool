@@ -45,7 +45,7 @@ describe("DebugEvent trace_id field", () => {
 
   it("multiple events each carry their own trace_id", () => {
     trailEvent("api:start", { trace_id: "t1", method: "POST" });
-    trailEvent("api:ok",    { trace_id: "t1", status: 200 });
+    trailEvent("api:ok", { trace_id: "t1", status: 200 });
     trailEvent("api:start", { trace_id: "t2", method: "GET" });
     const events = getTrail();
     const ids = events.map((e) => e.detail?.trace_id);

@@ -25,9 +25,11 @@ import sys
 # T4.7 — Sampling determinism
 # ---------------------------------------------------------------------------
 
+
 class TestSampling:
     def test_sample_rate_zero_stores_nothing(self):
         from app.tracing import TraceContext
+
         ctx = TraceContext(sample_rate=0.0)
         for i in range(100):
             ctx.add_trace(f"tid-{i}", endpoint="/api/test")
@@ -35,6 +37,7 @@ class TestSampling:
 
     def test_sample_rate_one_stores_everything(self):
         from app.tracing import TraceContext
+
         ctx = TraceContext(sample_rate=1.0, max_traces=200)
         for i in range(100):
             ctx.add_trace(f"tid-{i}", endpoint="/api/test")
@@ -43,6 +46,7 @@ class TestSampling:
     def test_sampling_is_deterministic_for_same_trace_id(self):
         """Same trace_id must always produce the same sampling decision."""
         from app.tracing import TraceContext
+
         ctx1 = TraceContext(sample_rate=0.5, max_traces=1000)
         ctx2 = TraceContext(sample_rate=0.5, max_traces=1000)
         ids = [f"stable-id-{i:04d}" for i in range(200)]
@@ -59,6 +63,7 @@ class TestSampling:
         import uuid as _uuid
 
         from app.tracing import TraceContext
+
         ctx = TraceContext(sample_rate=0.5, max_traces=1000)
         for _ in range(1000):
             ctx.add_trace(str(_uuid.uuid4()), endpoint="/api/test")
@@ -68,6 +73,7 @@ class TestSampling:
     def test_spans_not_stored_for_unsampled_trace(self):
         """add_span on an unsampled trace_id is a complete no-op."""
         from app.tracing import TraceContext
+
         ctx = TraceContext(sample_rate=0.0)
         ctx.add_trace("unsampled", endpoint="/api/test")
         ctx.add_span("unsampled", name="db_query", duration_ms=5.0, success=True)
@@ -78,9 +84,11 @@ class TestSampling:
 # T4.8 — TTL eviction
 # ---------------------------------------------------------------------------
 
+
 class TestTTLEviction:
     def test_old_trace_evicted_after_cleanup(self):
         from app.tracing import TraceContext
+
         ctx = TraceContext(ttl_hours=1)
         ctx.add_trace("old", endpoint="/api/test")
         # Manually backdate the trace's started_at by 2 hours
@@ -91,6 +99,7 @@ class TestTTLEviction:
 
     def test_recent_trace_survives_cleanup(self):
         from app.tracing import TraceContext
+
         ctx = TraceContext(ttl_hours=1)
         ctx.add_trace("fresh", endpoint="/api/test")
         ctx.cleanup()
@@ -98,6 +107,7 @@ class TestTTLEviction:
 
     def test_cleanup_noop_when_ttl_none(self):
         from app.tracing import TraceContext
+
         ctx = TraceContext(ttl_hours=None)
         ctx.add_trace("ageless", endpoint="/api/test")
         with ctx._lock:
@@ -108,6 +118,7 @@ class TestTTLEviction:
     def test_cleanup_preserves_ring_integrity(self):
         """After cleanup the ring and index remain consistent."""
         from app.tracing import TraceContext
+
         ctx = TraceContext(ttl_hours=1, max_traces=10)
         for i in range(5):
             ctx.add_trace(f"old-{i}", endpoint="/api/test")
@@ -126,6 +137,7 @@ class TestTTLEviction:
 
     def test_multiple_cleanups_idempotent(self):
         from app.tracing import TraceContext
+
         ctx = TraceContext(ttl_hours=1, max_traces=10)
         ctx.add_trace("fresh", endpoint="/api/test")
         ctx.cleanup()
@@ -137,6 +149,7 @@ class TestTTLEviction:
 # ---------------------------------------------------------------------------
 # T4.9 — Memory ceiling
 # ---------------------------------------------------------------------------
+
 
 class TestMemoryCeiling:
     def test_full_ring_under_50mb(self):

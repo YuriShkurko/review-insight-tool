@@ -51,6 +51,7 @@ def _load_dotenv_once() -> None:
             key, _, val = line.partition("=")
             os.environ.setdefault(key.strip(), val.strip())
 
+
 _load_dotenv_once()
 
 from starlette.middleware.base import BaseHTTPMiddleware  # noqa: E402
@@ -73,6 +74,7 @@ def get_current_trace_id() -> str | None:
 # Sampling helper — hash-deterministic so same trace_id always in/out
 # ---------------------------------------------------------------------------
 
+
 def _should_sample(trace_id: str, rate: float) -> bool:
     """Return True if this trace_id should be recorded at *rate* (0.0-1.0).
 
@@ -91,6 +93,7 @@ def _should_sample(trace_id: str, rate: float) -> bool:
 # ---------------------------------------------------------------------------
 # TraceContext — thread-safe in-memory ring buffer
 # ---------------------------------------------------------------------------
+
 
 class TraceContext:
     """In-memory ring buffer of request traces and their spans.
@@ -234,6 +237,7 @@ class TraceContext:
 # Global singleton — built from env vars; tests use their own instances
 # ---------------------------------------------------------------------------
 
+
 def _build_context() -> TraceContext:
     enabled = os.environ.get("DEBUG_TRACE", "").lower() == "true"
     max_traces = int(os.environ.get("DEBUG_TRACE_MAX_TRACES", "500"))
@@ -258,6 +262,7 @@ trace_context = _build_context()
 # TraceMiddleware — injects / propagates X-Trace-Id
 # ---------------------------------------------------------------------------
 
+
 class TraceMiddleware(BaseHTTPMiddleware):
     """Starlette middleware that:
 
@@ -279,6 +284,7 @@ class TraceMiddleware(BaseHTTPMiddleware):
             return response
         except Exception:
             from starlette.responses import PlainTextResponse
+
             response = PlainTextResponse("Internal Server Error", status_code=500)
             response.headers["x-trace-id"] = trace_id
             return response
@@ -289,6 +295,7 @@ class TraceMiddleware(BaseHTTPMiddleware):
 # ---------------------------------------------------------------------------
 # trace_span — context manager that records a single span
 # ---------------------------------------------------------------------------
+
 
 @contextmanager
 def trace_span(

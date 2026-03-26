@@ -8,7 +8,6 @@ Tests cover:
 - No headers injected when DEBUG_TRACE is off
 """
 
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -36,6 +35,7 @@ def _make_app(debug_trace: bool = True) -> FastAPI:
 # ---------------------------------------------------------------------------
 # T1.2a — header injection
 # ---------------------------------------------------------------------------
+
 
 class TestTraceMiddlewareInjection:
     def test_response_has_trace_id_header(self):
@@ -69,6 +69,7 @@ class TestTraceMiddlewareInjection:
 # T1.2b — disabled (DEBUG_TRACE off)
 # ---------------------------------------------------------------------------
 
+
 class TestTraceMiddlewareDisabled:
     def test_no_trace_header_when_disabled(self):
         client = TestClient(_make_app(debug_trace=False), raise_server_exceptions=False)
@@ -84,6 +85,7 @@ class TestTraceMiddlewareDisabled:
 # ---------------------------------------------------------------------------
 # T1.2c — contextvar isolation across requests
 # ---------------------------------------------------------------------------
+
 
 class TestTraceMiddlewareContextIsolation:
     def test_each_request_gets_unique_trace_id(self):

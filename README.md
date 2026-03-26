@@ -148,6 +148,14 @@ Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
 |---------|
 | ![Reviews](docs/screenshots/07-reviews.png) |
 
+| Debug Trail Panel | Debug Selector Highlight |
+|-------------------|--------------------------|
+| ![Debug Panel Events](docs/screenshots/08-debug-panel-events.png) | ![Debug Selector Highlight](docs/screenshots/09-debug-selector-highlight.png) |
+
+| Debug Selector Tab | Trace ID Header (Network) |
+|--------------------|---------------------------|
+| ![Debug Selector Tab](docs/screenshots/10-debug-selector-tab.png) | ![Trace ID Header](docs/screenshots/11-trace-id-network.png) |
+
 ## Usage
 
 1. **Register** — create an account at `/register`
@@ -165,32 +173,24 @@ Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
 
 ```mermaid
 graph TB
-    User([User]) --> Frontend
+    U[User] --> F[Frontend Next.js]
+    F --> API[Backend FastAPI]
 
-    subgraph Client
-        Frontend["Next.js Frontend<br/>React · TypeScript · Tailwind"]
-    end
+    API --> R[Routes]
+    R --> S[Services]
+    S --> P[Providers mock/offline/outscraper]
+    S --> LLM[OpenAI]
+    S --> DB[(PostgreSQL)]
 
-    subgraph Server
-        API["FastAPI Backend<br/>Routes · Services · Auth"]
-    end
+    F --> DT[Debug Trail + Selector]
+    DT --> DUI[/api/debug/ui-snapshot]
+    DUI --> API
 
-    subgraph Providers
-        RP["Review Provider Layer<br/>Outscraper · Offline · Mock"]
-    end
-
-    subgraph External
-        LLM["LLM Engine External<br/>OpenAI GPT-4o-mini"]
-    end
-
-    subgraph Data
-        DB[("PostgreSQL<br/>Users · Businesses<br/>Reviews · Analyses")]
-    end
-
-    Frontend -- "HTTP / JSON" --> API
-    API --> RP
-    API --> LLM
-    API --> DB
+    API --> TM[Trace Middleware + Trace Context]
+    TM --> DIP[Debug Dipstick Tools]
+    MCP[Cursor MCP Client] --> MCPDBG[review-insight-debug MCP server]
+    MCPDBG --> DIP
+    DIP --> TM
 ```
 
 The **Review Provider Layer** separates external review sources from core application logic, so adding a new provider (Yelp, TripAdvisor, etc.) requires only a new provider class and factory registration — no changes to routes, services, or the frontend.

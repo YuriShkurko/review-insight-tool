@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
-_BACKEND_DIR = Path(__file__).resolve().parents[1]
-
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
+
+_BACKEND_DIR = Path(__file__).resolve().parents[1]
 
 _PLACEHOLDER_PREFIXES = ("your-", "sk-your-", "change-me", "put-your", "insert-")
 

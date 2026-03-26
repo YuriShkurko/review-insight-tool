@@ -178,15 +178,15 @@ graph TB
 
     API --> R[Routes]
     R --> S[Services]
-    S --> P[Providers mock/offline/outscraper]
+    S --> P[Review Providers: mock / offline / outscraper]
     S --> LLM[OpenAI]
     S --> DB[(PostgreSQL)]
 
-    F --> DT[Debug Trail + Selector]
-    DT --> DUI[/api/debug/ui-snapshot]
-    DUI --> API
+    F --> DT[Debug Trail and Selector]
+    DT --> UIS[Debug UI Snapshot API]
+    UIS --> API
 
-    API --> TM[Trace Middleware + Trace Context]
+    API --> TM[Trace Middleware and Trace Context]
     TM --> DIP[Debug Dipstick Tools]
     MCP[Cursor MCP Client] --> MCPDBG[review-insight-debug MCP server]
     MCPDBG --> DIP

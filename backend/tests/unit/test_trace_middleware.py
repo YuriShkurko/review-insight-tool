@@ -8,9 +8,7 @@ Tests cover:
 - No headers injected when DEBUG_TRACE is off
 """
 
-import os
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 

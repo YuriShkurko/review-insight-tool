@@ -9,7 +9,7 @@ Sensitive data rules (enforced throughout):
 - Never return raw review text (PII risk)
 - API key presence is always reported as a boolean only
 
-Tool inventory (13 total):
+Tool inventory (14 total):
 
 System / config:
   system_status()              — provider, keys-set flags, DB reachable, Railway
@@ -24,6 +24,10 @@ Sandbox / data:
 Business / user:
   business_snapshot(id)        — full debug view for one business UUID
   user_summary(email|id)       — business count, review totals, account info
+
+Frontend debug selector:
+  debug_selector_status()      — CTRL+click selector config, env flag, + current snapshot
+  ui_snapshot()                — latest CTRL+click element snapshot (raw)
 
 Tracing dipstick (require DEBUG_TRACE=true):
   trace_journey(trace_id)      — ordered span tree: route→db→llm→exit
@@ -449,6 +453,7 @@ def register_tools(mcp: Any) -> None:
     # ── Dipstick tools (require DEBUG_TRACE for meaningful data) ──────────────
 
     from debug.dipstick import (
+        get_debug_selector_status,
         get_health_probe,
         get_llm_call_log,
         get_mutation_log,
@@ -456,18 +461,17 @@ def register_tools(mcp: Any) -> None:
         get_trace_journey,
         get_ui_snapshot,
     )
-    from app.tracing import trace_context as _trace_ctx
 
     @mcp.tool(
         name="trace_journey",
         description=(
-            "Returns the ordered span tree for a single request trace. "
+            "Returns the ordered span tree for a single request trace from the live backend. "
             "Requires DEBUG_TRACE=true. Pass the trace_id from an X-Trace-Id response header "
             "or from recent_traces. Shows every span: route_enter, db_query, llm_call, route_exit."
         ),
     )
     def trace_journey(trace_id: str) -> dict:
-        return get_trace_journey(_trace_ctx, trace_id)
+        return get_trace_journey(trace_id)
 
     @mcp.tool(
         name="health_probe",
@@ -483,13 +487,13 @@ def register_tools(mcp: Any) -> None:
     @mcp.tool(
         name="recent_traces",
         description=(
-            "Returns the N most recent request traces, newest first. "
+            "Returns the N most recent request traces from the live backend, newest first. "
             "Each entry shows trace_id, endpoint, started_at, and span_count. "
-            "Requires DEBUG_TRACE=true."
+            "Requires DEBUG_TRACE=true on the running backend."
         ),
     )
     def recent_traces(limit: int = 20) -> dict:
-        return get_recent_traces(_trace_ctx, limit=limit)
+        return get_recent_traces(limit=limit)
 
     @mcp.tool(
         name="mutation_log",
@@ -497,23 +501,23 @@ def register_tools(mcp: Any) -> None:
             "Returns all mutation spans recorded for a given entity_id (e.g. a business UUID). "
             "A span is a mutation when its metadata contains mutation=true. "
             "Shows every write operation with trace_id, operation name, and timestamp. "
-            "Requires DEBUG_TRACE=true."
+            "Requires DEBUG_TRACE=true on the running backend."
         ),
     )
     def mutation_log(entity_id: str) -> dict:
-        return get_mutation_log(_trace_ctx, entity_id=entity_id)
+        return get_mutation_log(entity_id=entity_id)
 
     @mcp.tool(
         name="llm_call_log",
         description=(
-            "Returns all LLM call spans for a given business_id. "
+            "Returns all LLM call spans for a given business_id from the live backend. "
             "Shows model call duration, success, and which trace each call belongs to. "
             "Useful for diagnosing slow analysis or runaway token usage. "
-            "Requires DEBUG_TRACE=true."
+            "Requires DEBUG_TRACE=true on the running backend."
         ),
     )
     def llm_call_log(business_id: str) -> dict:
-        return get_llm_call_log(_trace_ctx, business_id=business_id)
+        return get_llm_call_log(business_id=business_id)
 
     @mcp.tool(
         name="ui_snapshot",
@@ -529,6 +533,22 @@ def register_tools(mcp: Any) -> None:
     )
     def ui_snapshot() -> dict:
         return get_ui_snapshot()
+
+    @mcp.tool(
+        name="debug_selector_status",
+        description=(
+            "Returns the full state of the frontend CTRL+click debug selector. "
+            "Checks whether NEXT_PUBLIC_DEBUG_TRAIL=true is set in frontend/.env.local, "
+            "then fetches the latest UI snapshot from the running backend. "
+            "Also documents the complete selector workflow: "
+            "hold CTRL → cursor becomes crosshair; CTRL+click → purple glow on the element "
+            "([data-debug-sel='primary']) and dashed outlines on all children; "
+            "double-tap CTRL to clear; ◉ Debug panel → Selector tab to inspect selection. "
+            "Use this first to verify the selector is enabled before calling ui_snapshot."
+        ),
+    )
+    def debug_selector_status() -> dict:
+        return get_debug_selector_status()
 
     # ── 8. sandbox_reset_user (guarded mutating) ──────────────────────────────
 

@@ -85,14 +85,16 @@ def analyze_reviews(db: Session, business_id: uuid.UUID, trace_id: str | None = 
     review_texts = _format_reviews_for_prompt(reviews)
 
     tid = trace_id or get_current_trace_id()
-    with timed_operation(logger, "llm_call", business_id=business_id, review_count=len(reviews)):
-        with trace_span(
+    with (
+        timed_operation(logger, "llm_call", business_id=business_id, review_count=len(reviews)),
+        trace_span(
             trace_context,
             tid,
             "llm_call",
             metadata={"business_id": str(business_id), "review_count": len(reviews)},
-        ):
-            result = _call_openai(system_prompt, review_texts)
+        ),
+    ):
+        result = _call_openai(system_prompt, review_texts)
     result = _normalize_result(result)
 
     existing = db.query(Analysis).filter(Analysis.business_id == business_id).first()

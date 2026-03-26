@@ -190,7 +190,7 @@ export default function DebugPanel() {
                     </div>
                     <p className="text-gray-500 text-[10px] truncate mb-1">{el.path}</p>
                     {el.text && (
-                      <p className="text-gray-400 text-[10px] truncate italic">"{el.text.slice(0, 80)}"</p>
+                      <p className="text-gray-400 text-[10px] truncate italic">&quot;{el.text.slice(0, 80)}&quot;</p>
                     )}
                     <div className="flex gap-3 mt-1 text-[10px] text-gray-600">
                       <span>{el.rect.width}×{el.rect.height}</span>

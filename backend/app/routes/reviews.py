@@ -38,9 +38,11 @@ def trigger_fetch_reviews(
 ):
     business = _get_business_for_user(business_id, current_user, db)
     tid = get_current_trace_id()
-    with timed_operation(logger, "fetch_reviews", business_id=business_id):
-        with trace_span(trace_context, tid, "fetch_reviews", metadata={"business_id": str(business_id)}):
-            reviews = fetch_reviews_for_business(db, business)
+    with (
+        timed_operation(logger, "fetch_reviews", business_id=business_id),
+        trace_span(trace_context, tid, "fetch_reviews", metadata={"business_id": str(business_id)}),
+    ):
+        reviews = fetch_reviews_for_business(db, business)
     logger.info("op=fetch_reviews business_id=%s review_count=%d", business_id, len(reviews))
     return reviews
 
@@ -69,9 +71,11 @@ def trigger_analysis(
     _get_business_for_user(business_id, current_user, db)
     tid = get_current_trace_id()
     try:
-        with timed_operation(logger, "analyze", business_id=business_id):
-            with trace_span(trace_context, tid, "route_analyze", metadata={"business_id": str(business_id)}):
-                result = analyze_reviews(db, business_id, trace_id=tid)
+        with (
+            timed_operation(logger, "analyze", business_id=business_id),
+            trace_span(trace_context, tid, "route_analyze", metadata={"business_id": str(business_id)}),
+        ):
+            result = analyze_reviews(db, business_id, trace_id=tid)
     except NoReviewsError as exc:
         raise HTTPException(status_code=400, detail=exc.message) from exc
     except ExternalProviderError as exc:

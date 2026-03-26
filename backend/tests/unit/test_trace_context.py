@@ -12,9 +12,6 @@ Tests cover:
 import threading
 import time
 
-import pytest
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -156,7 +153,7 @@ class TestTraceContextThreadSafety:
             t.join()
 
         assert not errors
-        # 10 threads × 50 = 500 traces, all within ring
+        # 10 threads x 50 = 500 traces, all within ring
         assert len(ctx.list_recent(limit=None)) == 500
 
     def test_concurrent_add_spans(self):

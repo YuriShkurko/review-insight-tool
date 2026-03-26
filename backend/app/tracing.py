@@ -20,7 +20,7 @@ Usage
 Tuning env vars (all optional):
     DEBUG_TRACE_MAX_TRACES      int   default 500
     DEBUG_TRACE_MAX_SPANS       int   default 50
-    DEBUG_TRACE_SAMPLE_RATE     float default 1.0  (0.0–1.0, hash-deterministic)
+    DEBUG_TRACE_SAMPLE_RATE     float default 1.0  (0.0-1.0, hash-deterministic)
     DEBUG_TRACE_TTL_HOURS       int   default 24   (set to 0 to disable TTL)
 """
 
@@ -30,13 +30,32 @@ import threading
 import time
 import uuid
 from collections import deque
+from collections.abc import Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import Any, Generator
+from pathlib import Path
+from typing import Any
 
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
+
+# Load .env so DEBUG_TRACE and tuning vars are visible via os.environ when this
+# module is imported (pydantic-settings populates Settings but not os.environ).
+def _load_dotenv_once() -> None:
+    env_path = Path(__file__).resolve().parents[1] / ".env"
+    if not env_path.exists():
+        return
+    with env_path.open() as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            os.environ.setdefault(key.strip(), val.strip())
+
+_load_dotenv_once()
+
+from starlette.middleware.base import BaseHTTPMiddleware  # noqa: E402
+from starlette.requests import Request  # noqa: E402
+from starlette.responses import Response  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Contextvar — current trace ID for the in-flight request
@@ -55,7 +74,7 @@ def get_current_trace_id() -> str | None:
 # ---------------------------------------------------------------------------
 
 def _should_sample(trace_id: str, rate: float) -> bool:
-    """Return True if this trace_id should be recorded at *rate* (0.0–1.0).
+    """Return True if this trace_id should be recorded at *rate* (0.0-1.0).
 
     Uses the first 8 hex digits of SHA-256(trace_id) as a uniform [0, 1)
     value so the decision is consistent across processes and restarts.
@@ -85,7 +104,7 @@ class TraceContext:
     enabled:
         When False every method is a no-op.
     sample_rate:
-        Fraction of traces to store (0.0–1.0).  Sampling is hash-deterministic:
+        Fraction of traces to store (0.0-1.0).  Sampling is hash-deterministic:
         the same trace_id always produces the same sampling decision.
     ttl_hours:
         Traces older than this many hours are removed by cleanup().

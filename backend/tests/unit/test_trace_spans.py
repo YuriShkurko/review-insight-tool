@@ -13,7 +13,6 @@ import time
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -67,9 +66,8 @@ class TestTraceSpanBasic:
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
-        with pytest.raises(RuntimeError):
-            with trace_span(ctx, "tid-1", "llm_call"):
-                raise RuntimeError("timeout")
+        with pytest.raises(RuntimeError), trace_span(ctx, "tid-1", "llm_call"):
+            raise RuntimeError("timeout")
 
         span = ctx.get_trace("tid-1")["spans"][0]
         assert span["success"] is False
@@ -80,9 +78,8 @@ class TestTraceSpanBasic:
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
-        with pytest.raises(ValueError, match="oops"):
-            with trace_span(ctx, "tid-1", "x"):
-                raise ValueError("oops")
+        with pytest.raises(ValueError, match="oops"), trace_span(ctx, "tid-1", "x"):
+            raise ValueError("oops")
 
     def test_span_metadata_stored(self):
         from app.tracing import trace_span
@@ -107,10 +104,12 @@ class TestTraceSpanNested:
         ctx = _fresh_ctx()
         ctx.add_trace("tid-1", endpoint="/api/test")
 
-        with trace_span(ctx, "tid-1", "route_enter"):
-            with trace_span(ctx, "tid-1", "db_query"):
-                with trace_span(ctx, "tid-1", "llm_call"):
-                    pass
+        with (
+            trace_span(ctx, "tid-1", "route_enter"),
+            trace_span(ctx, "tid-1", "db_query"),
+            trace_span(ctx, "tid-1", "llm_call"),
+        ):
+            pass
 
         spans = ctx.get_trace("tid-1")["spans"]
         names = [s["name"] for s in spans]
@@ -152,6 +151,5 @@ class TestTraceSpanDisabled:
         from app.tracing import trace_span
         ctx = _fresh_ctx(enabled=False)
 
-        with pytest.raises(KeyError):
-            with trace_span(ctx, "tid-1", "x"):
-                raise KeyError("still raised")
+        with pytest.raises(KeyError), trace_span(ctx, "tid-1", "x"):
+            raise KeyError("still raised")

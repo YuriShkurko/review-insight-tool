@@ -482,13 +482,13 @@ export default function BusinessDetailPage() {
                     <span className={mainReady ? "text-green-700" : "text-gray-400"}>
                       {mainReady ? "✓" : "○"} Your business analyzed
                     </span>
-                    <span className={anyCompReady ? "text-green-700" : "text-gray-400"}>
-                      {allCompReady ? "✓" : anyCompReady ? "◐" : "○"}{" "}
+                    <span className={allCompReady ? "text-green-700" : anyCompReady ? "text-amber-600" : "text-gray-400"}>
+                      {allCompReady ? "✓" : anyCompReady ? "◐" : "→"}{" "}
                       {allCompReady
                         ? "All competitors analyzed"
                         : anyCompReady
-                          ? "Some competitors analyzed"
-                          : "At least one competitor analyzed"}
+                          ? "Some competitors analyzed — rest will auto-analyze"
+                          : "Competitors will be auto-analyzed"}
                     </span>
                   </div>
                 </div>

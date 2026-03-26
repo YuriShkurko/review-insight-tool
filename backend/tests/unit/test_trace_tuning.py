@@ -1,4 +1,4 @@
-"""T4.7–T4.9 — Tests for tuning: sampling, TTL eviction, and memory ceiling.
+"""T4.7-T4.9 - Tests for tuning: sampling, TTL eviction, and memory ceiling.
 
 All tests are written before the implementation (RED phase).
 
@@ -14,15 +14,12 @@ T4.8 — TTL eviction
     - cleanup() is a no-op when TTL is None (disabled)
 
 T4.9 — Memory ceiling
-    - A full ring (max_traces × max_spans) uses reasonable memory
+    - A full ring (max_traces x max_spans) uses reasonable memory
 """
 
 from __future__ import annotations
 
 import sys
-import time
-from unittest.mock import patch
-
 
 # ---------------------------------------------------------------------------
 # T4.7 — Sampling determinism
@@ -58,9 +55,10 @@ class TestSampling:
         assert stored1 == stored2
 
     def test_sampling_approximately_correct_rate(self):
-        """At 50% rate, within 15% of 1000 traces should be stored (350–650)."""
-        from app.tracing import TraceContext
+        """At 50% rate, within 15% of 1000 traces should be stored (350-650)."""
         import uuid as _uuid
+
+        from app.tracing import TraceContext
         ctx = TraceContext(sample_rate=0.5, max_traces=1000)
         for _ in range(1000):
             ctx.add_trace(str(_uuid.uuid4()), endpoint="/api/test")

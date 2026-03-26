@@ -132,29 +132,38 @@ Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
 
 ## Screenshots
 
-| Login | Business List |
-|-------|--------------|
-| ![Login](docs/screenshots/01-login.png) | ![Business List](docs/screenshots/02-business-list.png) |
+1. Login  
+   ![Login](docs/screenshots/01-login.png)
 
-| Dashboard — Header & Stats | Dashboard — Insights |
-|----------------------------|---------------------|
-| ![Dashboard Header](docs/screenshots/03-dashboard-header.png) | ![Dashboard Insights](docs/screenshots/04-dashboard-insights.png) |
+2. Business List  
+   ![Business List](docs/screenshots/02-business-list.png)
 
-| Competitors | Comparison |
-|-------------|------------|
-| ![Competitors](docs/screenshots/05-competitors.png) | ![Comparison](docs/screenshots/06-comparison.png) |
+3. Dashboard Header  
+   ![Dashboard Header](docs/screenshots/03-dashboard-header.png)
 
-| Reviews |
-|---------|
-| ![Reviews](docs/screenshots/07-reviews.png) |
+4. Dashboard Insights  
+   ![Dashboard Insights](docs/screenshots/04-dashboard-insights.png)
 
-| Debug Trail Panel | Debug Selector Highlight |
-|-------------------|--------------------------|
-| ![Debug Panel Events](docs/screenshots/08-debug-panel-events.png) | ![Debug Selector Highlight](docs/screenshots/09-debug-selector-highlight.png) |
+5. Competitors  
+   ![Competitors](docs/screenshots/05-competitors.png)
 
-| Debug Selector Tab | Trace ID Header (Network) |
-|--------------------|---------------------------|
-| ![Debug Selector Tab](docs/screenshots/10-debug-selector-tab.png) | ![Trace ID Header](docs/screenshots/11-trace-id-network.png) |
+6. Comparison  
+   ![Comparison](docs/screenshots/06-comparison.png)
+
+7. Reviews  
+   ![Reviews](docs/screenshots/07-reviews.png)
+
+8. Debug Panel Events  
+   ![Debug Panel Events](docs/screenshots/08-debug-panel-events.png)
+
+9. Debug Selector Highlight  
+   ![Debug Selector Highlight](docs/screenshots/09-debug-selector-highlight.png)
+
+10. Debug Selector Tab  
+    ![Debug Selector Tab](docs/screenshots/10-debug-selector-tab.png)
+
+11. Trace ID Header (Network)  
+    ![Trace ID Header](docs/screenshots/11-trace-id-network.png)
 
 ## Usage
 

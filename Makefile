@@ -1,4 +1,4 @@
-.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check validate frontend-build ci-local backend frontend dev debug stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head
+.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check validate frontend-build ci-local backend frontend dev debug stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head pdf aws-bootstrap aws-rds aws-network aws-alb aws-ecs aws-logs-backend aws-logs-frontend aws-status aws-teardown
 
 # ── Docker Compose ──────────────────────────────────────────────
 
@@ -175,3 +175,52 @@ clean:
 	-rmdir /S /Q backend\.pytest_cache 2>nul || rm -rf backend/.pytest_cache
 	-rmdir /S /Q frontend\.next 2>nul || rm -rf frontend/.next
 	@echo Cleaned.
+
+
+# ── Docs ────────────────────────────────────────────────────────
+## Regenerate INTERVIEW_PREP.pdf (Mermaid diagrams pre-rendered via system Chrome)
+pdf:
+	node scripts/build-pdf.mjs
+
+# ── AWS Deployment ─────────────────────────────────────────────
+
+## Step 1: Create ECR repos, IAM role, store secrets in SSM
+aws-bootstrap:
+	bash infrastructure/01-bootstrap.sh
+
+## Step 2: Create RDS PostgreSQL instance (skip if using Railway DB)
+aws-rds:
+	bash infrastructure/02-rds.sh
+
+## Step 3: Create security groups (uses default VPC)
+aws-network:
+	bash infrastructure/03-network.sh
+
+## Step 4: Create Application Load Balancer + routing rules
+aws-alb:
+	bash infrastructure/04-alb.sh
+
+## Step 5: Create ECS cluster, task definitions, and services
+aws-ecs:
+	bash infrastructure/05-ecs.sh
+
+## Stream backend logs from ECS (CloudWatch)
+aws-logs-backend:
+	aws logs tail /ecs/review-insight-backend --follow --region $(or $(AWS_REGION),eu-central-1)
+
+## Stream frontend logs from ECS (CloudWatch)
+aws-logs-frontend:
+	aws logs tail /ecs/review-insight-frontend --follow --region $(or $(AWS_REGION),eu-central-1)
+
+## Show ECS service health (running/desired counts)
+aws-status:
+	aws ecs describe-services \
+		--cluster review-insight \
+		--services review-insight-backend review-insight-frontend \
+		--region $(or $(AWS_REGION),eu-central-1) \
+		--query 'services[*].{name:serviceName,running:runningCount,desired:desiredCount,status:status}' \
+		--output table
+
+## Delete all AWS resources (stops billing — use with care)
+aws-teardown:
+	bash infrastructure/teardown.sh

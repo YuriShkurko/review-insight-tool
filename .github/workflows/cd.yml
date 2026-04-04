@@ -1,0 +1,158 @@
+name: CD — Deploy to AWS ECS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only run one deploy at a time — cancel older queued runs
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_BACKEND: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/review-insight-backend
+  ECR_FRONTEND: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/review-insight-frontend
+  ECS_CLUSTER: review-insight
+
+jobs:
+  # ── Guard: only deploy if CI would pass ────────────────────────────────────
+  ci-check:
+    name: Quick lint guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Backend lint
+        run: |
+          pip install ruff --quiet
+          ruff check backend/app backend/debug --quiet
+          ruff format backend/app backend/debug --check --quiet
+
+      - name: Frontend type-check
+        working-directory: frontend
+        run: |
+          npm ci --silent
+          npx tsc --noEmit
+
+  # ── Build + push images to ECR ─────────────────────────────────────────────
+  build-push:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    needs: ci-check
+    outputs:
+      backend-image: ${{ steps.backend-image.outputs.image }}
+      frontend-image: ${{ steps.frontend-image.outputs.image }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── Backend ─────────────────────────────────────────────────────────────
+      - name: Build + push backend
+        id: backend-image
+        run: |
+          IMAGE="${ECR_BACKEND}:${{ github.sha }}"
+          docker build -t "$IMAGE" -t "${ECR_BACKEND}:latest" ./backend
+          docker push "$IMAGE"
+          docker push "${ECR_BACKEND}:latest"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      # ── Frontend ────────────────────────────────────────────────────────────
+      # NEXT_PUBLIC_API_URL is baked into client JS at build time.
+      # Set vars.BACKEND_PUBLIC_URL in GitHub → Settings → Variables to your ALB DNS.
+      - name: Build + push frontend
+        id: frontend-image
+        run: |
+          IMAGE="${ECR_FRONTEND}:${{ github.sha }}"
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=${{ vars.BACKEND_PUBLIC_URL }} \
+            -t "$IMAGE" \
+            -t "${ECR_FRONTEND}:latest" \
+            -f ./frontend/Dockerfile.prod ./frontend
+          docker push "$IMAGE"
+          docker push "${ECR_FRONTEND}:latest"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+  # ── Deploy to ECS Fargate ──────────────────────────────────────────────────
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build-push
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── Backend: register new task def revision + update service ────────────
+      - name: Download backend task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition review-insight-backend \
+            --query taskDefinition \
+            --region "$AWS_REGION" > task-def-backend.json
+
+      - name: Render backend task definition (new image)
+        id: render-backend
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def-backend.json
+          container-name: backend
+          image: ${{ needs.build-push.outputs.backend-image }}
+
+      - name: Deploy backend to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-backend.outputs.task-definition }}
+          service: review-insight-backend
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      # ── Frontend: same pattern ───────────────────────────────────────────────
+      - name: Download frontend task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition review-insight-frontend \
+            --query taskDefinition \
+            --region "$AWS_REGION" > task-def-frontend.json
+
+      - name: Render frontend task definition (new image)
+        id: render-frontend
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def-frontend.json
+          container-name: frontend
+          image: ${{ needs.build-push.outputs.frontend-image }}
+
+      - name: Deploy frontend to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-frontend.outputs.task-definition }}
+          service: review-insight-frontend
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Print public URL
+        run: |
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --names review-insight-alb \
+            --query "LoadBalancers[0].DNSName" \
+            --output text --region "$AWS_REGION")
+          echo "✓ Deployed: http://${ALB_DNS}"
+          echo "::notice title=Deployed::http://${ALB_DNS}"

@@ -21,6 +21,7 @@ Paste a Google Maps link, fetch reviews, and get tailored insights: top complain
 - [Development automation](docs/DEVELOPMENT.md)
 - [Debug event trail](docs/DEVELOPMENT.md#debug-event-trail)
 - [Staging / demo deployment](docs/STAGING.md)
+- [Benchmark](#benchmark)
 - [Testing](#testing)
 - [Specification](#specification)
 - [Roadmap](#roadmap)
@@ -47,6 +48,7 @@ Review Insight Tool solves this by:
 - **Secure access** — each user sees only their own businesses and data
 - **Fresh data** — refreshing reviews replaces the old set and clears stale analysis automatically
 - **Competitor comparison (V2)** — link up to 3 competitor businesses, run analysis on them, and generate an AI comparison (strengths, weaknesses, opportunities)
+- **Polyglot persistence (V3)** — optional MongoDB layer for comparison caching (4.2x speedup), versioned analysis history, and raw API response archival. Graceful no-op when unconfigured. See [benchmark results](docs/BENCHMARK.md)
 - **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching
 
 ## Quick Start
@@ -190,6 +192,7 @@ graph TB
     S --> P[Review Providers: mock / offline / outscraper]
     S --> LLM[OpenAI]
     S --> DB[(PostgreSQL)]
+    S --> MDB[(MongoDB - optional)]
 
     F --> DT[Debug Trail and Selector]
     DT --> UIS[Debug UI Snapshot API]
@@ -211,6 +214,7 @@ The **Review Provider Layer** separates external review sources from core applic
 | Routes | HTTP handlers, input validation, auth enforcement |
 | Services | Business logic — place resolution, review ingestion, AI analysis, dashboard |
 | Providers | Pluggable review source abstraction |
+| Mongo | Optional speed layer — comparison cache, analysis history, raw responses |
 | Models | SQLAlchemy ORM — User, Business, Review, Analysis |
 | Schemas | Pydantic request/response validation |
 
@@ -228,11 +232,11 @@ The **Review Provider Layer** separates external review sources from core applic
 |-------|------------|
 | Backend | Python 3.11+, FastAPI, SQLAlchemy 2.0, Pydantic |
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4 |
-| Database | PostgreSQL 16, Alembic migrations |
+| Database | PostgreSQL 16, Alembic migrations, MongoDB (optional — Atlas or local) |
 | AI | OpenAI GPT-4o-mini |
 | Auth | JWT (PyJWT), bcrypt |
 | Review providers | Mock (built-in), Offline (bundled real reviews), Outscraper (live) |
-| Infrastructure | Docker, Docker Compose |
+| Infrastructure | Docker, Docker Compose, AWS ECS Fargate, ECR, ALB, SSM |
 
 ## Review Providers
 
@@ -286,6 +290,10 @@ Interactive docs: http://localhost:8000/docs
 | `GOOGLE_PLACES_API_KEY` | Google Places API key (blank = extract name from URL) | — |
 | `JWT_SECRET_KEY` | Secret for signing tokens | `change-me-in-production` |
 | `JWT_EXPIRE_MINUTES` | Token expiry in minutes | `1440` |
+| `MONGO_URI` | MongoDB connection string (empty = MongoDB features disabled) | — |
+| `MONGO_DB_NAME` | MongoDB database name | `review_insight` |
+| `COMPARISON_CACHE_TTL_HOURS` | Comparison cache TTL in hours | `24` |
+| `RAW_RESPONSE_TTL_DAYS` | Raw API response retention in days | `30` |
 
 ### Frontend (`frontend/.env.local`)
 
@@ -301,6 +309,7 @@ Interactive docs: http://localhost:8000/docs
 │   │   ├── main.py              # FastAPI entry point
 │   │   ├── config.py            # Pydantic settings
 │   │   ├── database.py          # SQLAlchemy engine and session
+│   │   ├── mongo.py             # MongoDB client (optional polyglot layer)
 │   │   ├── auth.py              # JWT + bcrypt utilities
 │   │   ├── models/              # ORM models
 │   │   ├── schemas/             # Request/response schemas
@@ -504,6 +513,24 @@ make db-upgrade
 ```
 
 Then re-seed if needed (`make seed-offline`) and re-register users.
+
+## Benchmark
+
+The polyglot persistence layer was benchmarked on AWS ECS Fargate (Postgres-only vs Postgres + MongoDB Atlas M0).
+
+| Operation | Postgres-only | + MongoDB | Change |
+|-----------|--------------|-----------|--------|
+| Comparison (cold) | 5,797 ms | 5,190 ms | same (LLM-bound) |
+| Comparison (cache hit) | 5,049 ms | 1,235 ms | **4.2x faster** |
+| Analysis history query | N/A | 575 ms | **new capability** |
+
+Cache hits skip the OpenAI LLM call entirely and serve a MongoDB document instead. All MongoDB features gracefully no-op when `MONGO_URI` is unset.
+
+Full results: [docs/BENCHMARK.md](docs/BENCHMARK.md)
+
+```bash
+make benchmark   # run against a live backend
+```
 
 ## Testing
 

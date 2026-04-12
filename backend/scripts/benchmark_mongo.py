@@ -26,7 +26,7 @@ import sys
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -147,7 +147,7 @@ def run_benchmark(base_url: str, iterations: int) -> dict:
                 params={"business_id": target_id},
             )
             if r.status_code == 404:
-                print(f"  History query: endpoint not available (pre-MongoDB baseline)")
+                print("  History query: endpoint not available (pre-MongoDB baseline)")
                 break
             if r.status_code != 200:
                 fail(f"Analysis history failed: {r.text}")
@@ -180,7 +180,7 @@ def run_benchmark(base_url: str, iterations: int) -> dict:
         r = c.post(f"/businesses/{comp_id}/analyze", headers=h)
         if r.status_code != 200:
             fail(f"Analyze competitor failed: {r.text}")
-        print(f"  Analyzed competitor")
+        print("  Analyzed competitor")
 
         # ── 10. Comparison (cold — hits LLM) ──
         r, elapsed = timed_request(
@@ -208,7 +208,7 @@ def run_benchmark(base_url: str, iterations: int) -> dict:
             "iterations": iterations,
             "review_count": review_count,
             "tag": tag,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -335,7 +335,7 @@ def main() -> None:
     args = parser.parse_args()
 
     print(f"\n{'='*60}")
-    print(f"  Polyglot Persistence Benchmark")
+    print("  Polyglot Persistence Benchmark")
     print(f"  Backend: {args.base_url}")
     print(f"  Iterations: {args.iterations}")
     print(f"  MongoDB: {'enabled' if args.mongo else 'disabled (baseline)'}")

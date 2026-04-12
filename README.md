@@ -524,6 +524,18 @@ The polyglot persistence layer was benchmarked on AWS ECS Fargate (Postgres-only
 | Comparison (cache hit) | 5,049 ms | 1,235 ms | **4.2x faster** |
 | Analysis history query | N/A | 575 ms | **new capability** |
 
+```
+Comparison latency (ms) — lower is better
+
+Postgres-only (every call hits LLM):
+  cold     |████████████████████████████████████████████████████| 5,797 ms
+  "cached" |████████████████████████████████████████████████    | 5,049 ms
+
+Postgres + MongoDB (cache hit skips LLM):
+  cold     |████████████████████████████████████████████████    | 5,190 ms
+  cached   |██████████                                         | 1,235 ms  ← 4.2x faster
+```
+
 Cache hits skip the OpenAI LLM call entirely and serve a MongoDB document instead. All MongoDB features gracefully no-op when `MONGO_URI` is unset.
 
 Full results: [docs/BENCHMARK.md](docs/BENCHMARK.md)

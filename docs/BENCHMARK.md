@@ -14,6 +14,21 @@
 | comparison (cold) | 5,797 | 5,190 | same (LLM-bound) |
 | comparison (cache hit) | 5,049 | 1,235 | **4.2x faster** |
 
+```
+Comparison latency (ms) — lower is better
+
+Postgres-only (every call hits LLM):
+  cold     |████████████████████████████████████████████████████| 5,797 ms
+  "cached" |████████████████████████████████████████████████    | 5,049 ms
+
+Postgres + MongoDB (cache hit skips LLM):
+  cold     |████████████████████████████████████████████████    | 5,190 ms
+  cached   |██████████                                         | 1,235 ms  ← 4.2x faster
+
+Analysis history (new capability):
+  query    |█████                                              |   575 ms
+```
+
 ## Key Findings
 
 ### Comparison cache: 4.2x speedup (skips LLM entirely)

@@ -183,9 +183,7 @@ def run_benchmark(base_url: str, iterations: int) -> dict:
         print("  Analyzed competitor")
 
         # ── 10. Comparison (cold — hits LLM) ──
-        r, elapsed = timed_request(
-            c, "POST", f"/businesses/{target_id}/competitors/comparison", h
-        )
+        r, elapsed = timed_request(c, "POST", f"/businesses/{target_id}/competitors/comparison", h)
         if r.status_code != 200:
             fail(f"Comparison (cold) failed: {r.text}")
         record("comparison_cold").times_ms.append(elapsed)
@@ -247,9 +245,7 @@ def generate_report(data: dict, mongo_enabled: bool) -> str:
         r = results.get(name)
         if not r:
             continue
-        lines.append(
-            f"| {name} | {r.avg:.1f} | {r.min:.1f} | {r.max:.1f} | {r.stdev:.1f} |"
-        )
+        lines.append(f"| {name} | {r.avg:.1f} | {r.min:.1f} | {r.max:.1f} | {r.stdev:.1f} |")
 
     lines.append("")
 
@@ -258,12 +254,14 @@ def generate_report(data: dict, mongo_enabled: bool) -> str:
     cached = results.get("comparison_cached")
     if cold and cached and cached.avg > 0:
         speedup = cold.avg / cached.avg
-        lines.extend([
-            "## Speedup Analysis",
-            "",
-            f"- **Comparison cache speedup:** {speedup:.1f}x "
-            f"(cold {cold.avg:.0f}ms vs cached {cached.avg:.0f}ms)",
-        ])
+        lines.extend(
+            [
+                "## Speedup Analysis",
+                "",
+                f"- **Comparison cache speedup:** {speedup:.1f}x "
+                f"(cold {cold.avg:.0f}ms vs cached {cached.avg:.0f}ms)",
+            ]
+        )
         if mongo_enabled:
             lines.append(
                 "- **Cache mechanism:** MongoDB document lookup (skips LLM call entirely)"
@@ -277,38 +275,42 @@ def generate_report(data: dict, mongo_enabled: bool) -> str:
     rerun = results.get("analysis_rerun")
     if first and rerun:
         overhead = rerun.avg - first.avg
-        lines.extend([
-            f"- **Analysis archive overhead:** {overhead:+.0f}ms "
-            f"(first {first.avg:.0f}ms vs re-run {rerun.avg:.0f}ms)",
-        ])
+        lines.extend(
+            [
+                f"- **Analysis archive overhead:** {overhead:+.0f}ms "
+                f"(first {first.avg:.0f}ms vs re-run {rerun.avg:.0f}ms)",
+            ]
+        )
 
     history = results.get("history_query")
     if history:
         lines.append(f"- **History query latency:** {history.avg:.0f}ms avg")
 
-    lines.extend([
-        "",
-        "## Architecture",
-        "",
-        "```",
-        "                  +-- Postgres (source of truth) --+",
-        "                  |   users, businesses, reviews,  |",
-        "  FastAPI ------->|   analyses, competitor_links    |",
-        "                  +--------------------------------+",
-        "                  |                                 |",
-        "                  +-- MongoDB (optional speed layer)+",
-        "                  |   comparison_cache   (TTL 24h)  |",
-        "                  |   analysis_history   (permanent)|",
-        "                  |   raw_provider_responses (30d)  |",
-        "                  +--------------------------------+",
-        "```",
-        "",
-        "Postgres remains the single source of truth. MongoDB accelerates",
-        "read-heavy operations (comparison cache hits skip the LLM call",
-        "entirely) and stores data that doesn't fit the relational model",
-        "(versioned analysis history, raw API payloads).",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Architecture",
+            "",
+            "```",
+            "                  +-- Postgres (source of truth) --+",
+            "                  |   users, businesses, reviews,  |",
+            "  FastAPI ------->|   analyses, competitor_links    |",
+            "                  +--------------------------------+",
+            "                  |                                 |",
+            "                  +-- MongoDB (optional speed layer)+",
+            "                  |   comparison_cache   (TTL 24h)  |",
+            "                  |   analysis_history   (permanent)|",
+            "                  |   raw_provider_responses (30d)  |",
+            "                  +--------------------------------+",
+            "```",
+            "",
+            "Postgres remains the single source of truth. MongoDB accelerates",
+            "read-heavy operations (comparison cache hits skip the LLM call",
+            "entirely) and stores data that doesn't fit the relational model",
+            "(versioned analysis history, raw API payloads).",
+            "",
+        ]
+    )
 
     return "\n".join(lines)
 
@@ -318,28 +320,32 @@ def generate_report(data: dict, mongo_enabled: bool) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Polyglot Persistence Benchmark")
+    parser.add_argument("--base-url", default=BASE_URL, help=f"Backend URL (default: {BASE_URL})")
     parser.add_argument(
-        "--base-url", default=BASE_URL, help=f"Backend URL (default: {BASE_URL})"
+        "--iterations",
+        type=int,
+        default=ITERATIONS,
+        help=f"Iterations per scenario (default: {ITERATIONS})",
     )
     parser.add_argument(
-        "--iterations", type=int, default=ITERATIONS, help=f"Iterations per scenario (default: {ITERATIONS})"
-    )
-    parser.add_argument(
-        "--mongo", action="store_true", default=False,
+        "--mongo",
+        action="store_true",
+        default=False,
         help="Flag indicating MongoDB is enabled (affects report labels)",
     )
     parser.add_argument(
-        "--output", default=None,
+        "--output",
+        default=None,
         help="Output path for BENCHMARK.md (default: docs/BENCHMARK.md relative to repo root)",
     )
     args = parser.parse_args()
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("  Polyglot Persistence Benchmark")
     print(f"  Backend: {args.base_url}")
     print(f"  Iterations: {args.iterations}")
     print(f"  MongoDB: {'enabled' if args.mongo else 'disabled (baseline)'}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     data = run_benchmark(args.base_url, args.iterations)
 
@@ -358,10 +364,16 @@ def main() -> None:
     print(f"\nReport written to {out_path}")
 
     # Print summary to stdout
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("  Summary")
-    print(f"{'='*60}")
-    for name in ["analysis_first", "analysis_rerun", "history_query", "comparison_cold", "comparison_cached"]:
+    print(f"{'=' * 60}")
+    for name in [
+        "analysis_first",
+        "analysis_rerun",
+        "history_query",
+        "comparison_cold",
+        "comparison_cached",
+    ]:
         r = data["results"].get(name)
         if r:
             print(f"  {name:25s}  avg={r.avg:8.1f}ms  min={r.min:8.1f}ms  max={r.max:8.1f}ms")

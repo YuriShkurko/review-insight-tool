@@ -11,7 +11,7 @@ from app.logging_config import timed_operation
 from app.models.business import Business
 from app.models.review import Review
 from app.models.user import User
-from app.schemas.analysis import AnalysisRead
+from app.schemas.analysis import AnalysisHistoryItem, AnalysisRead
 from app.schemas.review import ReviewRead
 from app.services.analysis_service import analyze_reviews
 from app.services.review_service import fetch_reviews_for_business
@@ -62,6 +62,19 @@ def list_reviews(
         .order_by(Review.published_at.desc())
         .all()
     )
+
+
+@router.get("/analysis-history", response_model=list[AnalysisHistoryItem])
+def list_analysis_history(
+    business_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List previous analysis versions from MongoDB. Returns [] if MongoDB is not configured."""
+    _get_business_for_user(business_id, current_user, db)
+    from app.mongo import get_analysis_history
+
+    return get_analysis_history(str(business_id))
 
 
 @router.post("/analyze", response_model=AnalysisRead)

@@ -17,11 +17,16 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Schema is managed with Alembic (see README: Database migrations).
     logger.info(
-        "op=startup review_provider=%s openai_key_set=%s outscraper_key_set=%s",
+        "op=startup review_provider=%s openai_key_set=%s outscraper_key_set=%s mongo_uri_set=%s",
         settings.REVIEW_PROVIDER,
         bool(settings.OPENAI_API_KEY),
         bool(settings.OUTSCRAPER_API_KEY),
+        bool(settings.MONGO_URI),
     )
+    if settings.MONGO_URI:
+        from app.mongo import _init_mongo
+
+        _init_mongo()
     yield
 
 

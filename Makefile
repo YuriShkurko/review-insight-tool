@@ -1,4 +1,4 @@
-.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check validate frontend-build ci-local backend frontend dev debug stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head pdf aws-bootstrap aws-rds aws-network aws-alb aws-ecs aws-logs-backend aws-logs-frontend aws-status aws-teardown
+.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check validate frontend-build ci-local backend frontend dev debug stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head pdf aws-bootstrap aws-rds aws-network aws-alb aws-ecs aws-logs-backend aws-logs-frontend aws-status aws-teardown mongo-shell mongo-stats benchmark
 
 # ── Docker Compose ──────────────────────────────────────────────
 
@@ -156,6 +156,20 @@ db-add-is-competitor:
 	docker compose exec -T db psql -U postgres -d review_insight \
 		-c "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS is_competitor boolean NOT NULL DEFAULT false;"
 	@echo Column added. Restart backend if needed.
+
+# ── MongoDB ───────────────────────────────────────────────────
+
+## Open mongosh in the Docker Compose mongo container
+mongo-shell:
+	docker compose exec mongo mongosh review_insight
+
+## Show collection document counts
+mongo-stats:
+	docker compose exec mongo mongosh review_insight --quiet --eval "printjson({analysis_history: db.analysis_history.countDocuments({}), comparison_cache: db.comparison_cache.countDocuments({}), raw_provider_responses: db.raw_provider_responses.countDocuments({})})"
+
+## Run polyglot persistence benchmark (requires running backend; outputs docs/BENCHMARK.md)
+benchmark:
+	docker compose exec backend python -m scripts.benchmark_mongo $(BENCHMARK_ARGS)
 
 # ── Offline demo data ─────────────────────────────────────────
 

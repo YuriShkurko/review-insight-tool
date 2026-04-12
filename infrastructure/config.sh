@@ -20,5 +20,6 @@ export SSM_DATABASE_URL="/review-insight/DATABASE_URL"
 export SSM_OPENAI_KEY="/review-insight/OPENAI_API_KEY"
 export SSM_OUTSCRAPER_KEY="/review-insight/OUTSCRAPER_API_KEY"
 export SSM_JWT_SECRET="/review-insight/JWT_SECRET_KEY"
+export SSM_MONGO_URI="/review-insight/MONGO_URI"
 
 echo "✓ Config loaded (account=${AWS_ACCOUNT_ID}, region=${AWS_REGION})"

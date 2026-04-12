@@ -9,6 +9,13 @@ from app.routes.reviews import router as reviews_router
 from app.routes.sandbox import router as sandbox_router
 
 api_router = APIRouter(prefix="/api")
+
+
+@api_router.get("/health", include_in_schema=False)
+def health():
+    return {"status": "ok"}
+
+
 api_router.include_router(auth_router)
 api_router.include_router(businesses_router)
 api_router.include_router(competitors_router)

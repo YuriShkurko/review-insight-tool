@@ -27,6 +27,19 @@ def fetch_reviews_for_business(db: Session, business: Business) -> list[Review]:
     ):
         raw_reviews = provider.fetch_reviews(business.place_id, business.google_maps_url)
 
+    # Archive raw provider response to MongoDB (fire-and-forget)
+    raw_body = getattr(provider, "last_raw_response", None)
+    if raw_body is not None:
+        from app.mongo import store_raw_provider_response
+
+        store_raw_provider_response(
+            business_id=str(business.id),
+            provider=type(provider).__name__.lower().replace("provider", ""),
+            place_id=business.place_id,
+            raw_response=raw_body,
+            review_count=len(raw_reviews),
+        )
+
     if len(raw_reviews) > MAX_REVIEWS_PER_FETCH:
         logger.warning(
             "op=provider_fetch business_id=%s review_count=%d truncated_to=%d",

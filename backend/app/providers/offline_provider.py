@@ -27,6 +27,7 @@ class OfflineProvider(ReviewProvider):
     def __init__(self, data_dir: Path | None = None):
         self._data_dir = data_dir or _DATA_DIR
         self._manifest = self._load_manifest()
+        self.last_raw_response: list[dict] | None = None
 
     def _load_manifest(self) -> dict[str, dict]:
         manifest_path = self._data_dir / "manifest.json"
@@ -78,6 +79,7 @@ class OfflineProvider(ReviewProvider):
 
         with open(reviews_file, encoding="utf-8") as f:
             raw_reviews: list[dict] = json.load(f)
+        self.last_raw_response = raw_reviews
 
         result: list[NormalizedReview] = []
         fallback_date = datetime(2026, 3, 1, tzinfo=UTC)

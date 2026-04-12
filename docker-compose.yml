@@ -15,6 +15,18 @@ services:
       timeout: 3s
       retries: 5
 
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   backend:
     build: ./backend
     ports:
@@ -33,10 +45,13 @@ services:
       - ./backend/.env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/review_insight
+      MONGO_URI: mongodb://mongo:27017
     volumes:
       - ./backend:/app
     depends_on:
       db:
+        condition: service_healthy
+      mongo:
         condition: service_healthy
 
   frontend:
@@ -53,3 +68,4 @@ services:
 
 volumes:
   pgdata:
+  mongodata:

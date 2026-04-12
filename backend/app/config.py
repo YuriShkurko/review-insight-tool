@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     # Comma-separated extra CORS origins (e.g. https://my-app.up.railway.app). Localhost is always allowed.
     CORS_ORIGINS: str = ""
 
+    # MongoDB (optional) — polyglot persistence for analysis history, comparison cache, raw responses.
+    MONGO_URI: str = ""
+    MONGO_DB_NAME: str = "review_insight"
+    COMPARISON_CACHE_TTL_HOURS: int = 24
+    RAW_RESPONSE_TTL_DAYS: int = 30
+
     # Debug tracing — set to "true" to enable E2E request tracing ring buffer.
     DEBUG_TRACE: bool = False
 

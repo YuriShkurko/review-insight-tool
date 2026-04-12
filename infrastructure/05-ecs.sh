@@ -62,10 +62,11 @@ aws ecs register-task-definition \
         {\"name\": \"DATABASE_URL\",      \"valueFrom\": \"${SSM_DATABASE_URL}\"},
         {\"name\": \"OPENAI_API_KEY\",    \"valueFrom\": \"${SSM_OPENAI_KEY}\"},
         {\"name\": \"OUTSCRAPER_API_KEY\",\"valueFrom\": \"${SSM_OUTSCRAPER_KEY}\"},
-        {\"name\": \"JWT_SECRET_KEY\",    \"valueFrom\": \"${SSM_JWT_SECRET}\"}
+        {\"name\": \"JWT_SECRET_KEY\",    \"valueFrom\": \"${SSM_JWT_SECRET}\"},
+        {\"name\": \"MONGO_URI\",        \"valueFrom\": \"${SSM_MONGO_URI}\"}
       ],
       \"environment\": [
-        {\"name\": \"REVIEW_PROVIDER\", \"value\": \"outscraper\"},
+        {\"name\": \"REVIEW_PROVIDER\", \"value\": \"offline\"},
         {\"name\": \"CORS_ORIGINS\",    \"value\": \"*\"}
       ],
       \"healthCheck\": {

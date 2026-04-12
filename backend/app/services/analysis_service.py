@@ -99,6 +99,20 @@ def analyze_reviews(db: Session, business_id: uuid.UUID, trace_id: str | None = 
 
     existing = db.query(Analysis).filter(Analysis.business_id == business_id).first()
     if existing:
+        # Archive previous version to MongoDB before overwriting (fire-and-forget)
+        from app.mongo import archive_analysis
+
+        archive_analysis(
+            business_id=str(business_id),
+            summary=existing.summary,
+            top_complaints=existing.top_complaints,
+            top_praise=existing.top_praise,
+            action_items=existing.action_items or [],
+            risk_areas=existing.risk_areas or [],
+            recommended_focus=existing.recommended_focus or "",
+            created_at=existing.created_at,
+        )
+
         existing.summary = result["summary"]
         existing.top_complaints = result["top_complaints"]
         existing.top_praise = result["top_praise"]

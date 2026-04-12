@@ -169,6 +169,22 @@ def generate_comparison(
             "Add at least one competitor and run analysis on them before generating a comparison."
         )
 
+    # Check MongoDB cache before expensive LLM call
+    from app.mongo import cache_comparison, get_cached_comparison
+
+    competitor_id_strs = sorted(str(s.business_id) for s in competitor_snapshots)
+    cached = get_cached_comparison(str(business_id), competitor_id_strs)
+    if cached:
+        logger.info("op=comparison_cache_hit business_id=%s", business_id)
+        return ComparisonResponse(
+            target=target_snapshot,
+            competitors=competitor_snapshots,
+            comparison_summary=cached["comparison_summary"],
+            strengths=cached["strengths"],
+            weaknesses=cached["weaknesses"],
+            opportunities=cached["opportunities"],
+        )
+
     prompt_text = _format_snapshots_for_prompt(target_snapshot, competitor_snapshots)
     with timed_operation(
         logger,
@@ -178,6 +194,18 @@ def generate_comparison(
     ):
         raw = _call_openai_comparison(prompt_text)
     normalized = _normalize_comparison_result(raw)
+
+    # Cache in MongoDB (fire-and-forget)
+    cache_comparison(
+        business_id=str(business_id),
+        competitor_ids=competitor_id_strs,
+        target_snapshot=target_snapshot.model_dump(mode="json"),
+        competitor_snapshots=[s.model_dump(mode="json") for s in competitor_snapshots],
+        comparison_summary=normalized["comparison_summary"],
+        strengths=normalized["strengths"],
+        weaknesses=normalized["weaknesses"],
+        opportunities=normalized["opportunities"],
+    )
 
     return ComparisonResponse(
         target=target_snapshot,

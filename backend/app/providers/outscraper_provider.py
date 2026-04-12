@@ -32,6 +32,7 @@ class OutscraperProvider(ReviewProvider):
         self._reviews_limit = reviews_limit
         self._sort = sort
         self._cutoff = cutoff.strip() if cutoff else ""
+        self.last_raw_response: dict | None = None
 
     def fetch_reviews(
         self, place_id: str, google_maps_url: str | None = None
@@ -70,6 +71,7 @@ class OutscraperProvider(ReviewProvider):
                 )
                 resp.raise_for_status()
                 body = resp.json()
+                self.last_raw_response = body
         except httpx.TimeoutException as exc:
             logger.error(
                 "op=outscraper_fetch success=false error=Timeout detail=%s timeout=%ds",

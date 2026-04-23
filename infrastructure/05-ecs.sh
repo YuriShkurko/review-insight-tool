@@ -63,7 +63,9 @@ aws ecs register-task-definition \
         {\"name\": \"OPENAI_API_KEY\",    \"valueFrom\": \"${SSM_OPENAI_KEY}\"},
         {\"name\": \"OUTSCRAPER_API_KEY\",\"valueFrom\": \"${SSM_OUTSCRAPER_KEY}\"},
         {\"name\": \"JWT_SECRET_KEY\",    \"valueFrom\": \"${SSM_JWT_SECRET}\"},
-        {\"name\": \"MONGO_URI\",        \"valueFrom\": \"${SSM_MONGO_URI}\"}
+        {\"name\": \"MONGO_URI\",        \"valueFrom\": \"${SSM_MONGO_URI}\"},
+        {\"name\": \"OTEL_EXPORTER_OTLP_ENDPOINT\", \"valueFrom\": \"/review-insight/OTEL_EXPORTER_OTLP_ENDPOINT\"},
+        {\"name\": \"OTEL_EXPORTER_OTLP_HEADERS\",  \"valueFrom\": \"/review-insight/OTEL_EXPORTER_OTLP_HEADERS\"}
       ],
       \"environment\": [
         {\"name\": \"REVIEW_PROVIDER\", \"value\": \"offline\"},

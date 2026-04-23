@@ -7,6 +7,7 @@ from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
 from app.models.review import Review
+from app.observability import reviews_fetched
 from app.providers import get_review_provider
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,8 @@ def fetch_reviews_for_business(db: Session, business: Business) -> list[Review]:
             raw_response=raw_body,
             review_count=len(raw_reviews),
         )
+
+    reviews_fetched.add(len(raw_reviews))
 
     if len(raw_reviews) > MAX_REVIEWS_PER_FETCH:
         logger.warning(

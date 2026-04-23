@@ -156,3 +156,9 @@ jobs:
             --output text --region "$AWS_REGION")
           echo "✓ Deployed: http://${ALB_DNS}"
           echo "::notice title=Deployed::http://${ALB_DNS}"
+
+  # ── Post-deploy smoke test ─────────────────────────────────────────────────
+  smoke-test:
+    name: Post-deploy smoke test
+    needs: deploy
+    uses: ./.github/workflows/synthetic.yml

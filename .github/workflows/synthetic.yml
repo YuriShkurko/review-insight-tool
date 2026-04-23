@@ -1,0 +1,43 @@
+# Synthetic monitoring — exercises every user flow against the live deployment.
+# Runs every 30 minutes. Also triggers on every deploy (called from cd.yml).
+# Sends a Telegram alert on failure if secrets are configured.
+
+name: Synthetic Monitor
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+  workflow_call:  # allows cd.yml to call this after a successful deploy
+
+jobs:
+  monitor:
+    name: Synthetic health check
+    runs-on: ubuntu-latest
+    env:
+      MONITOR_BASE_URL: ${{ vars.BACKEND_PUBLIC_URL }}
+      REVIEW_PROVIDER: mock
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      SYNTHETIC_RESULTS_PATH: /tmp/synthetic-results.json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install httpx --quiet
+
+      - name: Run synthetic monitor
+        run: python scripts/synthetic_monitor.py
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-results-${{ github.run_number }}
+          path: /tmp/synthetic-results.json
+          retention-days: 7

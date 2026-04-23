@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 import uuid
 
 from openai import OpenAI
@@ -11,6 +12,7 @@ from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
 from app.models.review import Review
+from app.observability import analyses_run, llm_errors, llm_latency, llm_parse_failures
 from app.tracing import get_current_trace_id, trace_context, trace_span
 
 logger = logging.getLogger(__name__)
@@ -182,6 +184,7 @@ def _call_openai(system_prompt: str, review_texts: str) -> dict:
     if not settings.OPENAI_API_KEY:
         return _mock_analysis()
 
+    t0 = time.perf_counter()
     try:
         client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=LLM_TIMEOUT_SECONDS)
         response = client.chat.completions.create(
@@ -193,13 +196,19 @@ def _call_openai(system_prompt: str, review_texts: str) -> dict:
             temperature=0.3,
         )
     except Exception as exc:
+        llm_errors.add(1)
         logger.error("op=llm_call success=false error=%s detail=%s", type(exc).__name__, exc)
         raise ExternalProviderError("AI analysis failed. Please try again later.") from exc
+    finally:
+        llm_latency.record((time.perf_counter() - t0) * 1000)
 
     content = response.choices[0].message.content or "{}"
     try:
-        return json.loads(content)
+        result = json.loads(content)
+        analyses_run.add(1)
+        return result
     except json.JSONDecodeError:
+        llm_parse_failures.add(1)
         logger.warning("op=llm_parse success=false content_length=%d", len(content))
         return {"summary": content, "top_complaints": [], "top_praise": []}
 

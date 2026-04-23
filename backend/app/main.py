@@ -57,6 +57,12 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(api_router)
+
+    from app.database import engine
+    from app.observability import init_observability
+
+    init_observability(app, engine)
+
     return app
 
 

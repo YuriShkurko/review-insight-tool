@@ -11,6 +11,7 @@ from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
 from app.models.competitor_link import CompetitorLink
+from app.observability import comparison_cache_hits, comparison_cache_misses, comparisons_run
 from app.schemas.analysis import InsightItem
 from app.schemas.comparison import BusinessSnapshot, ComparisonResponse
 
@@ -175,6 +176,7 @@ def generate_comparison(
     competitor_id_strs = sorted(str(s.business_id) for s in competitor_snapshots)
     cached = get_cached_comparison(str(business_id), competitor_id_strs)
     if cached:
+        comparison_cache_hits.add(1)
         logger.info("op=comparison_cache_hit business_id=%s", business_id)
         return ComparisonResponse(
             target=target_snapshot,
@@ -185,6 +187,7 @@ def generate_comparison(
             opportunities=cached["opportunities"],
         )
 
+    comparison_cache_misses.add(1)
     prompt_text = _format_snapshots_for_prompt(target_snapshot, competitor_snapshots)
     with timed_operation(
         logger,
@@ -207,6 +210,7 @@ def generate_comparison(
         opportunities=normalized["opportunities"],
     )
 
+    comparisons_run.add(1)
     return ComparisonResponse(
         target=target_snapshot,
         competitors=competitor_snapshots,

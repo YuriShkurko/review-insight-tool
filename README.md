@@ -50,6 +50,7 @@ Review Insight Tool solves this by:
 - **Competitor comparison (V2)** — link up to 3 competitor businesses, run analysis on them, and generate an AI comparison (strengths, weaknesses, opportunities)
 - **Polyglot persistence (V3)** — optional MongoDB layer for comparison caching (4.2x speedup), versioned analysis history, and raw API response archival. Graceful no-op when unconfigured. See [benchmark results](docs/BENCHMARK.md)
 - **Production observability (V4)** — OpenTelemetry traces and metrics exported to Grafana Cloud. RED dashboard (request rate, error rate, P95 latency), business metrics (reviews fetched, analyses run, LLM latency/errors, cache hit ratio). Synthetic monitor runs every 30 minutes via GitHub Actions and pings Telegram on failure. Fully no-op when `OTEL_EXPORTER_OTLP_ENDPOINT` is unset.
+- **Living demo world (V5)** — persistent demo environment that runs autonomously 24/7. Three businesses with a 14-day narrative arc (craft beer festival → quiet week → bad keg incident → recovery), sine-wave review volume with weekly rhythm, optional LLM-burst reviews for dramatic arc events. Tick worker runs every 30 min via GitHub Actions. End-of-cycle soak report sent to Telegram with human-readable findings.
 - **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching
 
 ## Quick Start
@@ -248,6 +249,7 @@ The app uses a pluggable provider architecture for fetching reviews. All provide
 | **Mock** | `mock` | Generates random reviews seeded by place ID | None |
 | **Offline** | `offline` | Loads real review snapshots from `backend/data/offline/` | None (reviews); `OPENAI_API_KEY` for analysis |
 | **Outscraper** | `outscraper` | Fetches live Google Maps reviews via Outscraper REST API | `OUTSCRAPER_API_KEY` + `OPENAI_API_KEY` |
+| **Simulation** | `simulation` | Reads from `sim_reviews` Postgres table (living demo world). Falls back to Mock for unknown place IDs so CI smoke tests are unaffected. | None (reviews); `OPENAI_API_KEY` for analysis |
 
 Set the provider in `backend/.env` via the `REVIEW_PROVIDER` variable. Default is `mock`.
 
@@ -282,7 +284,7 @@ Interactive docs: http://localhost:8000/docs
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5432/review_insight` |
-| `REVIEW_PROVIDER` | Review source: `mock`, `offline`, or `outscraper` | `mock` |
+| `REVIEW_PROVIDER` | Review source: `mock`, `offline`, `outscraper`, or `simulation` | `mock` |
 | `OUTSCRAPER_API_KEY` | Outscraper API key (required for real reviews) | — |
 | `OUTSCRAPER_REVIEWS_LIMIT` | Max reviews per fetch | `100` |
 | `OUTSCRAPER_SORT` | Order: `newest`, `most_relevant`, `highest_rating`, `lowest_rating` | `newest` |
@@ -352,13 +354,18 @@ Interactive docs: http://localhost:8000/docs
 │   └── DEVELOPMENT.md           # CI, Makefile automation, debug event trail
 │
 ├── scripts/
-│   └── synthetic_monitor.py     # Full-flow synthetic health check (used by CI)
+│   ├── synthetic_monitor.py     # Full-flow synthetic health check (used by CI)
+│   ├── seed_demo.py             # Idempotent demo world seed (businesses + reviews + analysis)
+│   ├── tick_demo.py             # Living demo world tick worker (sine wave + arc modulation)
+│   └── demo_report.py           # 14-day soak report — DB + GitHub Actions API → Telegram
 │
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml               # Push/PR: lint, tests, frontend build
 │       ├── cd.yml               # Deploy to AWS ECS + post-deploy smoke test
-│       └── synthetic.yml        # Synthetic monitor cron (every 30 min)
+│       ├── synthetic.yml        # Synthetic monitor cron (every 30 min)
+│       ├── demo-tick.yml        # Living demo world tick (every 30 min)
+│       └── demo-report.yml      # Soak report (weekly + end-of-cycle)
 │
 ├── docker-compose.yml           # Full-stack Docker setup
 ├── Makefile                     # Developer shortcuts
@@ -528,6 +535,36 @@ To run manually against a live deployment:
 MONITOR_BASE_URL=https://your-backend.example.com python scripts/synthetic_monitor.py
 ```
 
+**Living demo world** — a persistent demo environment running autonomously on the hosted deployment. Three craft beer bars in Tel Aviv evolve over time via a three-layer modulation system:
+
+| Layer | What it does |
+|-------|-------------|
+| Sine wave | Daily volume rhythm with phase offsets — bars peak at different times |
+| Weekly schedule | Friday night rush (2.8×), Sunday Beer Garden brunch (3.2×), Thursday buildup, Monday dip |
+| 14-day narrative arc | Festival weekend → quiet week → bad keg incident at Tap Room (rating crashes) → recovery arc → wind-down → repeat |
+
+The tick worker (`demo-tick.yml`) injects new reviews every 30 minutes and calls fetch-reviews + analyze. For arc "burst" moments, reviews are generated via `gpt-4o-mini` if `OPENAI_API_KEY` is set; otherwise falls back to the hand-authored template bank.
+
+A soak report runs weekly and at end-of-cycle, querying the DB and GitHub Actions history to produce a human-readable Telegram summary of what the story arc produced and how the system held up.
+
+Demo login (hosted):
+- **URL:** the ALB public DNS (see GitHub → Settings → Variables → `BACKEND_PUBLIC_URL`)
+- **Email:** `demo@review-insight.app`
+- **Password:** `DemoWorld2026!`
+
+To seed or re-seed the demo world manually:
+
+```bash
+DATABASE_URL=... DEMO_API_URL=http://... python scripts/seed_demo.py
+```
+
+To run a tick manually:
+
+```bash
+DATABASE_URL=... DEMO_API_URL=http://... python scripts/tick_demo.py --dry-run
+DATABASE_URL=... DEMO_API_URL=http://... python scripts/tick_demo.py --show-arc
+```
+
 ### Database reset (escape hatch)
 
 If the database is corrupted or out of sync with migrations, drop everything and reapply:
@@ -636,6 +673,7 @@ For detailed system behavior, user flows, analysis output shapes, and known limi
 - [ ] Background jobs — Celery/Redis for async review fetching
 - [ ] Export reports — PDF/CSV
 - [x] CI/CD pipeline — GitHub Actions CI (lint + tests + build) + CD (ECS deploy) + synthetic monitor (every 30 min)
+- [x] Living demo world — autonomous 14-day narrative arc, sine-wave + weekly modulation, LLM burst reviews, soak report
 
 ## License
 

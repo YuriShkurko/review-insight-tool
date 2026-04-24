@@ -1,0 +1,60 @@
+# Demo world soak report.
+# Runs every Monday at 09:00 UTC (weekly progress check during the 14-day cycle)
+# and at the end of each arc cycle (day 14 = May 8, then every 14 days).
+# Also triggerable manually via workflow_dispatch.
+
+name: Demo Soak Report
+
+on:
+  schedule:
+    # Weekly progress check every Monday 09:00 UTC
+    - cron: "0 9 * * 1"
+    # End-of-cycle on May 8 and then every 14 days
+    - cron: "0 2 8 5 *"
+    - cron: "0 2 22 5 *"
+    - cron: "0 2 5 6 *"
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "Cycle start date override (YYYY-MM-DD). Leave blank for auto."
+        required: false
+        default: ""
+
+jobs:
+  report:
+    name: Generate soak report
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install httpx sqlalchemy psycopg2-binary --quiet
+
+      - name: Generate report
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          DEMO_API_URL: ${{ vars.BACKEND_PUBLIC_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPORT_PATH: demo-report.md
+        run: |
+          SINCE_ARG=""
+          if [ -n "${{ github.event.inputs.since }}" ]; then
+            SINCE_ARG="--since ${{ github.event.inputs.since }}"
+          fi
+          python scripts/demo_report.py $SINCE_ARG
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-soak-report-${{ github.run_number }}
+          path: demo-report.md
+          retention-days: 90

@@ -35,7 +35,7 @@ DEMO_PASSWORD = "DemoWorld2026!"
 
 # Fixed epoch so narrative arcs are globally coherent.
 # 2026-04-24 00:00 UTC — day 0 of the first arc cycle.
-ARC_EPOCH = 1745452800
+ARC_EPOCH = 1776988800
 
 # ---------------------------------------------------------------------------
 # Layer 1 — Sine wave parameters (daily rhythm, phase-spread per business)

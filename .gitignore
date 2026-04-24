@@ -35,6 +35,9 @@ build/
 # Local commit message helper (use: git commit -F COMMIT_MSG.txt)
 COMMIT_MSG.txt
 
+# Generated reports (committed as CI artifacts, not source)
+demo-report.md
+
 # Personal / local-only files
 INTERVIEW_PREP.md
 INTERVIEW_PREP.pdf

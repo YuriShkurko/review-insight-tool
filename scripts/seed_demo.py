@@ -152,14 +152,14 @@ def get_or_create_business(client: httpx.Client, headers: dict, biz: dict) -> st
     )
     if r.status_code == 201:
         biz_id = r.json()["id"]
-        log(f"Created business '{biz['name']}' → {biz_id}")
+        log(f"Created business '{biz['name']}' ->{biz_id}")
         return biz_id
     if r.status_code in (400, 409):
         r2 = client.get("/api/businesses", headers=headers)
         r2.raise_for_status()
         for b in r2.json():
             if b["place_id"] == biz["place_id"]:
-                log(f"Business '{biz['name']}' already exists → {b['id']}")
+                log(f"Business '{biz['name']}' already exists ->{b['id']}")
                 return b["id"]
     r.raise_for_status()
     raise RuntimeError(f"Could not create/find business {biz['place_id']}")
@@ -213,9 +213,9 @@ def main() -> None:
         print("ERROR: DATABASE_URL environment variable is required", file=sys.stderr)
         sys.exit(1)
 
-    print(f"\nSeeding demo world → {BASE_URL}", flush=True)
+    print(f"\nSeeding demo world -> {BASE_URL}", flush=True)
 
-    client = httpx.Client(timeout=120)
+    client = httpx.Client(base_url=BASE_URL, timeout=120)
 
     # 1. Auth
     print("\n[1/5] Auth", flush=True)
@@ -269,7 +269,7 @@ def main() -> None:
 
     print("\nDemo world seeded.", flush=True)
     print(f"  Login: {DEMO_EMAIL} / {DEMO_PASSWORD}", flush=True)
-    print(f"  Hero business: {BASE_URL} → Lager & Ale TLV", flush=True)
+    print(f"  Hero business: {BASE_URL} ->Lager & Ale TLV", flush=True)
 
 
 if __name__ == "__main__":

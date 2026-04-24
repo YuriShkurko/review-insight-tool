@@ -15,6 +15,7 @@ Environment variables:
 import contextlib
 import json
 import os
+import random
 import sys
 import time
 import uuid
@@ -28,8 +29,15 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 
 def _unique_place_id() -> str:
-    """Generate a unique synthetic place ID that bypasses URL resolution."""
-    return f"ChIJSYNTH{uuid.uuid4().hex[:16].upper()}"
+    """Return a place ID from the offline dataset so fetch-reviews returns real data."""
+    return random.choice([
+        "offline_lager_ale",
+        "offline_lager_ale_raanana",
+        "offline_lager_ale_herzliya",
+        "offline_beer_garden",
+        "offline_rami_levy",
+        "offline_lala_market",
+    ])
 
 
 class SyntheticMonitor:
@@ -110,7 +118,7 @@ class SyntheticMonitor:
             lambda: self._check(
                 self.client.post(
                     "/businesses",
-                    json={"place_id": place_id, "business_type": "restaurant"},
+                    json={"place_id": place_id, "business_type": "bar"},
                     headers=self._headers(),
                 ),
                 201,
@@ -180,7 +188,7 @@ class SyntheticMonitor:
             lambda: self._check(
                 self.client.post(
                     f"/businesses/{biz_id}/competitors",
-                    json={"place_id": comp_place_id, "business_type": "restaurant"},
+                    json={"place_id": comp_place_id, "business_type": "bar"},
                     headers=self._headers(),
                 ),
                 201,

@@ -88,7 +88,7 @@ class SyntheticMonitor:
         return r is not None
 
     def check_register(self) -> bool:
-        email = f"bot-{uuid.uuid4().hex[:8]}@synthetic.test"
+        email = f"bot-{uuid.uuid4().hex[:8]}@synthetic-monitor.com"
         password = "SyntheticBot123!"
 
         r = self._timed(

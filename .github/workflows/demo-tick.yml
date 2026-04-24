@@ -1,0 +1,31 @@
+# Living demo world tick worker.
+# Injects a sine-wave batch of new reviews into sim_reviews every 30 minutes,
+# then triggers fetch-reviews + analyze so the dashboard stays live.
+
+name: Demo World Tick
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  tick:
+    name: Tick demo world
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install httpx sqlalchemy psycopg2-binary --quiet
+
+      - name: Run tick worker
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DEMO_API_URL: ${{ vars.BACKEND_PUBLIC_URL }}
+        run: python scripts/tick_demo.py

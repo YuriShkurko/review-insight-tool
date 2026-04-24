@@ -22,10 +22,11 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install httpx sqlalchemy psycopg2-binary --quiet
+        run: pip install httpx sqlalchemy psycopg2-binary openai --quiet
 
       - name: Run tick worker
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DEMO_API_URL: ${{ vars.BACKEND_PUBLIC_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python scripts/tick_demo.py

@@ -38,7 +38,7 @@ class SimulationProvider(ReviewProvider):
             # place_id has no sim_reviews (e.g. synthetic monitor or offline place IDs).
             # Fall back to MockProvider so health checks and CI smoke tests still pass.
             logger.info("op=sim_fetch place_id=%s no sim rows, delegating to mock", place_id)
-            from app.providers.mock_provider import MockProvider  # noqa: PLC0415
+            from app.providers.mock_provider import MockProvider
 
             return MockProvider().fetch_reviews(place_id, google_maps_url)
 

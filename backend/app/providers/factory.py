@@ -30,7 +30,12 @@ def get_review_provider() -> ReviewProvider:
             cutoff=settings.OUTSCRAPER_CUTOFF,
         )
 
-    supported = ("mock", "offline", "outscraper")
+    if name == "simulation":
+        from app.providers.simulation_provider import SimulationProvider
+
+        return SimulationProvider()
+
+    supported = ("mock", "offline", "outscraper", "simulation")
     raise ValueError(
         f"Unknown REVIEW_PROVIDER '{name}'. Supported providers: {', '.join(supported)}"
     )

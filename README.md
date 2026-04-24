@@ -49,6 +49,7 @@ Review Insight Tool solves this by:
 - **Fresh data** — refreshing reviews replaces the old set and clears stale analysis automatically
 - **Competitor comparison (V2)** — link up to 3 competitor businesses, run analysis on them, and generate an AI comparison (strengths, weaknesses, opportunities)
 - **Polyglot persistence (V3)** — optional MongoDB layer for comparison caching (4.2x speedup), versioned analysis history, and raw API response archival. Graceful no-op when unconfigured. See [benchmark results](docs/BENCHMARK.md)
+- **Production observability (V4)** — OpenTelemetry traces and metrics exported to Grafana Cloud. RED dashboard (request rate, error rate, P95 latency), business metrics (reviews fetched, analyses run, LLM latency/errors, cache hit ratio). Synthetic monitor runs every 30 minutes via GitHub Actions and pings Telegram on failure. Fully no-op when `OTEL_EXPORTER_OTLP_ENDPOINT` is unset.
 - **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching
 
 ## Quick Start
@@ -294,6 +295,10 @@ Interactive docs: http://localhost:8000/docs
 | `MONGO_DB_NAME` | MongoDB database name | `review_insight` |
 | `COMPARISON_CACHE_TTL_HOURS` | Comparison cache TTL in hours | `24` |
 | `RAW_RESPONSE_TTL_DAYS` | Raw API response retention in days | `30` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector endpoint (e.g. Grafana Cloud) — empty disables OTEL | — |
+| `OTEL_EXPORTER_OTLP_HEADERS` | Auth header for OTLP endpoint (e.g. `Authorization=Basic <token>`) | — |
+| `GIT_SHA` | Git commit SHA baked into OTEL service resource attributes | `dev` |
+| `DEPLOY_ENV` | Deployment environment tag in OTEL resource attributes | `production` |
 
 ### Frontend (`frontend/.env.local`)
 
@@ -310,6 +315,7 @@ Interactive docs: http://localhost:8000/docs
 │   │   ├── config.py            # Pydantic settings
 │   │   ├── database.py          # SQLAlchemy engine and session
 │   │   ├── mongo.py             # MongoDB client (optional polyglot layer)
+│   │   ├── observability.py     # OpenTelemetry init + business metric instruments
 │   │   ├── auth.py              # JWT + bcrypt utilities
 │   │   ├── models/              # ORM models
 │   │   ├── schemas/             # Request/response schemas
@@ -345,9 +351,14 @@ Interactive docs: http://localhost:8000/docs
 │   ├── STAGING.md               # Staging / demo deployment notes
 │   └── DEVELOPMENT.md           # CI, Makefile automation, debug event trail
 │
+├── scripts/
+│   └── synthetic_monitor.py     # Full-flow synthetic health check (used by CI)
+│
 ├── .github/
 │   └── workflows/
-│       └── ci.yml               # Push/PR: lint, tests, frontend build
+│       ├── ci.yml               # Push/PR: lint, tests, frontend build
+│       ├── cd.yml               # Deploy to AWS ECS + post-deploy smoke test
+│       └── synthetic.yml        # Synthetic monitor cron (every 30 min)
 │
 ├── docker-compose.yml           # Full-stack Docker setup
 ├── Makefile                     # Developer shortcuts
@@ -493,15 +504,29 @@ The dataset lives in `backend/data/offline/`. To add a new business:
 
 ### Observability
 
-The backend logs all key operations with structured fields:
+**Structured logs** — all key operations emit `op=<name> duration_ms=<ms> success=<bool>` structured fields. External calls (review providers, LLM) have timeouts and payload limits to fail fast.
 
-- **Auth**: registration, login (success/failure)
-- **Business**: creation with timing
-- **Reviews**: provider fetch duration, review count, payload truncation
-- **Analysis**: LLM call duration, review count, parse failures
-- **Dashboard**: aggregation timing
+**OpenTelemetry (production)** — when `OTEL_EXPORTER_OTLP_ENDPOINT` is set, the backend ships traces, metrics, and auto-instrumented spans to any OTLP-compatible backend (Grafana Cloud, Jaeger, etc.). Fully no-op in local dev when the env var is unset.
 
-Logs use `op=<name> duration_ms=<ms> success=<bool>` format for easy searching and monitoring. External calls (review providers, LLM) have timeouts and payload limits to fail fast instead of hanging.
+| Signal | What's captured |
+|--------|----------------|
+| Traces | Every HTTP request auto-instrumented via FastAPI + SQLAlchemy + httpx instrumentors |
+| `reviews.fetched` | Total reviews fetched per provider call |
+| `analyses.run` | Successful AI analysis completions |
+| `llm.latency_ms` | End-to-end OpenAI call latency (histogram) |
+| `llm.errors` | LLM call failures (timeouts, API errors) |
+| `llm.parse_failures` | Responses where OpenAI returned invalid JSON |
+| `comparisons.run` | Comparison completions (cache miss path) |
+| `comparisons.cache_hits` | MongoDB cache hits (skipped LLM call) |
+| `comparisons.cache_misses` | Cache misses (LLM call needed) |
+
+**Synthetic monitor** — `scripts/synthetic_monitor.py` exercises the full user flow (register → create business → fetch → analyze → dashboard → competitor → comparison × 2 → cleanup) and exits non-zero on any failure. Runs every 30 minutes via `.github/workflows/synthetic.yml` and fires a Telegram alert on failure.
+
+To run manually against a live deployment:
+
+```bash
+MONITOR_BASE_URL=https://your-backend.example.com python scripts/synthetic_monitor.py
+```
 
 ### Database reset (escape hatch)
 
@@ -558,6 +583,8 @@ make test-e2e            # end-to-end tests (requires running backend via make u
 
 On every push and pull request to `main` / `master`, **GitHub Actions** runs backend lint (`ruff`), backend tests (unit + integration), and frontend lint + production build. E2E tests are not run in CI (they need a live server). Details: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
 
+After every deployment, the **synthetic monitor** (`synthetic.yml`) automatically runs the full user-flow check against the live backend. It also runs on a 30-minute cron schedule. Results are uploaded as workflow artifacts. Configure `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` in GitHub repo secrets to receive phone alerts on failure.
+
 To match CI locally before you push:
 
 ```bash
@@ -608,7 +635,7 @@ For detailed system behavior, user flows, analysis output shapes, and known limi
 - [ ] Secure auth — refresh tokens, httpOnly cookies
 - [ ] Background jobs — Celery/Redis for async review fetching
 - [ ] Export reports — PDF/CSV
-- [ ] CI/CD pipeline
+- [x] CI/CD pipeline — GitHub Actions CI (lint + tests + build) + CD (ECS deploy) + synthetic monitor (every 30 min)
 
 ## License
 

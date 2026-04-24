@@ -66,9 +66,9 @@ create_tg() {
       --unhealthy-threshold-count 3 \
       --region "$AWS_REGION" \
       --query "TargetGroups[0].TargetGroupArn" --output text)
-    echo "✓ Created target group: $name → $arn"
+    echo "✓ Created target group: $name → $arn" >&2
   else
-    echo "✓ Target group already exists: $name"
+    echo "✓ Target group already exists: $name" >&2
   fi
   echo "$arn"
 }

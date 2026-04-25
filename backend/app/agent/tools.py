@@ -343,7 +343,9 @@ def _get_review_series(
         series.append({"date": day, "count": count, "avg_rating": avg_rating})
 
     total_reviews = sum(int(point["count"] or 0) for point in series)
-    rated_points = [float(point["avg_rating"]) for point in series if point["avg_rating"] is not None]
+    rated_points = [
+        float(point["avg_rating"]) for point in series if point["avg_rating"] is not None
+    ]
     period_avg_rating = round(sum(rated_points) / len(rated_points), 2) if rated_points else None
 
     return {

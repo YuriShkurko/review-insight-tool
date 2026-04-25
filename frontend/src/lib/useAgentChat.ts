@@ -162,7 +162,9 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
               continue;
             }
 
-            if (eventType === "text_delta") {
+            if (eventType === "status") {
+              // Keep-alive ping from backend — no state change needed, connection is live
+            } else if (eventType === "text_delta") {
               if (!assistantStarted) {
                 dispatch({ type: "BEGIN_ASSISTANT", id: assistantId });
                 assistantStarted = true;
@@ -202,6 +204,11 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
         }
       } catch {
         dispatch({ type: "ERROR", message: "Stream interrupted. Please try again." });
+        return;
+      }
+      // Stream closed without a done event — reset so the button isn't stuck greyed out
+      if (stateRef.current.isStreaming) {
+        dispatch({ type: "ERROR", message: "Response ended unexpectedly. Please try again." });
       }
     },
     [businessId, onWidgetPinned],

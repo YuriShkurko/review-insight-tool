@@ -81,6 +81,10 @@ async def run_agent(
     new_messages: list[dict] = []  # messages added this turn (to persist later)
     new_messages.append({"role": "user", "content": message})
 
+    # Yield immediately so the connection stays alive and the UI shows activity
+    # before the first (potentially slow) LLM call completes.
+    yield _sse("status", {"status": "thinking"})
+
     # Build the full message list for the LLM (system + truncated history)
     def _build_llm_messages() -> list[dict]:
         base = [{"role": "system", "content": system_prompt}]

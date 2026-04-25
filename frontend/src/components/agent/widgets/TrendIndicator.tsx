@@ -10,17 +10,17 @@ export function TrendIndicator({ data }: { data: Record<string, unknown> }) {
   const changePct = data.change_pct as number | null | undefined;
 
   if (!current || !previous) {
-    return <p className="text-xs text-gray-400">No trend data.</p>;
+    return <p className="text-xs text-text-muted">No trend data.</p>;
   }
 
   const trendColor =
     changePct == null
-      ? "text-gray-700"
+      ? "text-text-primary"
       : changePct > 0
         ? "text-green-600"
         : changePct < 0
           ? "text-red-600"
-          : "text-gray-700";
+          : "text-text-primary";
 
   const rows: [string, React.ReactNode][] = [
     ["Period", period ?? "—"],
@@ -43,11 +43,11 @@ export function TrendIndicator({ data }: { data: Record<string, unknown> }) {
   ];
 
   return (
-    <div className="divide-y divide-gray-100">
+    <div className="divide-y divide-border-subtle">
       {rows.map(([label, value]) => (
         <div key={label} className="flex items-center justify-between py-1.5 text-sm">
-          <span className="text-gray-500">{label}</span>
-          <span className="font-medium text-gray-800">{value}</span>
+          <span className="text-text-secondary">{label}</span>
+          <span className="font-medium text-text-primary">{value}</span>
         </div>
       ))}
     </div>

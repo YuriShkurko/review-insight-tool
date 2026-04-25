@@ -9,20 +9,21 @@ const PROMPTS = [
 
 export function SuggestedPrompts({ onSelect }: { onSelect: (prompt: string) => void }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full px-6 py-8 gap-5">
+    <div className="flex flex-col items-center justify-center h-full px-6 py-8 gap-6">
       <div className="text-center">
-        <p className="text-sm font-medium text-gray-700">Ask anything about your reviews</p>
-        <p className="text-xs text-gray-400 mt-1">
-          The AI can search reviews, run analysis, and pin insights to your workspace.
+        <div className="text-4xl mb-3">✦</div>
+        <p className="text-lg font-semibold text-text-primary">Ask anything about your reviews</p>
+        <p className="text-sm text-text-secondary mt-1.5 leading-relaxed max-w-xs">
+          The AI can search reviews, spot trends, and pin insights directly to your dashboard.
         </p>
       </div>
-      <div className="flex flex-wrap gap-2 justify-center max-w-sm">
+      <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
         {PROMPTS.map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => onSelect(p)}
-            className="text-xs px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors"
+            className="text-xs px-3 py-2.5 rounded-xl border border-border bg-surface-card text-text-secondary hover:border-brand/40 hover:text-brand hover:bg-brand-light/20 shadow-sm hover:shadow transition-all text-left leading-snug"
           >
             {p}
           </button>

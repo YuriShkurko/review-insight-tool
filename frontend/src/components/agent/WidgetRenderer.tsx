@@ -13,19 +13,19 @@ type ReviewRow = {
 
 function ReviewListWidget({ data }: { data: Record<string, unknown> }) {
   const reviews = data.reviews as ReviewRow[] | undefined;
-  if (!reviews?.length) return <p className="text-xs text-gray-400">No reviews found.</p>;
+  if (!reviews?.length) return <p className="text-xs text-text-muted">No reviews found.</p>;
   return (
     <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
       {reviews.map((r) => (
-        <div key={r.id} className="border-b border-gray-100 last:border-0 pb-2 last:pb-0">
+        <div key={r.id} className="border-b border-border-subtle last:border-0 pb-2 last:pb-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className="text-yellow-400 text-xs tracking-tighter">
               {"★".repeat(r.rating)}
               {"☆".repeat(5 - r.rating)}
             </span>
-            {r.author && <span className="text-xs text-gray-400">{r.author}</span>}
+            {r.author && <span className="text-xs text-text-muted">{r.author}</span>}
           </div>
-          {r.text && <p className="text-xs text-gray-600 line-clamp-2">{r.text}</p>}
+          {r.text && <p className="text-xs text-text-secondary line-clamp-2">{r.text}</p>}
         </div>
       ))}
     </div>
@@ -40,11 +40,11 @@ function ComparisonWidget({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="space-y-3 text-xs">
-      {summary && <p className="text-gray-700 leading-relaxed">{summary}</p>}
+      {summary && <p className="text-text-secondary leading-relaxed">{summary}</p>}
       {strengths && strengths.length > 0 && (
         <div>
           <p className="font-semibold text-green-600 uppercase tracking-wide mb-1">Strengths</p>
-          <ul className="list-disc list-inside text-gray-600 space-y-0.5">
+          <ul className="list-disc list-inside text-text-secondary space-y-0.5">
             {strengths.slice(0, 3).map((s, i) => (
               <li key={i}>{s}</li>
             ))}
@@ -54,7 +54,7 @@ function ComparisonWidget({ data }: { data: Record<string, unknown> }) {
       {weaknesses && weaknesses.length > 0 && (
         <div>
           <p className="font-semibold text-red-500 uppercase tracking-wide mb-1">Weaknesses</p>
-          <ul className="list-disc list-inside text-gray-600 space-y-0.5">
+          <ul className="list-disc list-inside text-text-secondary space-y-0.5">
             {weaknesses.slice(0, 3).map((w, i) => (
               <li key={i}>{w}</li>
             ))}
@@ -63,8 +63,8 @@ function ComparisonWidget({ data }: { data: Record<string, unknown> }) {
       )}
       {opportunities && opportunities.length > 0 && (
         <div>
-          <p className="font-semibold text-blue-600 uppercase tracking-wide mb-1">Opportunities</p>
-          <ul className="list-disc list-inside text-gray-600 space-y-0.5">
+          <p className="font-semibold text-brand uppercase tracking-wide mb-1">Opportunities</p>
+          <ul className="list-disc list-inside text-text-secondary space-y-0.5">
             {opportunities.slice(0, 3).map((o, i) => (
               <li key={i}>{o}</li>
             ))}
@@ -98,7 +98,7 @@ export function WidgetRenderer({
       return <ComparisonWidget data={data} />;
     default:
       return (
-        <pre className="text-xs text-gray-500 overflow-auto max-h-32 whitespace-pre-wrap">
+        <pre className="text-xs text-text-muted overflow-auto max-h-32 whitespace-pre-wrap">
           {JSON.stringify(data, null, 2)}
         </pre>
       );

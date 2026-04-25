@@ -27,7 +27,7 @@ export function ChatMessage({
   if (item.kind === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm leading-relaxed">
+        <div className="max-w-[80%] bg-brand text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm leading-relaxed">
           {item.text}
         </div>
       </div>
@@ -38,10 +38,10 @@ export function ChatMessage({
     if (!item.text && !isStreaming) return null;
     return (
       <div className="flex justify-start">
-        <div className="max-w-[85%] text-gray-900 px-1 py-1 text-sm leading-relaxed whitespace-pre-wrap">
+        <div className="max-w-[85%] text-text-primary border-l-2 border-accent/30 pl-3 py-1 text-sm leading-relaxed whitespace-pre-wrap">
           {item.text}
           {isStreaming && (
-            <span className="inline-block w-0.5 h-[1em] bg-gray-400 animate-pulse ml-0.5 align-text-bottom" />
+            <span className="inline-block w-0.5 h-[1em] bg-text-muted animate-pulse ml-0.5 align-text-bottom" />
           )}
         </div>
       </div>
@@ -60,7 +60,7 @@ export function ChatMessage({
     if (item.name === "pin_widget") {
       return (
         <div className="flex justify-start">
-          <p className="text-xs text-gray-400 py-1 pl-1">Pinned to workspace</p>
+          <p className="text-xs text-text-muted py-1 pl-1">Pinned to workspace</p>
         </div>
       );
     }
@@ -72,18 +72,18 @@ export function ChatMessage({
     return (
       <div className="flex justify-start w-full">
         <div
-          className={`w-full border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm ${
+          className={`w-full border border-border rounded-xl overflow-hidden bg-surface-card shadow-sm ${
             isChartWidget ? "max-w-2xl" : "max-w-sm"
           }`}
         >
-          <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-gray-500 truncate">{title}</span>
+          <div className="px-3 py-2 bg-surface-elevated border-b border-border-subtle flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-text-secondary truncate">{title}</span>
             <button
               type="button"
               onClick={() => onPin(widgetType, title, item.result)}
-              className="shrink-0 text-xs text-gray-400 hover:text-blue-600 transition-colors"
+              className="shrink-0 text-xs text-text-muted hover:text-brand transition-colors font-medium"
             >
-              Add to dashboard
+              + Dashboard
             </button>
           </div>
           <div className="p-3">

@@ -33,7 +33,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
     .filter((p) => typeof p.date === "string");
 
   if (points.length === 0) {
-    return <p className="text-xs text-gray-400">No chart data available.</p>;
+    return <p className="text-xs text-text-muted">No chart data available.</p>;
   }
 
   const values = points.map((p) => p.value ?? 0);
@@ -62,7 +62,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="space-y-3">
-      <div className="h-28 w-full rounded-lg border border-gray-100 bg-gradient-to-b from-white to-gray-50 p-3">
+      <div className="h-28 w-full rounded-lg border border-border-subtle bg-gradient-to-b from-surface-card to-surface p-3">
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           className="h-full w-full"
@@ -73,7 +73,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
-            className="text-blue-500"
+            className="text-brand"
           />
           {points.map((point, index) => {
             const x = index * xStep;
@@ -84,7 +84,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
                 cx={x}
                 cy={y}
                 r="1.8"
-                className="fill-blue-600"
+                className="fill-accent"
               />
             );
           })}
@@ -92,7 +92,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
       </div>
 
       <div className="flex items-center justify-between text-xs">
-        <div className="text-gray-500">
+        <div className="text-text-muted">
           {formatLabel(firstPoint?.date ?? "")} - {formatLabel(lastPoint?.date ?? "")}
         </div>
         {delta != null && (

@@ -26,22 +26,22 @@ export function ChatInput({
   }
 
   return (
-    <div className="shrink-0 px-4 py-3 border-t border-gray-200 bg-white">
+    <div className="shrink-0 px-3 py-3 border-t border-border bg-surface-card">
       <div className="flex items-end gap-2">
         <textarea
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about your reviews… (Enter to send, Shift+Enter for newline)"
+          placeholder="Ask about your reviews…"
           disabled={disabled}
           rows={1}
-          className="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 disabled:opacity-50 max-h-32 overflow-y-auto"
+          className="flex-1 resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/30 disabled:opacity-50 max-h-28 overflow-y-auto"
         />
         <button
           type="button"
           onClick={submit}
           disabled={disabled || !value.trim()}
-          className="shrink-0 bg-blue-600 text-white rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-40 transition-colors"
+          className="shrink-0 bg-brand text-white rounded-xl px-3 py-2 text-sm font-medium hover:bg-brand-hover disabled:opacity-40 transition-colors"
         >
           Send
         </button>

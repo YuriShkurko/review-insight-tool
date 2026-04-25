@@ -58,9 +58,11 @@ class TestCallOpenai:
     def test_provider_exception_raises_external_provider_error(self):
         mock_provider = MagicMock()
         mock_provider.complete.side_effect = Exception("API down")
-        with patch("app.services.analysis_service.get_llm_provider", return_value=mock_provider):
-            with pytest.raises(ExternalProviderError):
-                _call_openai("system", "reviews")
+        with (
+            patch("app.services.analysis_service.get_llm_provider", return_value=mock_provider),
+            pytest.raises(ExternalProviderError),
+        ):
+            _call_openai("system", "reviews")
 
     def test_empty_content_returns_fallback(self):
         mock_provider = MagicMock()

@@ -112,9 +112,11 @@ class TestCallOpenaiComparison:
     def test_provider_exception_raises_external_provider_error(self):
         mock_provider = MagicMock()
         mock_provider.complete.side_effect = Exception("timeout")
-        with patch("app.services.comparison_service.get_llm_provider", return_value=mock_provider):
-            with pytest.raises(ExternalProviderError):
-                _call_openai_comparison("prompt")
+        with (
+            patch("app.services.comparison_service.get_llm_provider", return_value=mock_provider),
+            pytest.raises(ExternalProviderError),
+        ):
+            _call_openai_comparison("prompt")
 
 
 class TestNormalizeComparisonResult:

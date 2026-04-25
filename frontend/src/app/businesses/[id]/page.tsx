@@ -9,6 +9,7 @@ import { trailEvent } from "@/lib/debugTrail";
 import Toast from "@/components/Toast";
 import { ChatPanel } from "@/components/agent/ChatPanel";
 import { Workspace } from "@/components/agent/Workspace";
+import { ResizablePanel } from "@/components/ui/ResizablePanel";
 import type { Dashboard, Review } from "@/lib/types";
 import type { WorkspaceWidget } from "@/lib/agentTypes";
 
@@ -28,7 +29,10 @@ export default function BusinessDetailPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [workspace, setWorkspace] = useState<WorkspaceWidget[]>([]);
   const [workspaceLoading, setWorkspaceLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("chat");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("workspace");
+  const [chatCollapsed, setChatCollapsed] = useState(() => {
+    try { return localStorage.getItem("chat-collapsed") === "true"; } catch { return false; }
+  });
 
   const activeRouteIdRef = useRef(id);
   activeRouteIdRef.current = id;
@@ -37,6 +41,16 @@ export default function BusinessDetailPage() {
 
   function showToast(message: string, type: "success" | "error" = "success") {
     setToast({ message, type });
+  }
+
+  function handleCollapseChat() {
+    setChatCollapsed(true);
+    try { localStorage.setItem("chat-collapsed", "true"); } catch {}
+  }
+
+  function handleExpandChat() {
+    setChatCollapsed(false);
+    try { localStorage.setItem("chat-collapsed", "false"); } catch {}
   }
 
   const loadDashboard = useCallback(async () => {
@@ -138,6 +152,17 @@ export default function BusinessDetailPage() {
     }
   }
 
+  async function handleReorder(widgetIds: string[]) {
+    try {
+      await apiFetch(`/businesses/${id}/agent/workspace/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({ widget_ids: widgetIds }),
+      });
+    } catch {
+      await loadWorkspace();
+    }
+  }
+
   const handleWidgetPinned = useCallback(async () => {
     await loadWorkspace();
     setToast({ message: "Added to dashboard.", type: "success" });
@@ -145,8 +170,8 @@ export default function BusinessDetailPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <span className="inline-block h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex justify-center items-center h-screen bg-surface">
+        <span className="inline-block h-5 w-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -156,15 +181,15 @@ export default function BusinessDetailPage() {
       <div className="max-w-4xl mx-auto py-8 px-4">
         <Link
           href="/businesses"
-          className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-flex items-center gap-1"
+          className="text-sm text-text-muted hover:text-text-secondary mb-4 inline-flex items-center gap-1 transition-colors"
         >
           <span aria-hidden>&larr;</span> Back to businesses
         </Link>
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-xl px-4">
-          <p className="text-gray-700 mb-6 max-w-md mx-auto leading-relaxed">{loadError}</p>
+        <div className="text-center py-16 bg-surface-card border border-border rounded-xl px-4">
+          <p className="text-text-secondary mb-6 max-w-md mx-auto leading-relaxed">{loadError}</p>
           <Link
             href="/businesses"
-            className="inline-flex items-center justify-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center justify-center bg-brand text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-hover transition-colors"
           >
             Back to your businesses
           </Link>
@@ -179,25 +204,23 @@ export default function BusinessDetailPage() {
   const hasAnalysis = !!dashboard.ai_summary;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
+    <div className="h-screen flex flex-col overflow-hidden bg-surface">
       {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
 
       {/* Header */}
-      <header className="shrink-0 bg-white border-b border-gray-200 px-4 py-3">
+      <header className="shrink-0 bg-surface-card border-b border-border px-4 py-2.5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/businesses"
-              className="shrink-0 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              className="shrink-0 text-sm text-text-muted hover:text-text-secondary transition-colors"
             >
               &larr; Back
             </Link>
-            <span className="text-gray-200 shrink-0" aria-hidden>
-              |
-            </span>
-            <h1 className="font-semibold text-gray-900 truncate">{dashboard.business_name}</h1>
+            <span className="text-border shrink-0" aria-hidden>|</span>
+            <h1 className="font-semibold text-text-primary truncate">{dashboard.business_name}</h1>
             {dashboard.business_type && dashboard.business_type !== "other" && (
-              <span className="shrink-0 hidden sm:inline-block text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full capitalize">
+              <span className="shrink-0 hidden sm:inline-block text-xs bg-surface-elevated text-text-muted px-2 py-0.5 rounded-full capitalize border border-border-subtle">
                 {dashboard.business_type}
               </span>
             )}
@@ -208,7 +231,7 @@ export default function BusinessDetailPage() {
               type="button"
               onClick={handleFetchReviews}
               disabled={busy}
-              className="border border-gray-200 bg-white text-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              className="border border-border bg-surface-card text-text-secondary px-3 py-1.5 rounded-lg text-sm hover:bg-surface-elevated disabled:opacity-50 transition-colors"
             >
               {fetchingReviews ? "Fetching…" : hasReviews ? "Refresh" : "Fetch Reviews"}
             </button>
@@ -217,60 +240,77 @@ export default function BusinessDetailPage() {
               onClick={handleAnalyze}
               disabled={busy || !hasReviews}
               title={!hasReviews ? "Fetch reviews first" : undefined}
-              className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="bg-brand text-white px-3 py-1.5 rounded-lg text-sm hover:bg-brand-hover disabled:opacity-50 transition-colors"
             >
               {analyzing ? "Analyzing…" : hasAnalysis ? "Re-analyze" : "Analyze"}
             </button>
           </div>
         </div>
 
-        {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
+        {actionError && <p className="mt-1.5 text-xs text-red-500">{actionError}</p>}
       </header>
 
       {/* Mobile tab bar */}
-      <div className="lg:hidden shrink-0 bg-white border-b border-gray-200 flex">
+      <div className="lg:hidden shrink-0 bg-surface-card border-b border-border flex">
         <button
           type="button"
           onClick={() => setActiveTab("workspace")}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "workspace" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500"
+            activeTab === "workspace"
+              ? "text-brand border-b-2 border-brand"
+              : "text-text-muted"
           }`}
         >
-          Workspace{workspace.length > 0 ? ` (${workspace.length})` : ""}
+          Dashboard{workspace.length > 0 ? ` (${workspace.length})` : ""}
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("chat")}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "chat" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500"
+            activeTab === "chat" ? "text-brand border-b-2 border-brand" : "text-text-muted"
           }`}
         >
           Chat
         </button>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 overflow-hidden flex flex-col lg:grid lg:grid-cols-12 lg:gap-4 lg:p-4">
-        {/* Chat panel - primary command center */}
-        <div
-          className={`${
-            activeTab === "chat" ? "flex" : "hidden"
-          } lg:flex flex-col w-full lg:col-span-7 bg-white overflow-hidden lg:rounded-2xl lg:border lg:border-gray-200 lg:shadow-sm`}
-        >
-          <ChatPanel key={id} businessId={id} onWidgetPinned={handleWidgetPinned} />
-        </div>
+      {/* Desktop: resizable panel. Mobile: tab-based */}
+      <div className="flex-1 overflow-hidden hidden lg:flex">
+        <ResizablePanel
+          left={
+            <Workspace
+              widgets={workspace}
+              onDelete={handleDeleteWidget}
+              onReorder={handleReorder}
+              isLoading={workspaceLoading}
+            />
+          }
+          right={
+            <ChatPanel
+              key={id}
+              businessId={id}
+              onWidgetPinned={handleWidgetPinned}
+              onCollapse={handleCollapseChat}
+            />
+          }
+          defaultRatio={0.65}
+          rightCollapsed={chatCollapsed}
+          onRightCollapsedChange={handleExpandChat}
+        />
+      </div>
 
-        {/* Dashboard canvas */}
-        <div
-          className={`${
-            activeTab === "workspace" ? "flex" : "hidden"
-          } lg:flex flex-col w-full lg:col-span-5 bg-gray-50 overflow-hidden lg:rounded-2xl lg:border lg:border-gray-200`}
-        >
+      {/* Mobile panels */}
+      <div className="flex-1 overflow-hidden flex flex-col lg:hidden">
+        <div className={`${activeTab === "workspace" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}>
           <Workspace
             widgets={workspace}
             onDelete={handleDeleteWidget}
+            onReorder={handleReorder}
             isLoading={workspaceLoading}
           />
+        </div>
+        <div className={`${activeTab === "chat" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}>
+          <ChatPanel key={id} businessId={id} onWidgetPinned={handleWidgetPinned} />
         </div>
       </div>
     </div>

@@ -28,6 +28,14 @@ type Action =
   | { type: "ERROR"; message: string }
   | { type: "CLEAR_ERROR" };
 
+function createClientId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `msg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+}
+
 function reducer(state: AgentState, action: Action): AgentState {
   switch (action.type) {
     case "ADD_USER":
@@ -112,7 +120,7 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
       if (isStreamingRef.current) return;
       isStreamingRef.current = true;
 
-      dispatch({ type: "ADD_USER", id: crypto.randomUUID(), text: message });
+      dispatch({ type: "ADD_USER", id: createClientId(), text: message });
 
       try {
         let res: Response;
@@ -137,7 +145,7 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
         const reader = res.body!.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
-        let assistantId = crypto.randomUUID();
+        let assistantId = createClientId();
         let assistantStarted = false;
         let streamCompleted = false;
 
@@ -177,11 +185,11 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
                 }
                 dispatch({ type: "APPEND_TEXT", id: assistantId, text: data.text as string });
               } else if (eventType === "tool_call") {
-                assistantId = crypto.randomUUID();
+                assistantId = createClientId();
                 assistantStarted = false;
                 dispatch({
                   type: "ADD_TOOL_CALL",
-                  id: crypto.randomUUID(),
+                  id: createClientId(),
                   name: data.name as string,
                   args: (data.args ?? {}) as Record<string, unknown>,
                 });
@@ -189,7 +197,7 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
                 const name = data.name as string;
                 dispatch({
                   type: "ADD_TOOL_RESULT",
-                  id: crypto.randomUUID(),
+                  id: createClientId(),
                   name,
                   widgetType: (data.widget_type as string | null) ?? null,
                   result: (data.result ?? {}) as Record<string, unknown>,

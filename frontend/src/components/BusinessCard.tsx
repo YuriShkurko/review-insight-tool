@@ -21,9 +21,7 @@ export default function BusinessCard({
             </span>
           )}
         </div>
-        {business.address && (
-          <p className="text-text-muted text-sm truncate">{business.address}</p>
-        )}
+        {business.address && <p className="text-text-muted text-sm truncate">{business.address}</p>}
         <div className="flex items-center gap-4 mt-2.5 text-sm">
           <span className="font-semibold text-text-primary">
             {business.avg_rating !== null ? `★ ${business.avg_rating.toFixed(1)}` : "No rating"}

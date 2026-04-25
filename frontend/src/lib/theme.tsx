@@ -73,7 +73,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   function setTheme(t: Theme) {
     setThemeState(t);
-    try { localStorage.setItem("theme", t); } catch {}
+    try {
+      localStorage.setItem("theme", t);
+    } catch {}
     applyTheme(t);
     setResolvedTheme(isDark() ? "dark" : "light");
   }

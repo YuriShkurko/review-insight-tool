@@ -9,7 +9,13 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.models.user import User
 from app.models.workspace_widget import WorkspaceWidget
-from app.schemas.agent import ChatRequest, ConversationRead, PinWidgetRequest, ReorderRequest, WorkspaceWidgetRead
+from app.schemas.agent import (
+    ChatRequest,
+    ConversationRead,
+    PinWidgetRequest,
+    ReorderRequest,
+    WorkspaceWidgetRead,
+)
 
 router = APIRouter(tags=["agent"])
 

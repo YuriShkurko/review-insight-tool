@@ -58,7 +58,9 @@ export function ResizablePanel({
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
       setRatio((r) => {
-        try { localStorage.setItem(storageKey, String(r)); } catch {}
+        try {
+          localStorage.setItem(storageKey, String(r));
+        } catch {}
         return r;
       });
     }
@@ -109,7 +111,16 @@ export function ResizablePanel({
           onClick={() => onRightCollapsedChange(false)}
           className="absolute bottom-6 right-6 z-20 flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-full shadow-lg text-sm font-medium hover:bg-brand-hover transition-colors"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           Open Chat

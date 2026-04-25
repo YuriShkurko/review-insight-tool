@@ -68,13 +68,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
           className="h-full w-full"
           preserveAspectRatio="none"
         >
-          <path
-            d={path}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-brand"
-          />
+          <path d={path} fill="none" stroke="currentColor" strokeWidth="2" className="text-brand" />
           {points.map((point, index) => {
             const x = index * xStep;
             const y = chartHeight - (((point.value ?? 0) - min) / range) * chartHeight;

@@ -31,7 +31,11 @@ export default function BusinessDetailPage() {
   const [workspaceLoading, setWorkspaceLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>("workspace");
   const [chatCollapsed, setChatCollapsed] = useState(() => {
-    try { return localStorage.getItem("chat-collapsed") === "true"; } catch { return false; }
+    try {
+      return localStorage.getItem("chat-collapsed") === "true";
+    } catch {
+      return false;
+    }
   });
 
   const activeRouteIdRef = useRef(id);
@@ -45,12 +49,16 @@ export default function BusinessDetailPage() {
 
   function handleCollapseChat() {
     setChatCollapsed(true);
-    try { localStorage.setItem("chat-collapsed", "true"); } catch {}
+    try {
+      localStorage.setItem("chat-collapsed", "true");
+    } catch {}
   }
 
   function handleExpandChat() {
     setChatCollapsed(false);
-    try { localStorage.setItem("chat-collapsed", "false"); } catch {}
+    try {
+      localStorage.setItem("chat-collapsed", "false");
+    } catch {}
   }
 
   const loadDashboard = useCallback(async () => {
@@ -217,7 +225,9 @@ export default function BusinessDetailPage() {
             >
               &larr; Back
             </Link>
-            <span className="text-border shrink-0" aria-hidden>|</span>
+            <span className="text-border shrink-0" aria-hidden>
+              |
+            </span>
             <h1 className="font-semibold text-text-primary truncate">{dashboard.business_name}</h1>
             {dashboard.business_type && dashboard.business_type !== "other" && (
               <span className="shrink-0 hidden sm:inline-block text-xs bg-surface-elevated text-text-muted px-2 py-0.5 rounded-full capitalize border border-border-subtle">
@@ -256,9 +266,7 @@ export default function BusinessDetailPage() {
           type="button"
           onClick={() => setActiveTab("workspace")}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "workspace"
-              ? "text-brand border-b-2 border-brand"
-              : "text-text-muted"
+            activeTab === "workspace" ? "text-brand border-b-2 border-brand" : "text-text-muted"
           }`}
         >
           Dashboard{workspace.length > 0 ? ` (${workspace.length})` : ""}
@@ -301,7 +309,9 @@ export default function BusinessDetailPage() {
 
       {/* Mobile panels */}
       <div className="flex-1 overflow-hidden flex flex-col lg:hidden">
-        <div className={`${activeTab === "workspace" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}>
+        <div
+          className={`${activeTab === "workspace" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}
+        >
           <Workspace
             widgets={workspace}
             onDelete={handleDeleteWidget}
@@ -309,7 +319,9 @@ export default function BusinessDetailPage() {
             isLoading={workspaceLoading}
           />
         </div>
-        <div className={`${activeTab === "chat" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}>
+        <div
+          className={`${activeTab === "chat" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}
+        >
           <ChatPanel key={id} businessId={id} onWidgetPinned={handleWidgetPinned} />
         </div>
       </div>

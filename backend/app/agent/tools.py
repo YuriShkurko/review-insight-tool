@@ -247,7 +247,22 @@ def _run_analysis(db: Session, business_id: uuid.UUID) -> dict:
 
 
 def _compare_competitors(db: Session, business_id: uuid.UUID, user_id: uuid.UUID) -> dict:
+    from app.models.analysis import Analysis
+    from app.models.competitor_link import CompetitorLink
+    from app.services.analysis_service import analyze_reviews
     from app.services.comparison_service import generate_comparison
+    from app.services.review_service import fetch_reviews_for_business
+
+    links = db.query(CompetitorLink).filter(CompetitorLink.target_business_id == business_id).all()
+    for link in links:
+        comp = link.competitor_business
+        if comp is None or comp.user_id != user_id:
+            continue
+        has_analysis = db.query(Analysis).filter(Analysis.business_id == comp.id).first()
+        if not has_analysis:
+            if not comp.total_reviews:
+                fetch_reviews_for_business(db, comp)
+            analyze_reviews(db, comp.id)
 
     result = generate_comparison(db, business_id, user_id)
     return result.model_dump(mode="json")

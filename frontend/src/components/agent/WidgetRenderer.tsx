@@ -44,7 +44,9 @@ function ComparisonWidget({ data }: { data: Record<string, unknown> }) {
         <div>
           <p className="font-semibold text-green-600 uppercase tracking-wide mb-1">Strengths</p>
           <ul className="list-disc list-inside text-gray-600 space-y-0.5">
-            {strengths.slice(0, 3).map((s, i) => <li key={i}>{s}</li>)}
+            {strengths.slice(0, 3).map((s, i) => (
+              <li key={i}>{s}</li>
+            ))}
           </ul>
         </div>
       )}
@@ -52,7 +54,9 @@ function ComparisonWidget({ data }: { data: Record<string, unknown> }) {
         <div>
           <p className="font-semibold text-red-500 uppercase tracking-wide mb-1">Weaknesses</p>
           <ul className="list-disc list-inside text-gray-600 space-y-0.5">
-            {weaknesses.slice(0, 3).map((w, i) => <li key={i}>{w}</li>)}
+            {weaknesses.slice(0, 3).map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
           </ul>
         </div>
       )}
@@ -60,7 +64,9 @@ function ComparisonWidget({ data }: { data: Record<string, unknown> }) {
         <div>
           <p className="font-semibold text-blue-600 uppercase tracking-wide mb-1">Opportunities</p>
           <ul className="list-disc list-inside text-gray-600 space-y-0.5">
-            {opportunities.slice(0, 3).map((o, i) => <li key={i}>{o}</li>)}
+            {opportunities.slice(0, 3).map((o, i) => (
+              <li key={i}>{o}</li>
+            ))}
           </ul>
         </div>
       )}

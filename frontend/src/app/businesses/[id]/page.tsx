@@ -224,9 +224,7 @@ export default function BusinessDetailPage() {
           </div>
         </div>
 
-        {actionError && (
-          <p className="mt-2 text-xs text-red-600">{actionError}</p>
-        )}
+        {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
       </header>
 
       {/* Mobile tab bar */}
@@ -235,9 +233,7 @@ export default function BusinessDetailPage() {
           type="button"
           onClick={() => setActiveTab("workspace")}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "workspace"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-500"
+            activeTab === "workspace" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500"
           }`}
         >
           Workspace{workspace.length > 0 ? ` (${workspace.length})` : ""}
@@ -246,9 +242,7 @@ export default function BusinessDetailPage() {
           type="button"
           onClick={() => setActiveTab("chat")}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "chat"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-500"
+            activeTab === "chat" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500"
           }`}
         >
           Chat
@@ -276,7 +270,7 @@ export default function BusinessDetailPage() {
             activeTab === "chat" ? "flex" : "hidden"
           } md:flex flex-col flex-1 bg-white overflow-hidden`}
         >
-          <ChatPanel businessId={id} onWidgetPinned={handleWidgetPinned} />
+          <ChatPanel key={id} businessId={id} onWidgetPinned={handleWidgetPinned} />
         </div>
       </div>
     </div>

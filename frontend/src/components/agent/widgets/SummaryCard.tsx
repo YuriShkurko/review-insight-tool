@@ -56,9 +56,7 @@ export function SummaryCard({ data }: { data: Record<string, unknown> }) {
         </div>
       )}
       {focus && (
-        <p className="text-xs text-gray-500 italic border-t border-gray-100 pt-2">
-          Focus: {focus}
-        </p>
+        <p className="text-xs text-gray-500 italic border-t border-gray-100 pt-2">Focus: {focus}</p>
       )}
     </div>
   );

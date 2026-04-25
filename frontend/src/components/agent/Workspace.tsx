@@ -21,9 +21,7 @@ export function Workspace({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="shrink-0 px-4 pt-4 pb-2">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-          Workspace
-        </h2>
+        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Workspace</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">

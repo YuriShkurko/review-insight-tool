@@ -14,7 +14,13 @@ export function TrendIndicator({ data }: { data: Record<string, unknown> }) {
   }
 
   const trendColor =
-    changePct == null ? "text-gray-700" : changePct > 0 ? "text-green-600" : changePct < 0 ? "text-red-600" : "text-gray-700";
+    changePct == null
+      ? "text-gray-700"
+      : changePct > 0
+        ? "text-green-600"
+        : changePct < 0
+          ? "text-red-600"
+          : "text-gray-700";
 
   const rows: [string, React.ReactNode][] = [
     ["Period", period ?? "—"],

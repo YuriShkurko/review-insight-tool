@@ -84,9 +84,8 @@ class TestFormatSnapshotsForPrompt:
 
 
 class TestCallOpenaiComparison:
-    def test_no_api_key_returns_mock(self):
-        with patch("app.services.comparison_service.settings") as mock_settings:
-            mock_settings.OPENAI_API_KEY = ""
+    def test_no_provider_returns_mock(self):
+        with patch("app.services.comparison_service.get_llm_provider", return_value=None):
             result = _call_openai_comparison("prompt text")
         assert result == _mock_comparison()
 
@@ -97,40 +96,23 @@ class TestCallOpenaiComparison:
             "weaknesses": ["Higher prices"],
             "opportunities": ["Expand menu"],
         }
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content=json.dumps(expected)))]
-
-        with (
-            patch("app.services.comparison_service.settings") as mock_settings,
-            patch("app.services.comparison_service.OpenAI") as mock_openai_cls,
-        ):
-            mock_settings.OPENAI_API_KEY = "test-key"
-            mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
+        mock_provider = MagicMock()
+        mock_provider.complete.return_value = json.dumps(expected)
+        with patch("app.services.comparison_service.get_llm_provider", return_value=mock_provider):
             result = _call_openai_comparison("prompt text")
-
         assert result["comparison_summary"] == "Target is better"
 
     def test_invalid_json_falls_back_to_mock(self):
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="not json!!!"))]
-
-        with (
-            patch("app.services.comparison_service.settings") as mock_settings,
-            patch("app.services.comparison_service.OpenAI") as mock_openai_cls,
-        ):
-            mock_settings.OPENAI_API_KEY = "test-key"
-            mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
+        mock_provider = MagicMock()
+        mock_provider.complete.return_value = "not json!!!"
+        with patch("app.services.comparison_service.get_llm_provider", return_value=mock_provider):
             result = _call_openai_comparison("prompt")
-
         assert result == _mock_comparison()
 
-    def test_openai_exception_raises_external_provider_error(self):
-        with (
-            patch("app.services.comparison_service.settings") as mock_settings,
-            patch("app.services.comparison_service.OpenAI") as mock_openai_cls,
-        ):
-            mock_settings.OPENAI_API_KEY = "test-key"
-            mock_openai_cls.return_value.chat.completions.create.side_effect = Exception("timeout")
+    def test_provider_exception_raises_external_provider_error(self):
+        mock_provider = MagicMock()
+        mock_provider.complete.side_effect = Exception("timeout")
+        with patch("app.services.comparison_service.get_llm_provider", return_value=mock_provider):
             with pytest.raises(ExternalProviderError):
                 _call_openai_comparison("prompt")
 

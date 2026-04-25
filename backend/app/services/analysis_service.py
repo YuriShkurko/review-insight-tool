@@ -3,10 +3,9 @@ import logging
 import time
 import uuid
 
-from openai import OpenAI
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.llm import get_llm_provider
 from app.errors import ExternalProviderError, NoReviewsError
 from app.logging_config import timed_operation
 from app.models.analysis import Analysis
@@ -18,7 +17,6 @@ from app.tracing import get_current_trace_id, trace_context, trace_span
 logger = logging.getLogger(__name__)
 
 MAX_REVIEWS_FOR_ANALYSIS = 200
-LLM_TIMEOUT_SECONDS = 60
 
 _TYPE_FOCUS: dict[str, str] = {
     "restaurant": "service speed, staff friendliness, food quality, wait times, cleanliness, atmosphere, value for money, menu variety, consistency",
@@ -181,20 +179,16 @@ def _format_reviews_for_prompt(reviews: list[Review]) -> str:
 
 
 def _call_openai(system_prompt: str, review_texts: str) -> dict:
-    if not settings.OPENAI_API_KEY:
+    provider = get_llm_provider()
+    if not provider:
         return _mock_analysis()
 
     t0 = time.perf_counter()
     try:
-        client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=LLM_TIMEOUT_SECONDS)
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": review_texts},
-            ],
-            temperature=0.3,
-        )
+        content = provider.complete([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": review_texts},
+        ])
     except Exception as exc:
         llm_errors.add(1)
         logger.error("op=llm_call success=false error=%s detail=%s", type(exc).__name__, exc)
@@ -202,7 +196,6 @@ def _call_openai(system_prompt: str, review_texts: str) -> dict:
     finally:
         llm_latency.record((time.perf_counter() - t0) * 1000)
 
-    content = response.choices[0].message.content or "{}"
     try:
         result = json.loads(content)
         analyses_run.add(1)

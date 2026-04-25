@@ -34,67 +34,41 @@ class TestFormatReviewsForPrompt:
 
 
 class TestCallOpenai:
-    def test_no_api_key_returns_mock(self):
-        with patch("app.services.analysis_service.settings") as mock_settings:
-            mock_settings.OPENAI_API_KEY = ""
+    def test_no_provider_returns_mock(self):
+        with patch("app.services.analysis_service.get_llm_provider", return_value=None):
             result = _call_openai("system", "reviews")
         assert result == _mock_analysis()
 
     def test_valid_json_response(self):
         expected = {"summary": "Good place", "top_complaints": [], "top_praise": []}
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content=json.dumps(expected)))]
-
-        with (
-            patch("app.services.analysis_service.settings") as mock_settings,
-            patch("app.services.analysis_service.OpenAI") as mock_openai_cls,
-        ):
-            mock_settings.OPENAI_API_KEY = "test-key"
-            mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
+        mock_provider = MagicMock()
+        mock_provider.complete.return_value = json.dumps(expected)
+        with patch("app.services.analysis_service.get_llm_provider", return_value=mock_provider):
             result = _call_openai("system", "reviews")
-
         assert result["summary"] == "Good place"
 
     def test_invalid_json_falls_back(self):
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="not valid json {{{"))]
-
-        with (
-            patch("app.services.analysis_service.settings") as mock_settings,
-            patch("app.services.analysis_service.OpenAI") as mock_openai_cls,
-        ):
-            mock_settings.OPENAI_API_KEY = "test-key"
-            mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
+        mock_provider = MagicMock()
+        mock_provider.complete.return_value = "not valid json {{{"
+        with patch("app.services.analysis_service.get_llm_provider", return_value=mock_provider):
             result = _call_openai("system", "reviews")
-
         assert result["summary"] == "not valid json {{{"
         assert result["top_complaints"] == []
 
-    def test_openai_exception_raises_external_provider_error(self):
-        with (
-            patch("app.services.analysis_service.settings") as mock_settings,
-            patch("app.services.analysis_service.OpenAI") as mock_openai_cls,
-        ):
-            mock_settings.OPENAI_API_KEY = "test-key"
-            mock_openai_cls.return_value.chat.completions.create.side_effect = Exception(
-                "API down"
-            )
+    def test_provider_exception_raises_external_provider_error(self):
+        mock_provider = MagicMock()
+        mock_provider.complete.side_effect = Exception("API down")
+        with patch("app.services.analysis_service.get_llm_provider", return_value=mock_provider):
             with pytest.raises(ExternalProviderError):
                 _call_openai("system", "reviews")
 
-    def test_none_content_returns_empty_dict(self):
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content=None))]
-
-        with (
-            patch("app.services.analysis_service.settings") as mock_settings,
-            patch("app.services.analysis_service.OpenAI") as mock_openai_cls,
-        ):
-            mock_settings.OPENAI_API_KEY = "test-key"
-            mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
+    def test_empty_content_returns_fallback(self):
+        mock_provider = MagicMock()
+        mock_provider.complete.return_value = ""
+        with patch("app.services.analysis_service.get_llm_provider", return_value=mock_provider):
             result = _call_openai("system", "reviews")
-
-        assert result == {}
+        assert result["summary"] == ""
+        assert result["top_complaints"] == []
 
 
 class TestAnalyzeReviews:

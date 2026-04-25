@@ -2,11 +2,10 @@ import json
 import logging
 import uuid
 
-from openai import OpenAI
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.errors import BusinessNotFoundError, ComparisonNotReadyError, ExternalProviderError
+from app.llm import get_llm_provider
 from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
@@ -16,8 +15,6 @@ from app.schemas.analysis import InsightItem
 from app.schemas.comparison import BusinessSnapshot, ComparisonResponse
 
 logger = logging.getLogger(__name__)
-
-LLM_TIMEOUT_SECONDS = 60
 
 _COMPARISON_SYSTEM = """\
 You are an expert business and customer-experience consultant.
@@ -83,18 +80,14 @@ def _format_snapshots_for_prompt(
 
 
 def _call_openai_comparison(prompt_text: str) -> dict:
-    if not settings.OPENAI_API_KEY:
+    provider = get_llm_provider()
+    if not provider:
         return _mock_comparison()
     try:
-        client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=LLM_TIMEOUT_SECONDS)
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": _COMPARISON_SYSTEM},
-                {"role": "user", "content": prompt_text},
-            ],
-            temperature=0.3,
-        )
+        content = provider.complete([
+            {"role": "system", "content": _COMPARISON_SYSTEM},
+            {"role": "user", "content": prompt_text},
+        ])
     except Exception as exc:
         logger.error(
             "op=comparison_llm success=false error=%s detail=%s",
@@ -104,7 +97,6 @@ def _call_openai_comparison(prompt_text: str) -> dict:
         raise ExternalProviderError(
             "Comparison generation failed. Please try again later."
         ) from exc
-    content = response.choices[0].message.content or "{}"
     try:
         return json.loads(content)
     except json.JSONDecodeError:

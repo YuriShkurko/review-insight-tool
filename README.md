@@ -51,6 +51,7 @@ Review Insight Tool solves this by:
 - **Polyglot persistence (V3)** — optional MongoDB layer for comparison caching (4.2x speedup), versioned analysis history, and raw API response archival. Graceful no-op when unconfigured. See [benchmark results](docs/BENCHMARK.md)
 - **Production observability (V4)** — OpenTelemetry traces and metrics exported to Grafana Cloud. RED dashboard (request rate, error rate, P95 latency), business metrics (reviews fetched, analyses run, LLM latency/errors, cache hit ratio). Synthetic monitor runs every 30 minutes via GitHub Actions and pings Telegram on failure. Fully no-op when `OTEL_EXPORTER_OTLP_ENDPOINT` is unset.
 - **Living demo world (V5)** — persistent demo environment that runs autonomously 24/7. Three businesses with a 14-day narrative arc (craft beer festival → quiet week → bad keg incident → recovery), sine-wave review volume with weekly rhythm, optional LLM-burst reviews for dramatic arc events. Tick worker runs every 30 min via GitHub Actions. End-of-cycle soak report sent to Telegram with human-readable findings.
+- **Chat-first agent UI (V6)** — business detail page redesigned as a chat interface. An AI agent answers natural-language questions ("What are customers complaining about?", "How do I compare to competitors?") by calling 6 tool functions (dashboard, reviews, analysis, comparison, trends, pin). Streaming SSE response. Pinned results persist in a side-by-side workspace panel. Works with OpenAI or OpenRouter (same SDK, configurable `base_url`). No LLM key needed — mock path remains.
 - **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching
 
 ## Quick Start
@@ -173,10 +174,10 @@ Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
 
 1. **Register** — create an account at `/register`
 2. **Add a business** — paste a Google Maps URL, select the business type
-3. **Fetch reviews** — click "Fetch Reviews" to pull customer reviews
-4. **Run analysis** — click "Run Analysis" to generate tailored insights
-5. **View dashboard** — see your rating, AI summary, complaints, praise, action items, and risk areas
-6. **Compare with competitors (optional)** — on a business page, add up to 3 competitors (Google Maps URLs), fetch and analyze each, then click "Generate Comparison" for AI-generated strengths, weaknesses, and opportunities
+3. **Fetch reviews** — click "Fetch Reviews" (header button) to pull customer reviews
+4. **Run analysis** — click "Analyze" (header button) to run AI analysis
+5. **Chat with the agent** — ask anything in the right-hand chat panel: "What are customers complaining about?", "Show me my 1-star reviews this week", "How do I compare to competitors?"
+6. **Pin insights to workspace** — click "Pin" on any agent result, or ask the agent to pin for you; pinned widgets live in the left-hand workspace panel across sessions
 
 > **Tip:** Use **Share → Copy link** from the Google Maps business info panel. Search-bar URLs may not work.
 
@@ -225,8 +226,8 @@ The **Review Provider Layer** separates external review sources from core applic
 | Layer | Responsibility |
 |-------|---------------|
 | Pages | Next.js App Router pages with client-side data fetching |
-| Components | Reusable UI — DashboardView, ReviewList, InsightList |
-| Lib | API client, auth context, TypeScript types |
+| Components | Reusable UI — DashboardView, ReviewList, InsightList; `agent/` tree for chat + workspace |
+| Lib | API client, auth context, TypeScript types, `useAgentChat` SSE hook |
 
 ## Tech Stack
 
@@ -235,7 +236,7 @@ The **Review Provider Layer** separates external review sources from core applic
 | Backend | Python 3.11+, FastAPI, SQLAlchemy 2.0, Pydantic |
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4 |
 | Database | PostgreSQL 16, Alembic migrations, MongoDB (optional — Atlas or local) |
-| AI | OpenAI GPT-4o-mini |
+| AI | OpenAI GPT-4o-mini (analysis/comparison) + pluggable agent LLM via provider abstraction (OpenAI or OpenRouter) |
 | Auth | JWT (PyJWT), bcrypt |
 | Review providers | Mock (built-in), Offline (bundled real reviews), Outscraper (live) |
 | Infrastructure | Docker, Docker Compose, AWS ECS Fargate, ECR, ALB, SSM |
@@ -274,6 +275,11 @@ All endpoints are prefixed with `/api`. Protected endpoints require a `Bearer` t
 | `/api/businesses/{id}/competitors` | GET | Yes | List linked competitors |
 | `/api/businesses/{id}/competitors/{cid}` | DELETE | Yes | Remove a competitor link |
 | `/api/businesses/{id}/competitors/comparison` | POST | Yes | Generate AI comparison |
+| `/api/businesses/{id}/agent/chat` | POST | Yes | Chat with AI agent (SSE stream) |
+| `/api/businesses/{id}/agent/workspace` | GET | Yes | List pinned workspace widgets |
+| `/api/businesses/{id}/agent/workspace` | POST | Yes | Pin a widget directly |
+| `/api/businesses/{id}/agent/workspace/{wid}` | DELETE | Yes | Remove a pinned widget |
+| `/api/businesses/{id}/agent/conversations` | GET | Yes | List past conversations |
 
 Interactive docs: http://localhost:8000/docs
 
@@ -297,6 +303,10 @@ Interactive docs: http://localhost:8000/docs
 | `MONGO_DB_NAME` | MongoDB database name | `review_insight` |
 | `COMPARISON_CACHE_TTL_HOURS` | Comparison cache TTL in hours | `24` |
 | `RAW_RESPONSE_TTL_DAYS` | Raw API response retention in days | `30` |
+| `LLM_PROVIDER` | LLM provider for agent chat: `openai` or `openrouter` | `openai` |
+| `LLM_MODEL` | Model for analysis/comparison calls | `gpt-4o-mini` |
+| `LLM_AGENT_MODEL` | Model for agent chat calls | `gpt-4o-mini` |
+| `OPENROUTER_API_KEY` | OpenRouter API key (if `LLM_PROVIDER=openrouter`) | — |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector endpoint (e.g. Grafana Cloud) — empty disables OTEL | — |
 | `OTEL_EXPORTER_OTLP_HEADERS` | Auth header for OTLP endpoint (e.g. `Authorization=Basic <token>`) | — |
 | `GIT_SHA` | Git commit SHA baked into OTEL service resource attributes | `dev` |
@@ -324,6 +334,8 @@ Interactive docs: http://localhost:8000/docs
 │   │   ├── routes/              # API route handlers
 │   │   ├── services/            # Business logic
 │   │   ├── providers/           # Review source providers
+│   │   ├── agent/               # Agent executor, tools, system prompt, context window
+│   │   ├── llm/                 # LLM provider abstraction (OpenAI / OpenRouter)
 │   │   └── mock/                # Sample data generators
 │   ├── data/offline/            # Offline demo dataset (JSON)
 │   ├── scripts/                 # Utility scripts (seed, etc.)
@@ -338,8 +350,8 @@ Interactive docs: http://localhost:8000/docs
 ├── frontend/
 │   ├── src/
 │   │   ├── app/                 # Next.js pages
-│   │   ├── components/          # React components
-│   │   └── lib/                 # API client, auth, types
+│   │   ├── components/          # React components; agent/ for chat+workspace UI
+│   │   └── lib/                 # API client, auth, types, useAgentChat hook
 │   ├── Dockerfile               # Local dev (docker-compose)
 │   ├── Dockerfile.prod          # Production build for PaaS (e.g. Railway)
 │   ├── package.json
@@ -674,6 +686,7 @@ For detailed system behavior, user flows, analysis output shapes, and known limi
 - [ ] Export reports — PDF/CSV
 - [x] CI/CD pipeline — GitHub Actions CI (lint + tests + build) + CD (ECS deploy) + synthetic monitor (every 30 min)
 - [x] Living demo world — autonomous 14-day narrative arc, sine-wave + weekly modulation, LLM burst reviews, soak report
+- [x] Chat-first agent UI — natural-language interface with 6 tool functions, SSE streaming, pinnable workspace widgets, OpenAI/OpenRouter provider abstraction
 
 ## License
 

@@ -9,7 +9,7 @@ _BACKEND_DIR = Path(__file__).resolve().parents[1]
 
 _PLACEHOLDER_PREFIXES = ("your-", "sk-your-", "change-me", "put-your", "insert-")
 
-_API_KEY_FIELDS = ("OPENAI_API_KEY", "GOOGLE_PLACES_API_KEY", "OUTSCRAPER_API_KEY")
+_API_KEY_FIELDS = ("OPENAI_API_KEY", "GOOGLE_PLACES_API_KEY", "OUTSCRAPER_API_KEY", "OPENROUTER_API_KEY")
 
 
 def _running_on_railway() -> bool:
@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/review_insight"
     OPENAI_API_KEY: str = ""
     GOOGLE_PLACES_API_KEY: str = ""
+
+    # LLM provider — "openai" (default) or "openrouter"
+    LLM_PROVIDER: str = "openai"
+    OPENROUTER_API_KEY: str = ""
+    LLM_MODEL: str = "gpt-4o-mini"
+    LLM_AGENT_MODEL: str = "gpt-4o-mini"
 
     REVIEW_PROVIDER: str = "mock"
     OUTSCRAPER_API_KEY: str = ""

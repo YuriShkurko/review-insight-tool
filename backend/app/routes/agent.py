@@ -9,7 +9,7 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.models.user import User
 from app.models.workspace_widget import WorkspaceWidget
-from app.schemas.agent import ChatRequest, ConversationRead, PinWidgetRequest, WorkspaceWidgetRead
+from app.schemas.agent import ChatRequest, ConversationRead, PinWidgetRequest, ReorderRequest, WorkspaceWidgetRead
 
 router = APIRouter(tags=["agent"])
 
@@ -90,6 +90,22 @@ def create_workspace_widget(
     db.commit()
     db.refresh(widget)
     return widget
+
+
+@router.patch("/businesses/{business_id}/agent/workspace/reorder", status_code=204)
+def reorder_widgets(
+    business_id: uuid.UUID,
+    payload: ReorderRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    for position, widget_id in enumerate(payload.widget_ids):
+        db.query(WorkspaceWidget).filter(
+            WorkspaceWidget.id == widget_id,
+            WorkspaceWidget.business_id == business_id,
+            WorkspaceWidget.user_id == current_user.id,
+        ).update({"position": position})
+    db.commit()
 
 
 @router.delete("/businesses/{business_id}/agent/workspace/{widget_id}", status_code=204)

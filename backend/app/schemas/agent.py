@@ -25,6 +25,10 @@ class PinWidgetRequest(BaseModel):
     position: int | None = None
 
 
+class ReorderRequest(BaseModel):
+    widget_ids: list[uuid.UUID]
+
+
 class WorkspaceWidgetRead(BaseModel):
     id: uuid.UUID
     widget_type: str

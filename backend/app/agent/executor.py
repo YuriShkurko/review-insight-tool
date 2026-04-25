@@ -42,9 +42,7 @@ async def run_agent(
 
     # Load business (needed for system prompt + ownership check)
     business = (
-        db.query(Business)
-        .filter(Business.id == business_id, Business.user_id == user_id)
-        .first()
+        db.query(Business).filter(Business.id == business_id, Business.user_id == user_id).first()
     )
     if not business:
         yield _sse("error", {"message": "Business not found."})

@@ -84,10 +84,12 @@ def _call_openai_comparison(prompt_text: str) -> dict:
     if not provider:
         return _mock_comparison()
     try:
-        content = provider.complete([
-            {"role": "system", "content": _COMPARISON_SYSTEM},
-            {"role": "user", "content": prompt_text},
-        ])
+        content = provider.complete(
+            [
+                {"role": "system", "content": _COMPARISON_SYSTEM},
+                {"role": "user", "content": prompt_text},
+            ]
+        )
     except Exception as exc:
         logger.error(
             "op=comparison_llm success=false error=%s detail=%s",

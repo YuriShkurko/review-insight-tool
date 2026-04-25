@@ -143,6 +143,7 @@ def execute_tool(
 
 def _get_dashboard(db: Session, business_id: uuid.UUID, user_id: uuid.UUID) -> dict:
     from app.services.dashboard_service import get_dashboard
+
     result = get_dashboard(db, business_id, user_id)
     return result.model_dump(mode="json")
 
@@ -187,6 +188,7 @@ def _query_reviews(
 
 def _run_analysis(db: Session, business_id: uuid.UUID) -> dict:
     from app.services.analysis_service import analyze_reviews
+
     analysis = analyze_reviews(db, business_id)
     return {
         "summary": analysis.summary,
@@ -200,6 +202,7 @@ def _run_analysis(db: Session, business_id: uuid.UUID) -> dict:
 
 def _compare_competitors(db: Session, business_id: uuid.UUID, user_id: uuid.UUID) -> dict:
     from app.services.comparison_service import generate_comparison
+
     result = generate_comparison(db, business_id, user_id)
     return result.model_dump(mode="json")
 

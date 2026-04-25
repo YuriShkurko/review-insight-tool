@@ -9,7 +9,12 @@ _BACKEND_DIR = Path(__file__).resolve().parents[1]
 
 _PLACEHOLDER_PREFIXES = ("your-", "sk-your-", "change-me", "put-your", "insert-")
 
-_API_KEY_FIELDS = ("OPENAI_API_KEY", "GOOGLE_PLACES_API_KEY", "OUTSCRAPER_API_KEY", "OPENROUTER_API_KEY")
+_API_KEY_FIELDS = (
+    "OPENAI_API_KEY",
+    "GOOGLE_PLACES_API_KEY",
+    "OUTSCRAPER_API_KEY",
+    "OPENROUTER_API_KEY",
+)
 
 
 def _running_on_railway() -> bool:

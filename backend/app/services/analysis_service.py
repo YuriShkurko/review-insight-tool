@@ -5,8 +5,8 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.llm import get_llm_provider
 from app.errors import ExternalProviderError, NoReviewsError
+from app.llm import get_llm_provider
 from app.logging_config import timed_operation
 from app.models.analysis import Analysis
 from app.models.business import Business
@@ -185,10 +185,12 @@ def _call_openai(system_prompt: str, review_texts: str) -> dict:
 
     t0 = time.perf_counter()
     try:
-        content = provider.complete([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": review_texts},
-        ])
+        content = provider.complete(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": review_texts},
+            ]
+        )
     except Exception as exc:
         llm_errors.add(1)
         logger.error("op=llm_call success=false error=%s detail=%s", type(exc).__name__, exc)

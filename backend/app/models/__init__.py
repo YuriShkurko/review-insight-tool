@@ -6,4 +6,12 @@ from app.models.review import Review
 from app.models.user import User
 from app.models.workspace_widget import WorkspaceWidget
 
-__all__ = ["Analysis", "Business", "CompetitorLink", "Conversation", "Review", "User", "WorkspaceWidget"]
+__all__ = [
+    "Analysis",
+    "Business",
+    "CompetitorLink",
+    "Conversation",
+    "Review",
+    "User",
+    "WorkspaceWidget",
+]

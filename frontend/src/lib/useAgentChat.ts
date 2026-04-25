@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useCallback, useRef, useEffect } from "react";
+import { useReducer, useCallback, useRef } from "react";
 import { apiStreamFetch } from "./api";
 import type { MessageItem } from "./agentTypes";
 
@@ -100,119 +100,130 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
     error: null,
   });
 
-  // Stable ref so sendMessage doesn't need state in its deps array.
-  // Updated in useEffect (not during render) to satisfy React 19 ref rules;
-  // safe because sendMessage is only called from event handlers (after effects run).
-  const stateRef = useRef(state);
-  useEffect(() => {
-    stateRef.current = state;
-  });
+  // Refs updated synchronously in sendMessage — no useEffect timing window.
+  // isStreamingRef guards against concurrent calls without relying on React state
+  // being visible before the next render. conversationIdRef keeps the latest
+  // conversation ID available in the sendMessage closure without needing it in deps.
+  const isStreamingRef = useRef(false);
+  const conversationIdRef = useRef<string | null>(null);
 
   const sendMessage = useCallback(
     async (message: string) => {
-      if (stateRef.current.isStreaming) return;
+      if (isStreamingRef.current) return;
+      isStreamingRef.current = true;
 
       dispatch({ type: "ADD_USER", id: crypto.randomUUID(), text: message });
 
-      let res: Response;
       try {
-        res = await apiStreamFetch(`/businesses/${businessId}/agent/chat`, {
-          method: "POST",
-          body: JSON.stringify({
-            message,
-            conversation_id: stateRef.current.conversationId,
-          }),
-        });
-      } catch {
-        dispatch({ type: "ERROR", message: "Network error. Please check your connection." });
-        return;
-      }
+        let res: Response;
+        try {
+          res = await apiStreamFetch(`/businesses/${businessId}/agent/chat`, {
+            method: "POST",
+            body: JSON.stringify({
+              message,
+              conversation_id: conversationIdRef.current,
+            }),
+          });
+        } catch {
+          dispatch({ type: "ERROR", message: "Network error. Please check your connection." });
+          return;
+        }
 
-      if (!res.ok) {
-        dispatch({ type: "ERROR", message: "Request failed. Please try again." });
-        return;
-      }
+        if (!res.ok) {
+          dispatch({ type: "ERROR", message: "Request failed. Please try again." });
+          return;
+        }
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let assistantId = crypto.randomUUID();
-      let assistantStarted = false;
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let assistantId = crypto.randomUUID();
+        let assistantStarted = false;
+        let streamCompleted = false;
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
 
-          const blocks = buffer.split("\n\n");
-          buffer = blocks.pop() ?? "";
+            const blocks = buffer.split("\n\n");
+            buffer = blocks.pop() ?? "";
 
-          for (const block of blocks) {
-            if (!block.trim()) continue;
-            const lines = block.split("\n");
-            let eventType = "message";
-            let dataStr = "";
-            for (const line of lines) {
-              if (line.startsWith("event: ")) eventType = line.slice(7).trim();
-              else if (line.startsWith("data: ")) dataStr = line.slice(6);
-            }
-            if (!dataStr) continue;
-
-            let data: Record<string, unknown>;
-            try {
-              data = JSON.parse(dataStr);
-            } catch {
-              continue;
-            }
-
-            if (eventType === "status") {
-              // Keep-alive ping from backend — no state change needed, connection is live
-            } else if (eventType === "text_delta") {
-              if (!assistantStarted) {
-                dispatch({ type: "BEGIN_ASSISTANT", id: assistantId });
-                assistantStarted = true;
+            for (const block of blocks) {
+              if (!block.trim()) continue;
+              const lines = block.split("\n");
+              let eventType = "message";
+              let dataStr = "";
+              for (const line of lines) {
+                if (line.startsWith("event: ")) eventType = line.slice(7).trim();
+                else if (line.startsWith("data: ")) dataStr = line.slice(6);
               }
-              dispatch({ type: "APPEND_TEXT", id: assistantId, text: data.text as string });
-            } else if (eventType === "tool_call") {
-              // Next text block after tools needs a fresh assistant item
-              assistantId = crypto.randomUUID();
-              assistantStarted = false;
-              dispatch({
-                type: "ADD_TOOL_CALL",
-                id: crypto.randomUUID(),
-                name: data.name as string,
-                args: (data.args ?? {}) as Record<string, unknown>,
-              });
-            } else if (eventType === "tool_result") {
-              const name = data.name as string;
-              dispatch({
-                type: "ADD_TOOL_RESULT",
-                id: crypto.randomUUID(),
-                name,
-                widgetType: (data.widget_type as string | null) ?? null,
-                result: (data.result ?? {}) as Record<string, unknown>,
-              });
-              if (name === "pin_widget") {
-                onWidgetPinned?.();
+              if (!dataStr) continue;
+
+              let data: Record<string, unknown>;
+              try {
+                data = JSON.parse(dataStr);
+              } catch {
+                continue;
               }
-            } else if (eventType === "done") {
-              dispatch({ type: "DONE", conversationId: data.conversation_id as string });
-            } else if (eventType === "error") {
-              dispatch({
-                type: "ERROR",
-                message: (data.message as string) || "Something went wrong.",
-              });
+
+              if (eventType === "status") {
+                // Keep-alive ping from backend — no state change needed
+              } else if (eventType === "text_delta") {
+                if (!assistantStarted) {
+                  dispatch({ type: "BEGIN_ASSISTANT", id: assistantId });
+                  assistantStarted = true;
+                }
+                dispatch({ type: "APPEND_TEXT", id: assistantId, text: data.text as string });
+              } else if (eventType === "tool_call") {
+                assistantId = crypto.randomUUID();
+                assistantStarted = false;
+                dispatch({
+                  type: "ADD_TOOL_CALL",
+                  id: crypto.randomUUID(),
+                  name: data.name as string,
+                  args: (data.args ?? {}) as Record<string, unknown>,
+                });
+              } else if (eventType === "tool_result") {
+                const name = data.name as string;
+                dispatch({
+                  type: "ADD_TOOL_RESULT",
+                  id: crypto.randomUUID(),
+                  name,
+                  widgetType: (data.widget_type as string | null) ?? null,
+                  result: (data.result ?? {}) as Record<string, unknown>,
+                });
+                if (name === "pin_widget") {
+                  onWidgetPinned?.();
+                }
+              } else if (eventType === "done") {
+                const conversationId = data.conversation_id as string;
+                conversationIdRef.current = conversationId;
+                dispatch({ type: "DONE", conversationId });
+                streamCompleted = true;
+              } else if (eventType === "error") {
+                dispatch({
+                  type: "ERROR",
+                  message: (data.message as string) || "Something went wrong.",
+                });
+                streamCompleted = true;
+              }
             }
           }
+        } catch {
+          dispatch({ type: "ERROR", message: "Stream interrupted. Please try again." });
+          return;
         }
-      } catch {
-        dispatch({ type: "ERROR", message: "Stream interrupted. Please try again." });
-        return;
-      }
-      // Stream closed without a done event — reset so the button isn't stuck greyed out
-      if (stateRef.current.isStreaming) {
-        dispatch({ type: "ERROR", message: "Response ended unexpectedly. Please try again." });
+
+        if (!streamCompleted) {
+          dispatch({
+            type: "ERROR",
+            message: "Response ended unexpectedly. Please try again.",
+          });
+        }
+      } finally {
+        isStreamingRef.current = false;
       }
     },
     [businessId, onWidgetPinned],

@@ -8,6 +8,7 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   run_analysis: "AI Analysis",
   compare_competitors: "Competitor Comparison",
   get_review_trends: "Review Trends",
+  get_review_series: "Review Trend Chart",
 };
 
 function formatToolName(name: string): string {
@@ -66,10 +67,15 @@ export function ChatMessage({
 
     const widgetType = item.widgetType ?? "summary_card";
     const title = formatToolName(item.name);
+    const isChartWidget = widgetType === "line_chart" || widgetType === "bar_chart";
 
     return (
       <div className="flex justify-start w-full">
-        <div className="w-full max-w-sm border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+        <div
+          className={`w-full border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm ${
+            isChartWidget ? "max-w-2xl" : "max-w-sm"
+          }`}
+        >
           <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-2">
             <span className="text-xs font-medium text-gray-500 truncate">{title}</span>
             <button
@@ -77,7 +83,7 @@ export function ChatMessage({
               onClick={() => onPin(widgetType, title, item.result)}
               className="shrink-0 text-xs text-gray-400 hover:text-blue-600 transition-colors"
             >
-              Pin
+              Add to dashboard
             </button>
           </div>
           <div className="p-3">

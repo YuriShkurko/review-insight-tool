@@ -10,6 +10,8 @@ export function Workspace({
   onDelete: (widgetId: string) => void;
   isLoading: boolean;
 }) {
+  const orderedWidgets = [...widgets].sort((a, b) => a.position - b.position);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -21,18 +23,22 @@ export function Workspace({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="shrink-0 px-4 pt-4 pb-2">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Workspace</h2>
+        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+          Dashboard Canvas
+        </h2>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {widgets.length === 0 ? (
+        {orderedWidgets.length === 0 ? (
           <div className="text-center py-12 text-sm text-gray-400">
             <p>No pinned insights yet.</p>
-            <p className="mt-1 text-xs">Ask the AI agent something, then pin the result here.</p>
+            <p className="mt-1 text-xs">
+              Ask in chat, then add cards here to build your custom dashboard.
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {widgets.map((widget) => (
+            {orderedWidgets.map((widget) => (
               <div
                 key={widget.id}
                 className="bg-white border border-gray-200 rounded-xl overflow-hidden"

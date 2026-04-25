@@ -79,6 +79,36 @@ TOOL_DEFINITIONS: list[dict] = [
     {
         "type": "function",
         "function": {
+            "name": "get_review_series",
+            "description": "Return chart-ready review time series grouped by day for a recent period.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "days": {
+                        "type": "integer",
+                        "enum": [3, 7, 14, 30],
+                        "default": 7,
+                        "description": "Number of days to include (rolling window ending today).",
+                    },
+                    "metric": {
+                        "type": "string",
+                        "enum": ["count", "avg_rating", "both"],
+                        "default": "both",
+                        "description": "Which metric to include in the response.",
+                    },
+                    "group_by": {
+                        "type": "string",
+                        "enum": ["day"],
+                        "default": "day",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "pin_widget",
             "description": "Pin an insight or data result to the workspace so the user can keep it visible.",
             "parameters": {
@@ -93,6 +123,8 @@ TOOL_DEFINITIONS: list[dict] = [
                             "summary_card",
                             "comparison_card",
                             "trend_indicator",
+                            "line_chart",
+                            "bar_chart",
                         ],
                     },
                     "title": {"type": "string"},
@@ -105,12 +137,13 @@ TOOL_DEFINITIONS: list[dict] = [
 ]
 
 # Maps tool name → widget_type hint for tool_result SSE events
-TOOL_WIDGET_TYPES: dict[str, str] = {
+TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "get_dashboard": "summary_card",
     "query_reviews": "review_list",
     "run_analysis": "insight_list",
     "compare_competitors": "comparison_card",
     "get_review_trends": "trend_indicator",
+    "get_review_series": "line_chart",
     "pin_widget": None,
 }
 
@@ -136,6 +169,19 @@ def execute_tool(
         return _compare_competitors(db, business_id, user_id)
     if name == "get_review_trends":
         return _get_review_trends(db, business_id, args.get("period", "7d"))
+    if name == "get_review_series":
+        raw_days = args.get("days", 7)
+        raw_metric = args.get("metric", "both")
+        try:
+            parsed_days = int(raw_days)
+        except (TypeError, ValueError):
+            parsed_days = 7
+        return _get_review_series(
+            db,
+            business_id,
+            days=parsed_days,
+            metric=str(raw_metric),
+        )
     if name == "pin_widget":
         return _pin_widget(db, business_id, user_id, **args)
     return {"error": f"Unknown tool: {name}"}
@@ -243,6 +289,76 @@ def _get_review_trends(db: Session, business_id: uuid.UUID, period: str) -> dict
         change_pct = round((curr["count"] - prev["count"]) / prev["count"] * 100, 1)
 
     return {"period": period, "current": curr, "previous": prev, "change_pct": change_pct}
+
+
+def _get_review_series(
+    db: Session,
+    business_id: uuid.UUID,
+    *,
+    days: int = 7,
+    metric: str = "both",
+) -> dict:
+    allowed_days = {3, 7, 14, 30}
+    window_days = days if days in allowed_days else 7
+    selected_metric = metric if metric in {"count", "avg_rating", "both"} else "both"
+
+    today = datetime.now(UTC).date()
+    start_date = today - timedelta(days=window_days - 1)
+
+    reviews = (
+        db.query(Review)
+        .filter(
+            Review.business_id == business_id,
+            Review.published_at >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC),
+        )
+        .order_by(Review.published_at.asc())
+        .all()
+    )
+
+    buckets: dict[str, dict[str, float | int | None]] = {}
+    cursor = start_date
+    while cursor <= today:
+        key = cursor.isoformat()
+        buckets[key] = {"date": key, "count": 0, "avg_rating": None, "_rating_sum": 0.0}
+        cursor += timedelta(days=1)
+
+    for review in reviews:
+        if not review.published_at:
+            continue
+        day_key = review.published_at.date().isoformat()
+        if day_key not in buckets:
+            continue
+        bucket = buckets[day_key]
+        count = int(bucket["count"])
+        bucket["count"] = count + 1
+        bucket["_rating_sum"] = float(bucket["_rating_sum"] or 0.0) + float(review.rating)
+
+    series: list[dict[str, int | float | str | None]] = []
+    for day in sorted(buckets.keys()):
+        bucket = buckets[day]
+        count = int(bucket["count"])
+        avg_rating = None
+        if count > 0:
+            avg_rating = round(float(bucket["_rating_sum"]) / count, 2)
+        series.append({"date": day, "count": count, "avg_rating": avg_rating})
+
+    total_reviews = sum(int(point["count"] or 0) for point in series)
+    rated_points = [float(point["avg_rating"]) for point in series if point["avg_rating"] is not None]
+    period_avg_rating = round(sum(rated_points) / len(rated_points), 2) if rated_points else None
+
+    return {
+        "period": f"{window_days}d",
+        "days": window_days,
+        "group_by": "day",
+        "metric": selected_metric,
+        "from": start_date.isoformat(),
+        "to": today.isoformat(),
+        "series": series,
+        "summary": {
+            "total_reviews": total_reviews,
+            "avg_rating": period_avg_rating,
+        },
+    }
 
 
 def _pin_widget(

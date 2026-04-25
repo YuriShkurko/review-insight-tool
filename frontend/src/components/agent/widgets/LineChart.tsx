@@ -1,0 +1,107 @@
+type SeriesPoint = {
+  date: string;
+  count?: number | null;
+  avg_rating?: number | null;
+};
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function formatLabel(dateIso: string): string {
+  const date = new Date(dateIso);
+  if (Number.isNaN(date.getTime())) return dateIso;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+export function LineChart({ data }: { data: Record<string, unknown> }) {
+  const rawSeries = Array.isArray(data.series) ? data.series : [];
+  const metric = data.metric === "avg_rating" || data.metric === "count" ? data.metric : "count";
+  const points = rawSeries
+    .map((row) => {
+      const p = row as SeriesPoint;
+      return {
+        date: p.date,
+        value: metric === "avg_rating" ? toNumber(p.avg_rating) : toNumber(p.count),
+      };
+    })
+    .filter((p) => typeof p.date === "string");
+
+  if (points.length === 0) {
+    return <p className="text-xs text-gray-400">No chart data available.</p>;
+  }
+
+  const values = points.map((p) => p.value ?? 0);
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const range = Math.max(max - min, 1);
+
+  const chartWidth = 100;
+  const chartHeight = 36;
+  const xStep = points.length > 1 ? chartWidth / (points.length - 1) : chartWidth;
+
+  const path = points
+    .map((point, index) => {
+      const x = index * xStep;
+      const y = chartHeight - (((point.value ?? 0) - min) / range) * chartHeight;
+      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ");
+
+  const lastPoint = points.at(-1);
+  const firstPoint = points.at(0);
+  const delta =
+    lastPoint?.value != null && firstPoint?.value != null
+      ? Number((lastPoint.value - firstPoint.value).toFixed(2))
+      : null;
+
+  return (
+    <div className="space-y-3">
+      <div className="h-28 w-full rounded-lg border border-gray-100 bg-gradient-to-b from-white to-gray-50 p-3">
+        <svg
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          className="h-full w-full"
+          preserveAspectRatio="none"
+        >
+          <path
+            d={path}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="text-blue-500"
+          />
+          {points.map((point, index) => {
+            const x = index * xStep;
+            const y = chartHeight - (((point.value ?? 0) - min) / range) * chartHeight;
+            return (
+              <circle
+                key={`${point.date}-${index}`}
+                cx={x}
+                cy={y}
+                r="1.8"
+                className="fill-blue-600"
+              />
+            );
+          })}
+        </svg>
+      </div>
+
+      <div className="flex items-center justify-between text-xs">
+        <div className="text-gray-500">
+          {formatLabel(firstPoint?.date ?? "")} - {formatLabel(lastPoint?.date ?? "")}
+        </div>
+        {delta != null && (
+          <div className={delta >= 0 ? "text-green-600" : "text-red-600"}>
+            {delta >= 0 ? "+" : ""}
+            {delta} {metric === "avg_rating" ? "rating" : "reviews"}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

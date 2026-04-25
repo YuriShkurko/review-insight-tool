@@ -140,7 +140,7 @@ export default function BusinessDetailPage() {
 
   const handleWidgetPinned = useCallback(async () => {
     await loadWorkspace();
-    setActiveTab("workspace");
+    setToast({ message: "Added to dashboard.", type: "success" });
   }, [loadWorkspace]);
 
   if (authLoading || loading) {
@@ -228,7 +228,7 @@ export default function BusinessDetailPage() {
       </header>
 
       {/* Mobile tab bar */}
-      <div className="md:hidden shrink-0 bg-white border-b border-gray-200 flex">
+      <div className="lg:hidden shrink-0 bg-white border-b border-gray-200 flex">
         <button
           type="button"
           onClick={() => setActiveTab("workspace")}
@@ -250,27 +250,27 @@ export default function BusinessDetailPage() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-hidden flex">
-        {/* Workspace panel */}
+      <div className="flex-1 overflow-hidden flex flex-col lg:grid lg:grid-cols-12 lg:gap-4 lg:p-4">
+        {/* Chat panel - primary command center */}
+        <div
+          className={`${
+            activeTab === "chat" ? "flex" : "hidden"
+          } lg:flex flex-col w-full lg:col-span-7 bg-white overflow-hidden lg:rounded-2xl lg:border lg:border-gray-200 lg:shadow-sm`}
+        >
+          <ChatPanel key={id} businessId={id} onWidgetPinned={handleWidgetPinned} />
+        </div>
+
+        {/* Dashboard canvas */}
         <div
           className={`${
             activeTab === "workspace" ? "flex" : "hidden"
-          } md:flex flex-col w-full md:w-[42%] lg:w-[38%] border-r border-gray-200 bg-gray-50 overflow-hidden`}
+          } lg:flex flex-col w-full lg:col-span-5 bg-gray-50 overflow-hidden lg:rounded-2xl lg:border lg:border-gray-200`}
         >
           <Workspace
             widgets={workspace}
             onDelete={handleDeleteWidget}
             isLoading={workspaceLoading}
           />
-        </div>
-
-        {/* Chat panel */}
-        <div
-          className={`${
-            activeTab === "chat" ? "flex" : "hidden"
-          } md:flex flex-col flex-1 bg-white overflow-hidden`}
-        >
-          <ChatPanel key={id} businessId={id} onWidgetPinned={handleWidgetPinned} />
         </div>
       </div>
     </div>

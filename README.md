@@ -51,7 +51,7 @@ Review Insight Tool solves this by:
 - **Polyglot persistence (V3)** — optional MongoDB layer for comparison caching (4.2x speedup), versioned analysis history, and raw API response archival. Graceful no-op when unconfigured. See [benchmark results](docs/BENCHMARK.md)
 - **Production observability (V4)** — OpenTelemetry traces and metrics exported to Grafana Cloud. RED dashboard (request rate, error rate, P95 latency), business metrics (reviews fetched, analyses run, LLM latency/errors, cache hit ratio). Synthetic monitor runs every 30 minutes via GitHub Actions and pings Telegram on failure. Fully no-op when `OTEL_EXPORTER_OTLP_ENDPOINT` is unset.
 - **Living demo world (V5)** — persistent demo environment that runs autonomously 24/7. Three businesses with a 14-day narrative arc (craft beer festival → quiet week → bad keg incident → recovery), sine-wave review volume with weekly rhythm, optional LLM-burst reviews for dramatic arc events. Tick worker runs every 30 min via GitHub Actions. End-of-cycle soak report sent to Telegram with human-readable findings.
-- **Chat-first agent UI (V6)** — business detail page redesigned as a chat interface. An AI agent answers natural-language questions ("What are customers complaining about?", "How do I compare to competitors?") by calling 6 tool functions (dashboard, reviews, analysis, comparison, trends, pin). Streaming SSE response. Pinned results persist in a side-by-side workspace panel. Works with OpenAI or OpenRouter (same SDK, configurable `base_url`). No LLM key needed — mock path remains.
+- **Agent dashboard builder (V7)** — business detail page evolves into a chat-driven command center. The agent can answer natural-language questions, generate chart-ready review trends, preview cards in the chat, and add useful results to a persistent dashboard canvas. Dashboard-building prompts can proactively pin widgets without requiring a separate click. Works with OpenAI or OpenRouter (same SDK, configurable `base_url`). No LLM key needed — mock path remains.
 - **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching
 
 ## Quick Start
@@ -176,8 +176,8 @@ Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
 2. **Add a business** — paste a Google Maps URL, select the business type
 3. **Fetch reviews** — click "Fetch Reviews" (header button) to pull customer reviews
 4. **Run analysis** — click "Analyze" (header button) to run AI analysis
-5. **Chat with the agent** — ask anything in the right-hand chat panel: "What are customers complaining about?", "Show me my 1-star reviews this week", "How do I compare to competitors?"
-6. **Pin insights to workspace** — click "Pin" on any agent result, or ask the agent to pin for you; pinned widgets live in the left-hand workspace panel across sessions
+5. **Chat with the agent** — use the chat command center to ask anything: "What are customers complaining about?", "Graph review volume for the last 3 days", "How do I compare to competitors?"
+6. **Build a dashboard** — click "Add to dashboard" on an agent result, or ask the agent to build/customize the dashboard for you. Pinned cards and charts persist in the dashboard canvas across sessions.
 
 > **Tip:** Use **Share → Copy link** from the Google Maps business info panel. Search-bar URLs may not work.
 
@@ -226,7 +226,7 @@ The **Review Provider Layer** separates external review sources from core applic
 | Layer | Responsibility |
 |-------|---------------|
 | Pages | Next.js App Router pages with client-side data fetching |
-| Components | Reusable UI — DashboardView, ReviewList, InsightList; `agent/` tree for chat + workspace |
+| Components | Reusable UI — DashboardView, ReviewList, InsightList; `agent/` tree for chat + dashboard canvas widgets |
 | Lib | API client, auth context, TypeScript types, `useAgentChat` SSE hook |
 
 ## Tech Stack
@@ -276,7 +276,7 @@ All endpoints are prefixed with `/api`. Protected endpoints require a `Bearer` t
 | `/api/businesses/{id}/competitors/{cid}` | DELETE | Yes | Remove a competitor link |
 | `/api/businesses/{id}/competitors/comparison` | POST | Yes | Generate AI comparison |
 | `/api/businesses/{id}/agent/chat` | POST | Yes | Chat with AI agent (SSE stream) |
-| `/api/businesses/{id}/agent/workspace` | GET | Yes | List pinned workspace widgets |
+| `/api/businesses/{id}/agent/workspace` | GET | Yes | List pinned dashboard widgets |
 | `/api/businesses/{id}/agent/workspace` | POST | Yes | Pin a widget directly |
 | `/api/businesses/{id}/agent/workspace/{wid}` | DELETE | Yes | Remove a pinned widget |
 | `/api/businesses/{id}/agent/conversations` | GET | Yes | List past conversations |
@@ -686,7 +686,7 @@ For detailed system behavior, user flows, analysis output shapes, and known limi
 - [ ] Export reports — PDF/CSV
 - [x] CI/CD pipeline — GitHub Actions CI (lint + tests + build) + CD (ECS deploy) + synthetic monitor (every 30 min)
 - [x] Living demo world — autonomous 14-day narrative arc, sine-wave + weekly modulation, LLM burst reviews, soak report
-- [x] Chat-first agent UI — natural-language interface with 6 tool functions, SSE streaming, pinnable workspace widgets, OpenAI/OpenRouter provider abstraction
+- [x] Agent dashboard builder — chat command center with tool calls, SSE streaming, chart-ready trends, and persistent dashboard canvas widgets
 
 ## License
 

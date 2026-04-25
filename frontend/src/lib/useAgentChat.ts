@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useCallback, useRef } from "react";
+import { useReducer, useCallback, useRef, useEffect } from "react";
 import { apiStreamFetch } from "./api";
 import type { MessageItem } from "./agentTypes";
 
@@ -100,9 +100,13 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
     error: null,
   });
 
-  // Stable ref so sendMessage doesn't need state in its deps array
+  // Stable ref so sendMessage doesn't need state in its deps array.
+  // Updated in useEffect (not during render) to satisfy React 19 ref rules;
+  // safe because sendMessage is only called from event handlers (after effects run).
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  });
 
   const sendMessage = useCallback(
     async (message: string) => {

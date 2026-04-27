@@ -13,8 +13,13 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
-function formatLabel(dateIso: string): string {
-  const date = new Date(dateIso);
+// Exported for unit tests.
+export function formatLabel(dateIso: string): string {
+  const parts = dateIso.split("-").map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return dateIso;
+  const [y, m, d] = parts;
+  // Construct as a local date to avoid UTC-midnight → previous-day shift in UTC− zones.
+  const date = new Date(y, m - 1, d);
   if (Number.isNaN(date.getTime())) return dateIso;
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }

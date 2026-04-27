@@ -4,7 +4,7 @@ import { useReducer, useCallback, useRef } from "react";
 import { apiStreamFetch } from "./api";
 import type { MessageItem } from "./agentTypes";
 
-interface AgentState {
+export interface AgentState {
   items: MessageItem[];
   isStreaming: boolean;
   conversationId: string | null;
@@ -12,7 +12,7 @@ interface AgentState {
   error: string | null;
 }
 
-type Action =
+export type Action =
   | { type: "ADD_USER"; id: string; text: string }
   | { type: "BEGIN_ASSISTANT"; id: string }
   | { type: "APPEND_TEXT"; id: string; text: string }
@@ -28,6 +28,10 @@ type Action =
   | { type: "ERROR"; message: string }
   | { type: "CLEAR_ERROR" };
 
+export function shouldTriggerWidgetPinned(name: string, result: Record<string, unknown>): boolean {
+  return name === "pin_widget" && result?.pinned === true;
+}
+
 function createClientId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -36,7 +40,7 @@ function createClientId(): string {
   return `msg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
 }
 
-function reducer(state: AgentState, action: Action): AgentState {
+export function reducer(state: AgentState, action: Action): AgentState {
   switch (action.type) {
     case "ADD_USER":
       return {
@@ -202,7 +206,7 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
                   widgetType: (data.widget_type as string | null) ?? null,
                   result: (data.result ?? {}) as Record<string, unknown>,
                 });
-                if (name === "pin_widget") {
+                if (shouldTriggerWidgetPinned(name, (data.result as Record<string, unknown>) ?? {})) {
                   onWidgetPinned?.();
                 }
               } else if (eventType === "done") {

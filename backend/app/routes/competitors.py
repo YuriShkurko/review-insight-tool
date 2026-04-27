@@ -78,7 +78,9 @@ async def add_competitor(
     competitor = await get_or_create_business_for_competitor(
         db, place_id, current_user.id, google_maps_url, payload.business_type.value
     )
-    if competitor.id == target.id:
+    if competitor.id == target.id or (
+        competitor.place_id and competitor.place_id == target.place_id
+    ):
         raise HTTPException(
             status_code=400,
             detail="Cannot add a business as its own competitor.",

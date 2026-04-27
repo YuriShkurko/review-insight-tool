@@ -138,6 +138,19 @@ def test_promotion_competitor_to_regular(client: TestClient, auth_headers: dict)
     assert len(r.json()) == 2
 
 
+def test_self_link_by_place_id_field_rejected(client: TestClient, auth_headers: dict):
+    """Submitting the target's place_id directly (not via URL) is also rejected."""
+    # Business created from SAMPLE_MAPS_URL resolves to place_id "0x0:0x1"
+    biz_id = _create_business(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/competitors",
+        json={"place_id": "0x0:0x1", "business_type": "bar"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 400
+    assert "own competitor" in r.json()["detail"].lower()
+
+
 def test_comparison_without_analysis_fails(client: TestClient, auth_headers: dict):
     """Comparison without analysis on the target returns 400."""
     biz_id = _create_business(client, auth_headers)

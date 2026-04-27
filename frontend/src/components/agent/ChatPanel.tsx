@@ -81,6 +81,7 @@ export function ChatPanel({
                 key={item.id}
                 item={item}
                 isStreaming={isStreaming && item.id === streamingId}
+                isGlobalStreaming={isStreaming}
                 onPin={handlePin}
               />
             ))}

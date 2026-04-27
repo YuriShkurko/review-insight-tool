@@ -18,10 +18,12 @@ function formatToolName(name: string): string {
 export function ChatMessage({
   item,
   isStreaming,
+  isGlobalStreaming = false,
   onPin,
 }: {
   item: MessageItem;
   isStreaming: boolean;
+  isGlobalStreaming?: boolean;
   onPin: (widgetType: string, title: string, data: Record<string, unknown>) => void;
 }) {
   if (item.kind === "user") {
@@ -51,7 +53,7 @@ export function ChatMessage({
   if (item.kind === "tool_call") {
     return (
       <div className="flex justify-start">
-        <ToolCallIndicator name={item.name} />
+        <ToolCallIndicator name={item.name} isStreaming={isGlobalStreaming} />
       </div>
     );
   }

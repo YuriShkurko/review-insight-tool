@@ -11,6 +11,7 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.orm import Session
 
 from app.agent.context import truncate_messages
+from app.agent.guardrails import Intent, classify_intent
 from app.agent.system_prompt import build_system_prompt
 from app.agent.tools import TOOL_DEFINITIONS, TOOL_WIDGET_TYPES, execute_tool
 from app.llm import get_llm_provider
@@ -34,6 +35,26 @@ async def run_agent(
     conversation_id: uuid.UUID | None,
     db: Session,
 ) -> AsyncGenerator[str, None]:
+    # Pre-flight guardrails: run before any DB or LLM work so blocked messages
+    # are cheap and don't persist history.
+    intent = classify_intent(message)
+    if intent == Intent.UNSAFE:
+        yield _sse("text_delta", {"text": "I can't help with that request."})
+        yield _sse("done", {})
+        return
+    if intent == Intent.IRRELEVANT:
+        yield _sse(
+            "text_delta",
+            {
+                "text": (
+                    "I'm focused on your business reviews, competitors, and dashboard. "
+                    "Try asking about your ratings, top issues, or review trends."
+                )
+            },
+        )
+        yield _sse("done", {})
+        return
+
     provider = get_llm_provider()
     if not provider:
         yield _sse("text_delta", {"text": "LLM provider is not configured."})
@@ -127,9 +148,7 @@ async def run_agent(
         for tc in tool_calls:
             yield _sse("tool_call", {"name": tc.name, "args": tc.arguments})
             try:
-                result = await asyncio.to_thread(
-                    execute_tool, tc.name, tc.arguments, db, business_id, user_id
-                )
+                result = execute_tool(tc.name, tc.arguments, db, business_id, user_id)
             except Exception as exc:
                 logger.error("op=agent_tool tool=%s error=%s", tc.name, exc)
                 result = {"error": str(exc)}

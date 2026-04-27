@@ -15,7 +15,6 @@ Environment variables:
 import contextlib
 import json
 import os
-import random
 import sys
 import time
 import uuid
@@ -28,16 +27,31 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 
-def _unique_place_id() -> str:
-    """Return a place ID from the offline dataset so fetch-reviews returns real data."""
-    return random.choice([
-        "offline_lager_ale",
-        "offline_lager_ale_raanana",
-        "offline_lager_ale_herzliya",
-        "offline_beer_garden",
-        "offline_rami_levy",
-        "offline_lala_market",
-    ])
+_OFFLINE_PLACE_IDS = [
+    "offline_lager_ale",
+    "offline_lager_ale_raanana",
+    "offline_lager_ale_herzliya",
+    "offline_beer_garden",
+    "offline_rami_levy",
+    "offline_lala_market",
+]
+
+
+def _pick_place_id(exclude: set[str] | None = None) -> str:
+    """Return a place ID from the offline dataset, excluding any in *exclude*.
+
+    Selection is deterministic (first valid candidate) so monitor runs are
+    reproducible. Raises RuntimeError with a clear message if no candidate
+    remains — callers must treat this as a hard setup error.
+    """
+    candidates = [p for p in _OFFLINE_PLACE_IDS if p not in (exclude or set())]
+    if not candidates:
+        raise RuntimeError(
+            "Synthetic monitor setup error: no valid competitor place ID available "
+            f"(all {len(_OFFLINE_PLACE_IDS)} IDs are excluded). "
+            "Add at least one additional offline place ID to the pool."
+        )
+    return candidates[0]
 
 
 class SyntheticMonitor:
@@ -247,7 +261,12 @@ class SyntheticMonitor:
             self.check_dashboard(biz_id)
 
             # ── Competitor + comparison ──────────────────────────────────────
-            comp_place_id = _unique_place_id()
+            try:
+                comp_place_id = _pick_place_id(exclude={target_place_id})
+            except RuntimeError as exc:
+                self._record("add_competitor", False, 0, str(exc))
+                self._send_alert(f"CRITICAL: Synthetic monitor setup error — {exc}")
+                return self.results
             comp_biz_id = self.check_add_competitor(biz_id, comp_place_id)
 
             if comp_biz_id:

@@ -19,6 +19,11 @@ import { useState, useMemo } from "react";
 import { SortableWidgetCard } from "./SortableWidgetCard";
 import type { WorkspaceWidget } from "@/lib/agentTypes";
 
+// Tracks an in-flight drag reorder. widgetsRef is the widgets array at the time
+// the drag ended; when the parent refreshes widgets the reference changes,
+// which invalidates the optimistic order without needing a useEffect reset.
+type DragState = { widgetsRef: WorkspaceWidget[]; order: string[] };
+
 export function Workspace({
   widgets,
   onDelete,
@@ -30,18 +35,19 @@ export function Workspace({
   onReorder?: (widgetIds: string[]) => void;
   isLoading: boolean;
 }) {
-  // dragIdOrder is non-null only during/after a drag, for optimistic reordering
-  const [dragIdOrder, setDragIdOrder] = useState<string[] | null>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
 
   const ordered = useMemo(() => {
     const sorted = [...widgets].sort((a, b) => a.position - b.position);
-    if (!dragIdOrder) return sorted;
+    // Only apply the optimistic order if it was set against the same widgets
+    // reference — once loadWorkspace() sets a new array, server order wins.
+    if (!dragState || dragState.widgetsRef !== widgets) return sorted;
     const map = new Map(sorted.map((w) => [w.id, w]));
-    const fromOrder = dragIdOrder.map((id) => map.get(id)).filter(Boolean) as WorkspaceWidget[];
-    const inOrder = new Set(dragIdOrder);
+    const fromOrder = dragState.order.map((id) => map.get(id)).filter(Boolean) as WorkspaceWidget[];
+    const inOrder = new Set(dragState.order);
     const extra = sorted.filter((w) => !inOrder.has(w.id));
     return [...fromOrder, ...extra];
-  }, [widgets, dragIdOrder]);
+  }, [widgets, dragState]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -55,7 +61,7 @@ export function Workspace({
     const oldIndex = currentIds.indexOf(active.id as string);
     const newIndex = currentIds.indexOf(over.id as string);
     const newIds = arrayMove(currentIds, oldIndex, newIndex);
-    setDragIdOrder(newIds);
+    setDragState({ widgetsRef: widgets, order: newIds });
     onReorder?.(newIds);
   }
 

@@ -4,11 +4,30 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Literal, get_args
 
 from sqlalchemy.orm import Session
 
 from app.models.review import Review
 from app.models.workspace_widget import WorkspaceWidget
+
+# ---------------------------------------------------------------------------
+# Widget type registry — single source of truth for both the tool schema and
+# the REST schema validation (schemas/agent.py imports WidgetType from here).
+# ---------------------------------------------------------------------------
+
+WidgetType = Literal[
+    "metric_card",
+    "insight_list",
+    "review_list",
+    "summary_card",
+    "comparison_card",
+    "trend_indicator",
+    "line_chart",
+    "bar_chart",
+]
+
+WIDGET_TYPES: frozenset[str] = frozenset(get_args(WidgetType))
 
 # ---------------------------------------------------------------------------
 # OpenAI tool definitions
@@ -109,6 +128,35 @@ TOOL_DEFINITIONS: list[dict] = [
     {
         "type": "function",
         "function": {
+            "name": "get_top_issues",
+            "description": (
+                "Return the top ranked issues from recent reviews with severity labels "
+                "(critical/notable/minor) and representative quotes. Use this instead of "
+                "query_reviews when answering open-ended quality or improvement questions "
+                "(e.g. 'what's wrong', 'what should we fix', 'what are customers complaining about')."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "default": 5,
+                        "maximum": 10,
+                        "description": "Number of top issues to return.",
+                    },
+                    "days": {
+                        "type": "integer",
+                        "default": 30,
+                        "description": "Recency window in days (7-90).",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "pin_widget",
             "description": "Pin an insight or data result to the workspace so the user can keep it visible.",
             "parameters": {
@@ -116,16 +164,7 @@ TOOL_DEFINITIONS: list[dict] = [
                 "properties": {
                     "widget_type": {
                         "type": "string",
-                        "enum": [
-                            "metric_card",
-                            "insight_list",
-                            "review_list",
-                            "summary_card",
-                            "comparison_card",
-                            "trend_indicator",
-                            "line_chart",
-                            "bar_chart",
-                        ],
+                        "enum": sorted(WIDGET_TYPES),
                     },
                     "title": {"type": "string"},
                     "data": {"type": "object"},
@@ -144,6 +183,7 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "compare_competitors": "comparison_card",
     "get_review_trends": "trend_indicator",
     "get_review_series": "line_chart",
+    "get_top_issues": "insight_list",
     "pin_widget": None,
 }
 
@@ -182,6 +222,16 @@ def execute_tool(
             days=parsed_days,
             metric=str(raw_metric),
         )
+    if name == "get_top_issues":
+        try:
+            parsed_limit = int(args.get("limit", 5))
+        except (TypeError, ValueError):
+            parsed_limit = 5
+        try:
+            parsed_days = int(args.get("days", 30))
+        except (TypeError, ValueError):
+            parsed_days = 30
+        return _get_top_issues(db, business_id, limit=parsed_limit, days=parsed_days)
     if name == "pin_widget":
         return _pin_widget(db, business_id, user_id, **args)
     return {"error": f"Unknown tool: {name}"}
@@ -378,6 +428,115 @@ def _get_review_series(
     }
 
 
+def _get_top_issues(
+    db: Session,
+    business_id: uuid.UUID,
+    *,
+    limit: int = 5,
+    days: int = 30,
+) -> dict:
+    from app.models.analysis import Analysis
+
+    window_days = max(7, min(90, int(days)))
+    limit = max(1, min(10, int(limit)))
+
+    now = datetime.now(UTC)
+    window_start = now - timedelta(days=window_days)
+
+    reviews = (
+        db.query(Review)
+        .filter(
+            Review.business_id == business_id,
+            Review.published_at >= window_start,
+        )
+        .all()
+    )
+
+    if not reviews:
+        return {"issues": [], "period": f"{window_days}d", "total_reviews_analyzed": 0}
+
+    analysis = db.query(Analysis).filter(Analysis.business_id == business_id).first()
+    complaint_themes = [c["label"] for c in (analysis.top_complaints or [])] if analysis else []
+
+    def _is_recent(review) -> bool:
+        return bool(review.published_at and (now - review.published_at).days <= 14)
+
+    def _matches_theme(text: str, theme: str) -> bool:
+        tl = text.lower()
+        thl = theme.lower()
+        if thl in tl:
+            return True
+        return any(w in tl for w in thl.split() if len(w) > 4)
+
+    # Group reviews by complaint theme if analysis data is available, else by star bucket
+    groups: dict[str, list] = {}
+
+    if complaint_themes:
+        for theme in complaint_themes:
+            matched = [r for r in reviews if r.text and _matches_theme(r.text, theme)]
+            if matched:
+                groups[theme] = matched
+        matched_ids = {id(r) for g in groups.values() for r in g}
+        leftover = [r for r in reviews if id(r) not in matched_ids]
+        if leftover:
+            groups["Other feedback"] = leftover
+    else:
+        for r in reviews:
+            if r.rating <= 2:
+                bucket = "Critical issues (1-2 stars)"
+            elif r.rating == 3:
+                bucket = "Mixed feedback (3 stars)"
+            else:
+                bucket = "Positive feedback (4-5 stars)"
+            groups.setdefault(bucket, []).append(r)
+
+    def _severity(avg_r: float, has_recent: bool) -> str:
+        if avg_r <= 1.5 and has_recent:
+            return "critical"
+        if avg_r <= 2.5:
+            return "notable"
+        return "minor"
+
+    def _pick_quote(group_reviews: list) -> str | None:
+        candidates = [r for r in group_reviews if r.text and r.rating <= 3]
+        if not candidates:
+            candidates = [r for r in group_reviews if r.text]
+        if not candidates:
+            return None
+        text = min(candidates, key=lambda r: len(r.text or "")).text or ""
+        return (text[:117] + "…") if len(text) > 120 else text
+
+    issues = []
+    for theme, group_reviews in groups.items():
+        avg_r = sum(r.rating for r in group_reviews) / len(group_reviews)
+        has_recent = any(_is_recent(r) for r in group_reviews)
+        # Score: count x recency multiplier x rating-severity weight
+        recency_mult = 1.5 if has_recent else 1.0
+        rating_penalty = max(0.1, (5 - avg_r) / 4)
+        score = len(group_reviews) * recency_mult * rating_penalty
+
+        issues.append(
+            {
+                "theme": theme,
+                "count": len(group_reviews),
+                "avg_rating": round(avg_r, 2),
+                "severity": _severity(avg_r, has_recent),
+                "representative_quote": _pick_quote(group_reviews),
+                "_score": score,
+            }
+        )
+
+    issues.sort(key=lambda x: x["_score"], reverse=True)
+    for issue in issues:
+        del issue["_score"]
+
+    return {
+        "issues": issues[:limit],
+        "period": f"{window_days}d",
+        "total_reviews_analyzed": len(reviews),
+    }
+
+
 def _pin_widget(
     db: Session,
     business_id: uuid.UUID,
@@ -387,6 +546,9 @@ def _pin_widget(
     title: str,
     data: dict,
 ) -> dict:
+    if widget_type not in WIDGET_TYPES:
+        return {"error": f"Unknown widget_type '{widget_type}'", "pinned": False}
+
     # Place new widget after existing ones
     existing_count = (
         db.query(WorkspaceWidget)

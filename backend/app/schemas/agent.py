@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from app.agent.tools import WIDGET_TYPES
 
 
 class ChatRequest(BaseModel):
@@ -23,6 +25,13 @@ class PinWidgetRequest(BaseModel):
     title: str
     data: dict
     position: int | None = None
+
+    @field_validator("widget_type")
+    @classmethod
+    def _check_widget_type(cls, v: str) -> str:
+        if v not in WIDGET_TYPES:
+            raise ValueError(f"widget_type must be one of {sorted(WIDGET_TYPES)}")
+        return v
 
 
 class ReorderRequest(BaseModel):

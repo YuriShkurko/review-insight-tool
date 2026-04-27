@@ -7,10 +7,10 @@ Pure functions only — no DB, no async, no app imports. Designed to be fast
 from __future__ import annotations
 
 import re
-from enum import Enum
+from enum import StrEnum
 
 
-class Intent(str, Enum):
+class Intent(StrEnum):
     ANALYTICS = "analytics_question"
     CREATE_WIDGET = "create_dashboard_widget"
     MODIFY_DASHBOARD = "modify_dashboard"
@@ -24,7 +24,9 @@ class Intent(str, Enum):
 # ---------------------------------------------------------------------------
 
 _INJECTION_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(r"ignore\s+(all\s+)?(previous|above|prior|all)\s+(instructions?|prompts?|rules?)", re.I),
+    re.compile(
+        r"ignore\s+(all\s+)?(previous|above|prior|all)\s+(instructions?|prompts?|rules?)", re.I
+    ),
     re.compile(r"reveal\s+(your|the)\s+(system\s+)?prompt", re.I),
     re.compile(r"(forget|disregard)\s+(everything|all|your)", re.I),
     re.compile(r"print\s+(your|the)\s+(instructions?|training|prompt|system)", re.I),
@@ -96,7 +98,10 @@ _CREATE_WIDGET_PATTERNS: list[re.Pattern[str]] = [
 ]
 
 _MODIFY_DASHBOARD_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(r"\b(remove\s+(the\s+)?\w+\s+widget|delete\s+(the\s+)?\w+\s+widget|reorder|rearrange\s+(the\s+)?dashboard|clear\s+(the\s+)?dashboard)\b", re.I),
+    re.compile(
+        r"\b(remove\s+(the\s+)?\w+\s+widget|delete\s+(the\s+)?\w+\s+widget|reorder|rearrange\s+(the\s+)?dashboard|clear\s+(the\s+)?dashboard)\b",
+        re.I,
+    ),
 ]
 
 

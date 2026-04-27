@@ -206,7 +206,9 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
                   widgetType: (data.widget_type as string | null) ?? null,
                   result: (data.result ?? {}) as Record<string, unknown>,
                 });
-                if (shouldTriggerWidgetPinned(name, (data.result as Record<string, unknown>) ?? {})) {
+                if (
+                  shouldTriggerWidgetPinned(name, (data.result as Record<string, unknown>) ?? {})
+                ) {
                   onWidgetPinned?.();
                 }
               } else if (eventType === "done") {

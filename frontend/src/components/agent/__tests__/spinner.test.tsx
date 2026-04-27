@@ -36,9 +36,7 @@ describe("ToolCallIndicator", () => {
   });
 
   it("falls back to humanised name for unknown tool", () => {
-    const html = renderToStaticMarkup(
-      <ToolCallIndicator name="custom_tool" isStreaming={false} />,
-    );
+    const html = renderToStaticMarkup(<ToolCallIndicator name="custom_tool" isStreaming={false} />);
     expect(html).toContain("custom tool");
   });
 });

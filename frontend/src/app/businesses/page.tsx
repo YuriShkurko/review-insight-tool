@@ -8,6 +8,7 @@ import BusinessCard from "@/components/BusinessCard";
 import SandboxCatalog from "@/components/SandboxCatalog";
 import {
   BUSINESS_TYPES,
+  type AppBootstrap,
   type Business,
   type BusinessType,
   type CatalogResponse,
@@ -26,6 +27,9 @@ export default function BusinessesPage() {
   const [catalog, setCatalog] = useState<CatalogResponse | null>(null);
   const [busyPlaceId, setBusyPlaceId] = useState<string | null>(null);
   const [resetBusy, setResetBusy] = useState(false);
+  const [reviewProvider, setReviewProvider] = useState<string | null>(null);
+
+  const isOfflineDemo = reviewProvider === "offline";
 
   const loadBusinesses = useCallback(async () => {
     try {
@@ -57,6 +61,12 @@ export default function BusinessesPage() {
     (async () => {
       try {
         await refreshAll();
+        try {
+          const b = await apiFetch<AppBootstrap>("/bootstrap");
+          if (!cancelled) setReviewProvider(b.review_provider);
+        } catch {
+          if (!cancelled) setReviewProvider("mock");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -159,38 +169,46 @@ export default function BusinessesPage() {
     <div className="max-w-2xl mx-auto py-8 px-4">
       <h1 className="text-2xl font-bold tracking-tight text-text-primary mb-6">Your Businesses</h1>
 
-      <form onSubmit={handleAdd} className="space-y-2 mb-2">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            required
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Paste a Google Maps URL, shortened link, or place ID"
-            disabled={adding}
-            className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand disabled:opacity-50"
-          />
-          <select
-            value={businessType}
-            onChange={(e) => setBusinessType(e.target.value as BusinessType)}
-            disabled={adding}
-            className="border border-border rounded-lg px-3 py-2 text-sm bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand disabled:opacity-50 capitalize"
-          >
-            {BUSINESS_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={adding || !input.trim()}
-            className="bg-brand text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-brand-hover disabled:opacity-50 transition-colors whitespace-nowrap"
-          >
-            {adding ? "Adding..." : "Add Business"}
-          </button>
+      {isOfflineDemo ? (
+        <div className="mb-4 rounded-lg border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
+          <strong className="text-text-primary">Offline demo mode.</strong> You cannot add a
+          business from a Google Maps link or free-form place ID here. Add one from the{" "}
+          <strong className="text-text-primary">sample catalog</strong> below instead.
         </div>
-      </form>
+      ) : (
+        <form onSubmit={handleAdd} className="space-y-2 mb-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              required
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Paste a Google Maps URL, shortened link, or place ID"
+              disabled={adding}
+              className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand disabled:opacity-50"
+            />
+            <select
+              value={businessType}
+              onChange={(e) => setBusinessType(e.target.value as BusinessType)}
+              disabled={adding}
+              className="border border-border rounded-lg px-3 py-2 text-sm bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand disabled:opacity-50 capitalize"
+            >
+              {BUSINESS_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              disabled={adding || !input.trim()}
+              className="bg-brand text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-brand-hover disabled:opacity-50 transition-colors whitespace-nowrap"
+            >
+              {adding ? "Adding..." : "Add Business"}
+            </button>
+          </div>
+        </form>
+      )}
 
       {error && (
         <p className="text-red-600 text-sm mb-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2 dark:bg-red-950/30 dark:border-red-900 dark:text-red-400">
@@ -234,8 +252,15 @@ export default function BusinessesPage() {
                     1
                   </span>
                   <span>
-                    <strong className="text-text-primary">Add your business</strong> — paste a
-                    Google Maps link (full or shortened) or a place ID above.
+                    <strong className="text-text-primary">Add your business</strong> —{" "}
+                    {isOfflineDemo ? (
+                      <>
+                        choose a sample from the <strong>offline catalog</strong> below (Google Maps
+                        links are disabled in this mode).
+                      </>
+                    ) : (
+                      <>paste a Google Maps link (full or shortened) or a place ID above.</>
+                    )}
                   </span>
                 </li>
                 <li className="flex items-start gap-3">

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
+from app.config import settings
 from app.database import get_db
 from app.errors import BusinessAlreadyExistsError
 from app.logging_config import timed_operation
@@ -26,6 +27,15 @@ async def create_business(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if settings.REVIEW_PROVIDER == "offline":
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Adding a business from a Google Maps link or free-form place ID is disabled "
+                "while REVIEW_PROVIDER=offline. Use the offline sample catalog to add businesses."
+            ),
+        )
+
     place_id = payload.place_id
     google_maps_url = payload.google_maps_url
 

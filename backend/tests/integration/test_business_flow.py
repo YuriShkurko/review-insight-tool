@@ -122,3 +122,25 @@ def test_business_not_found_returns_404(client: TestClient, auth_headers: dict):
     assert r.status_code == 404
     r2 = client.get(f"/api/businesses/{fake_id}/reviews", headers=auth_headers)
     assert r2.status_code == 404
+
+
+def test_bootstrap_returns_review_provider(client: TestClient):
+    r = client.get("/api/bootstrap")
+    assert r.status_code == 200
+    data = r.json()
+    assert data.get("review_provider") == "mock"
+
+
+def test_create_business_forbidden_when_review_provider_offline(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "REVIEW_PROVIDER", "offline")
+    r = client.post(
+        "/api/businesses",
+        json={"place_id": "offline_lager_ale", "business_type": "bar"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 403
+    assert "offline" in r.json()["detail"].lower()

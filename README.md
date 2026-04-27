@@ -52,8 +52,9 @@ Review Insight Tool solves this by:
 - **Production observability (V4)** — OpenTelemetry traces and metrics exported to Grafana Cloud. RED dashboard (request rate, error rate, P95 latency), business metrics (reviews fetched, analyses run, LLM latency/errors, cache hit ratio). Synthetic monitor runs every 30 minutes via GitHub Actions and pings Telegram on failure. Fully no-op when `OTEL_EXPORTER_OTLP_ENDPOINT` is unset.
 - **Living demo world (V5)** — persistent demo environment that runs autonomously 24/7. Three businesses with a 14-day narrative arc (craft beer festival → quiet week → bad keg incident → recovery), sine-wave review volume with weekly rhythm, optional LLM-burst reviews for dramatic arc events. Tick worker runs every 30 min via GitHub Actions. End-of-cycle soak report sent to Telegram with human-readable findings.
 - **Agent dashboard builder (V7)** — business detail page evolves into a chat-driven command center. The agent can answer natural-language questions, generate chart-ready review trends, preview cards in the chat, and add useful results to a persistent dashboard canvas. Dashboard-building prompts can proactively pin widgets without requiring a separate click. Works with OpenAI or OpenRouter (same SDK, configurable `base_url`). No LLM key needed — mock path remains.
-- **Agent safety + stability (V8)** — intent classification routes each message to the right flow and blocks off-topic or injection attempts before they reach the LLM. System prompt enforces an explicit data-trust boundary so malicious review text cannot override agent behaviour. Tool spinner clears correctly after streaming ends; optimistic drag-reorder self-corrects on server refresh; `pin_widget` callback guarded by `result.pinned === true`. Synthetic health check can no longer select the active business as its own competitor.
-- **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching
+- **Agent safety + stability (V8)** — intent classification routes each message to the right flow and blocks off-topic or injection attempts before they reach the LLM. System prompt enforces an explicit data-trust boundary so malicious review text cannot override agent behaviour. Tool spinner clears correctly after streaming ends; optimistic drag-reorder self-corrects on server refresh; `pin_widget` callback guarded by `result.pinned === true`. Synthetic monitor picks target vs competitor place IDs deterministically (`_pick_place_id`) so a run never treats the main business as its own competitor.
+- **Agent workspace + charts** — `get_rating_distribution` returns star-rating counts for a `bar_chart` widget; `pin_widget` coerces tool arguments so extra model-supplied JSON keys no longer break pinning; system prompt documents tool→`widget_type` mapping; pinned `get_top_issues` data renders via `issues` in the workspace summary card.
+- **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching. When `REVIEW_PROVIDER=offline`, **adding a business from a Google Maps link or free-form place ID is disabled** (`POST /api/businesses` → 403); use the **sandbox sample catalog** in the UI (`POST /api/sandbox/import`). **`GET /api/bootstrap`** (no auth) returns `{ "review_provider": "..." }` so the frontend can hide the form and match server mode.
 
 ## Quick Start
 
@@ -261,10 +262,14 @@ All endpoints are prefixed with `/api`. Protected endpoints require a `Bearer` t
 
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
+| `/api/bootstrap` | GET | No | Client hints: `review_provider` (`mock`, `offline`, `outscraper`, `simulation`) |
+| `/api/sandbox/catalog` | GET | Yes | Offline manifest catalog (`REVIEW_PROVIDER=offline` only) |
+| `/api/sandbox/import` | POST | Yes | Import a sample business from the catalog (`REVIEW_PROVIDER=offline` only) |
+| `/api/sandbox/reset` | POST | Yes | Remove offline sample businesses for the current user (`REVIEW_PROVIDER=offline` only) |
 | `/api/auth/register` | POST | No | Create account |
 | `/api/auth/login` | POST | No | Sign in, receive token |
 | `/api/auth/me` | GET | Yes | Current user info |
-| `/api/businesses` | POST | Yes | Add business |
+| `/api/businesses` | POST | Yes | Add business from Maps URL or place ID (returns **403** when `REVIEW_PROVIDER=offline` — use `/api/sandbox/import`) |
 | `/api/businesses` | GET | Yes | List businesses |
 | `/api/businesses/{id}` | GET | Yes | Get business details |
 | `/api/businesses/{id}` | DELETE | Yes | Delete business (cascades) |
@@ -492,6 +497,12 @@ make seed-offline
 ```
 
 > **Note:** Offline mode provides reviews without an external API, but AI analysis still requires an `OPENAI_API_KEY`. Without one, the app falls back to sample analysis data.
+
+#### Web app behaviour when `offline`
+
+- The businesses list page **hides** the Google Maps / place ID form and shows a short notice pointing to the sample catalog.
+- **`POST /api/businesses`** is rejected with **403** (use **`POST /api/sandbox/import`** from the catalog instead).
+- The frontend reads **`GET /api/bootstrap`** so it does not need a separate build-time flag to detect offline mode.
 
 #### What's included
 

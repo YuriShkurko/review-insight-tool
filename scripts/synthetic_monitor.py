@@ -250,7 +250,7 @@ class SyntheticMonitor:
                 return self.results
 
             # ── Target business ──────────────────────────────────────────────
-            target_place_id = _unique_place_id()
+            target_place_id = _pick_place_id()
             biz_id = self.check_create_business(target_place_id)
             if not biz_id:
                 self._send_alert("CRITICAL: Business creation failed")

@@ -1,4 +1,5 @@
 import { MetricCard } from "./widgets/MetricCard";
+import { BarChart } from "./widgets/BarChart";
 import { LineChart } from "./widgets/LineChart";
 import { SummaryCard } from "./widgets/SummaryCard";
 import { TrendIndicator } from "./widgets/TrendIndicator";
@@ -92,6 +93,8 @@ export function WidgetRenderer({
       return <TrendIndicator data={data} />;
     case "line_chart":
       return <LineChart data={data} />;
+    case "bar_chart":
+      return <BarChart data={data} />;
     case "review_list":
       return <ReviewListWidget data={data} />;
     case "comparison_card":

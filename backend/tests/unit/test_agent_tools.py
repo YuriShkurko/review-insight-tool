@@ -9,8 +9,11 @@ from unittest.mock import MagicMock
 from app.agent.system_prompt import build_system_prompt
 from app.agent.tools import (
     WIDGET_TYPES,
+    _coerce_pin_widget_arguments,
+    _get_rating_distribution,
     _get_top_issues,
     _pin_widget,
+    execute_tool,
 )
 
 # ---------------------------------------------------------------------------
@@ -153,6 +156,76 @@ class TestGetTopIssues:
             quote = issue.get("representative_quote")
             if quote:
                 assert len(quote) <= 120
+
+
+# ---------------------------------------------------------------------------
+# pin_widget argument coercion + execute_tool
+# ---------------------------------------------------------------------------
+
+
+class TestCoercePinWidgetArguments:
+    def test_strips_unknown_keys(self):
+        raw = {
+            "widget_type": "line_chart",
+            "title": "Trend",
+            "data": {"series": []},
+            "reasoning": "user asked for chart",
+        }
+        coerced = _coerce_pin_widget_arguments(raw)
+        assert coerced == {
+            "widget_type": "line_chart",
+            "title": "Trend",
+            "data": {"series": []},
+        }
+
+    def test_non_dict_data_becomes_empty_dict(self):
+        coerced = _coerce_pin_widget_arguments(
+            {"widget_type": "metric_card", "title": "X", "data": [1, 2]}
+        )
+        assert coerced["data"] == {}
+
+
+class TestGetRatingDistribution:
+    def test_counts_by_star(self):
+        biz_id = uuid.uuid4()
+        reviews = [
+            _make_review(5, business_id=biz_id),
+            _make_review(5, business_id=biz_id),
+            _make_review(1, business_id=biz_id),
+        ]
+        db = _make_db(reviews)
+        result = _get_rating_distribution(db, biz_id, days=30)
+        assert result["total"] == 3
+        assert result["bars"][4]["label"] == "5★"
+        assert result["bars"][4]["value"] == 2
+        assert result["bars"][0]["value"] == 1
+
+
+class TestExecuteToolPinWidgetIgnoresExtraKeys:
+    def test_extra_arguments_do_not_break_pin(self):
+        biz_id = uuid.uuid4()
+        user_id = uuid.uuid4()
+        db = MagicMock()
+        q = MagicMock()
+        q.filter.return_value = q
+        q.count.return_value = 0
+        db.query.return_value = q
+        db.refresh.side_effect = lambda w: None
+
+        result = execute_tool(
+            "pin_widget",
+            {
+                "widget_type": "line_chart",
+                "title": "Hi",
+                "data": {"series": []},
+                "chain_of_thought": "omit me",
+            },
+            db,
+            biz_id,
+            user_id,
+        )
+        assert result.get("pinned") is True
+        assert "widget_id" in result
 
 
 # ---------------------------------------------------------------------------

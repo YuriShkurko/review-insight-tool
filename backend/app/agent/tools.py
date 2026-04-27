@@ -29,6 +29,23 @@ WidgetType = Literal[
 
 WIDGET_TYPES: frozenset[str] = frozenset(get_args(WidgetType))
 
+
+def _coerce_pin_widget_arguments(arguments: dict | None) -> dict[str, str | dict]:
+    """Strip unknown keys so models that emit extra JSON fields do not break _pin_widget."""
+    raw = arguments or {}
+    wt = raw.get("widget_type")
+    widget_type = wt if isinstance(wt, str) else (str(wt) if wt is not None else "")
+    title_raw = raw.get("title")
+    title = (
+        title_raw
+        if isinstance(title_raw, str)
+        else (str(title_raw) if title_raw is not None else "Pinned widget")
+    )
+    data_raw = raw.get("data")
+    data = data_raw if isinstance(data_raw, dict) else {}
+    return {"widget_type": widget_type, "title": title, "data": data}
+
+
 # ---------------------------------------------------------------------------
 # OpenAI tool definitions
 # ---------------------------------------------------------------------------
@@ -128,6 +145,28 @@ TOOL_DEFINITIONS: list[dict] = [
     {
         "type": "function",
         "function": {
+            "name": "get_rating_distribution",
+            "description": (
+                "Return review counts grouped by star rating (1-5) for a recent period. "
+                "Use for bar charts / histograms (e.g. 'rating breakdown', 'how many 5-star reviews'). "
+                "Pin results with widget_type bar_chart."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "days": {
+                        "type": "integer",
+                        "default": 30,
+                        "description": "Recency window in days (7-90).",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_top_issues",
             "description": (
                 "Return the top ranked issues from recent reviews with severity labels "
@@ -158,7 +197,14 @@ TOOL_DEFINITIONS: list[dict] = [
         "type": "function",
         "function": {
             "name": "pin_widget",
-            "description": "Pin an insight or data result to the workspace so the user can keep it visible.",
+            "description": (
+                "Save a card or chart to the user's dashboard canvas. Call this in the same turn "
+                "after a data tool succeeds when the user asked to add, pin, or build the dashboard — "
+                "copy that tool's JSON return value into the data field unchanged. "
+                "widget_type must match the source: get_dashboard→summary_card; get_top_issues→insight_list; "
+                "query_reviews→review_list; run_analysis→insight_list; compare_competitors→comparison_card; "
+                "get_review_trends→trend_indicator; get_review_series→line_chart; get_rating_distribution→bar_chart."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -183,6 +229,7 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "compare_competitors": "comparison_card",
     "get_review_trends": "trend_indicator",
     "get_review_series": "line_chart",
+    "get_rating_distribution": "bar_chart",
     "get_top_issues": "insight_list",
     "pin_widget": None,
 }
@@ -222,6 +269,12 @@ def execute_tool(
             days=parsed_days,
             metric=str(raw_metric),
         )
+    if name == "get_rating_distribution":
+        try:
+            rd_days = int(args.get("days", 30))
+        except (TypeError, ValueError):
+            rd_days = 30
+        return _get_rating_distribution(db, business_id, days=rd_days)
     if name == "get_top_issues":
         try:
             parsed_limit = int(args.get("limit", 5))
@@ -233,7 +286,8 @@ def execute_tool(
             parsed_days = 30
         return _get_top_issues(db, business_id, limit=parsed_limit, days=parsed_days)
     if name == "pin_widget":
-        return _pin_widget(db, business_id, user_id, **args)
+        coerced = _coerce_pin_widget_arguments(args)
+        return _pin_widget(db, business_id, user_id, **coerced)
     return {"error": f"Unknown tool: {name}"}
 
 
@@ -425,6 +479,42 @@ def _get_review_series(
             "total_reviews": total_reviews,
             "avg_rating": period_avg_rating,
         },
+    }
+
+
+def _get_rating_distribution(
+    db: Session,
+    business_id: uuid.UUID,
+    *,
+    days: int = 30,
+) -> dict:
+    window_days = max(7, min(90, int(days)))
+    now = datetime.now(UTC)
+    window_start = now - timedelta(days=window_days)
+
+    reviews = (
+        db.query(Review)
+        .filter(
+            Review.business_id == business_id,
+            Review.published_at >= window_start,
+        )
+        .all()
+    )
+
+    counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    for review in reviews:
+        r = int(review.rating) if review.rating is not None else 0
+        if r in counts:
+            counts[r] += 1
+
+    bars = [{"label": f"{star}★", "value": counts[star]} for star in (1, 2, 3, 4, 5)]
+    total = sum(counts.values())
+
+    return {
+        "period": f"{window_days}d",
+        "days": window_days,
+        "bars": bars,
+        "total": total,
     }
 
 

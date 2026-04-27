@@ -1,3 +1,8 @@
+/** GET /api/bootstrap — public, no auth. */
+export interface AppBootstrap {
+  review_provider: string;
+}
+
 export interface User {
   id: string;
   email: string;

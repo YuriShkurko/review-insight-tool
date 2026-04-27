@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.config import settings
 from app.routes.agent import router as agent_router
 from app.routes.auth import router as auth_router
 from app.routes.businesses import router as businesses_router
@@ -15,6 +16,12 @@ api_router = APIRouter(prefix="/api")
 @api_router.get("/health", include_in_schema=False)
 def health():
     return {"status": "ok"}
+
+
+@api_router.get("/bootstrap", include_in_schema=False)
+def bootstrap():
+    """Public flags for the frontend (no auth)."""
+    return {"review_provider": settings.REVIEW_PROVIDER}
 
 
 api_router.include_router(auth_router)

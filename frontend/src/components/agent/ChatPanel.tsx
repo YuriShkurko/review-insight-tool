@@ -10,15 +10,18 @@ import { SuggestedPrompts } from "./SuggestedPrompts";
 export function ChatPanel({
   businessId,
   onWidgetPinned,
+  onAgentStreamDone,
   onCollapse,
 }: {
   businessId: string;
   onWidgetPinned: () => void;
+  onAgentStreamDone?: () => void | Promise<void>;
   onCollapse?: () => void;
 }) {
   const { items, isStreaming, streamingId, error, sendMessage, clearError } = useAgentChat(
     businessId,
     onWidgetPinned,
+    onAgentStreamDone,
   );
   const bottomRef = useRef<HTMLDivElement>(null);
 

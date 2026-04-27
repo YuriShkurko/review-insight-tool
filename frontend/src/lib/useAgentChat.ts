@@ -103,7 +103,16 @@ export function reducer(state: AgentState, action: Action): AgentState {
   }
 }
 
-export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
+/**
+ * @param onWidgetPinned — called when the agent's pin_widget tool returns pinned: true (e.g. toast).
+ * @param onAgentStreamDone — called when the SSE stream ends with a successful `done` event; use this
+ *   to reload the workspace so pinned widgets appear even if the pin event was missed or coalesced.
+ */
+export function useAgentChat(
+  businessId: string,
+  onWidgetPinned?: () => void,
+  onAgentStreamDone?: () => void | Promise<void>,
+) {
   const [state, dispatch] = useReducer(reducer, {
     items: [],
     isStreaming: false,
@@ -212,10 +221,11 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
                   onWidgetPinned?.();
                 }
               } else if (eventType === "done") {
-                const conversationId = data.conversation_id as string;
-                conversationIdRef.current = conversationId;
+                const conversationId = (data.conversation_id as string) ?? "";
+                conversationIdRef.current = conversationId || null;
                 dispatch({ type: "DONE", conversationId });
                 streamCompleted = true;
+                void Promise.resolve(onAgentStreamDone?.());
               } else if (eventType === "error") {
                 dispatch({
                   type: "ERROR",
@@ -240,7 +250,7 @@ export function useAgentChat(businessId: string, onWidgetPinned?: () => void) {
         isStreamingRef.current = false;
       }
     },
-    [businessId, onWidgetPinned],
+    [businessId, onWidgetPinned, onAgentStreamDone],
   );
 
   const clearError = useCallback(() => dispatch({ type: "CLEAR_ERROR" }), []);

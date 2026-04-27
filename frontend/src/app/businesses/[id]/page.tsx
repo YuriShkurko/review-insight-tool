@@ -74,8 +74,11 @@ export default function BusinessDetailPage() {
       const w = await apiFetch<WorkspaceWidget[]>(`/businesses/${routeId}/agent/workspace`);
       if (activeRouteIdRef.current !== routeId) return;
       setWorkspace(w);
-    } catch {
-      // non-critical
+    } catch (err) {
+      if (activeRouteIdRef.current !== routeId) return;
+      if (process.env.NODE_ENV === "development") {
+        console.warn("loadWorkspace failed", err);
+      }
     } finally {
       if (activeRouteIdRef.current === routeId) setWorkspaceLoading(false);
     }
@@ -174,6 +177,11 @@ export default function BusinessDetailPage() {
   const handleWidgetPinned = useCallback(async () => {
     await loadWorkspace();
     setToast({ message: "Added to dashboard.", type: "success" });
+  }, [loadWorkspace]);
+
+  /** Reload workspace after every successful agent turn so pins always appear (not only on pin_widget SSE). */
+  const handleAgentStreamDone = useCallback(async () => {
+    await loadWorkspace();
   }, [loadWorkspace]);
 
   if (authLoading || loading) {
@@ -298,6 +306,7 @@ export default function BusinessDetailPage() {
               key={id}
               businessId={id}
               onWidgetPinned={handleWidgetPinned}
+              onAgentStreamDone={handleAgentStreamDone}
               onCollapse={handleCollapseChat}
             />
           }
@@ -322,7 +331,12 @@ export default function BusinessDetailPage() {
         <div
           className={`${activeTab === "chat" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}
         >
-          <ChatPanel key={id} businessId={id} onWidgetPinned={handleWidgetPinned} />
+          <ChatPanel
+            key={id}
+            businessId={id}
+            onWidgetPinned={handleWidgetPinned}
+            onAgentStreamDone={handleAgentStreamDone}
+          />
         </div>
       </div>
     </div>

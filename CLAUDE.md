@@ -21,6 +21,6 @@ Codebase intelligence — use before tasks that require understanding structure,
 **When to use:** before refactors, when tracing an unfamiliar call chain, before touching shared modules, when asked about dependencies or impact.
 
 ### scribe
-Project-specific event/debug MCP server (workspace: `review-insight`, port 8787). Exposes runtime context — use when debugging live behavior, tracing review fetch/analysis flows, or inspecting emitted events.
+**Default and only project Scribe:** `localhost:8787`, workspace `review-insight` (see `.mcp.json`). Use this for artifacts, plans, work graph, and debug/event trail — do not use a separate Scribe MCP or workspace for this repo unless the user explicitly asks.
 
-**When to use:** debugging review pipeline issues, tracing analyze-all flows, inspecting backend event trail.
+**When to use:** debugging review pipeline issues, tracing analyze-all flows, inspecting backend event trail, saving or reading specs/tasks in Scribe.

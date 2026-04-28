@@ -304,3 +304,50 @@ class TestSystemPrompt:
 
         prompt = build_system_prompt(business)
         assert "get_top_issues" in prompt, "Prompt should instruct agent to use get_top_issues"
+
+    def test_prompt_contains_three_step_pin_sequence(self):
+        """Prompt must describe the required data→pin→report sequence."""
+        business = MagicMock()
+        business.name = "Test Gym"
+        business.business_type = "gym"
+        business.address = None
+        business.avg_rating = 4.0
+        business.total_reviews = 20
+
+        prompt = build_system_prompt(business)
+        assert "pin_widget" in prompt
+        # Step 1: data tool first
+        assert "data tool" in prompt.lower() or "appropriate data tool" in prompt.lower()
+        # Step 2: pass data unchanged
+        assert "unchanged" in prompt.lower()
+        # Step 3: report what was added
+        assert "tell the user what was added" in prompt.lower() or "what was added" in prompt.lower()
+
+    def test_prompt_forbids_invented_widget_types(self):
+        """Prompt must instruct agent to use only known widget_type values."""
+        business = MagicMock()
+        business.name = "Test Hotel"
+        business.business_type = "hotel"
+        business.address = None
+        business.avg_rating = 3.8
+        business.total_reviews = 10
+
+        prompt = build_system_prompt(business)
+        assert "do not invent" in prompt.lower() or "only use widget_type" in prompt.lower()
+
+    def test_prompt_includes_tool_widget_type_mapping(self):
+        """Every tool→widget_type mapping entry must appear in the system prompt."""
+        from app.agent.tools import TOOL_WIDGET_TYPES
+
+        business = MagicMock()
+        business.name = "Test Clinic"
+        business.business_type = "clinic"
+        business.address = None
+        business.avg_rating = 4.5
+        business.total_reviews = 30
+
+        prompt = build_system_prompt(business)
+        # Only check widget types that data tools actually map to (pin_widget maps to None)
+        mapped_types = {wt for wt in TOOL_WIDGET_TYPES.values() if wt is not None}
+        for wt in mapped_types:
+            assert wt in prompt, f"widget_type '{wt}' missing from system prompt mapping"

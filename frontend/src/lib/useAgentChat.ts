@@ -232,11 +232,13 @@ export function useAgentChat(
                   message: (data.message as string) || "Something went wrong.",
                 });
                 streamCompleted = true;
+                void Promise.resolve(onAgentStreamDone?.());
               }
             }
           }
         } catch {
           dispatch({ type: "ERROR", message: "Stream interrupted. Please try again." });
+          void Promise.resolve(onAgentStreamDone?.());
           return;
         }
 
@@ -245,6 +247,7 @@ export function useAgentChat(
             type: "ERROR",
             message: "Response ended unexpectedly. Please try again.",
           });
+          void Promise.resolve(onAgentStreamDone?.());
         }
       } finally {
         isStreamingRef.current = false;

@@ -78,3 +78,54 @@ describe("ChatMessage tool_call branch", () => {
     expect(html).toContain("✓");
   });
 });
+
+describe("ChatMessage pin_widget tool_result branch", () => {
+  const noop = () => {};
+
+  it("shows 'Pinned to workspace' when pinned=true", () => {
+    const item: MessageItem = {
+      id: "tr1",
+      kind: "tool_result",
+      name: "pin_widget",
+      widgetType: null,
+      result: { pinned: true, widget_id: "abc" },
+    };
+    const html = renderToStaticMarkup(
+      <ChatMessage item={item} isStreaming={false} onPin={noop} />,
+    );
+    expect(html).toContain("Pinned to workspace");
+    expect(html).not.toContain("Failed to pin");
+    expect(html).not.toContain("text-red-500");
+  });
+
+  it("shows failure message when pinned=false", () => {
+    const item: MessageItem = {
+      id: "tr2",
+      kind: "tool_result",
+      name: "pin_widget",
+      widgetType: null,
+      result: { pinned: false },
+    };
+    const html = renderToStaticMarkup(
+      <ChatMessage item={item} isStreaming={false} onPin={noop} />,
+    );
+    expect(html).toContain("Failed to pin widget");
+    expect(html).toContain("text-red-500");
+    expect(html).not.toContain("Pinned to workspace");
+  });
+
+  it("shows backend error message when pinned=false and error field is set", () => {
+    const item: MessageItem = {
+      id: "tr3",
+      kind: "tool_result",
+      name: "pin_widget",
+      widgetType: null,
+      result: { pinned: false, error: "Unknown widget_type 'bad_type'" },
+    };
+    const html = renderToStaticMarkup(
+      <ChatMessage item={item} isStreaming={false} onPin={noop} />,
+    );
+    expect(html).toContain("Unknown widget_type");
+    expect(html).toContain("text-red-500");
+  });
+});

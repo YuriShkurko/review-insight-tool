@@ -60,9 +60,14 @@ export function ChatMessage({
 
   if (item.kind === "tool_result") {
     if (item.name === "pin_widget") {
+      const succeeded = item.result?.pinned === true;
       return (
         <div className="flex justify-start">
-          <p className="text-xs text-text-muted py-1 pl-1">Pinned to workspace</p>
+          <p className={`text-xs py-1 pl-1 ${succeeded ? "text-text-muted" : "text-red-500"}`}>
+            {succeeded
+              ? "Pinned to workspace"
+              : ((item.result?.error as string) || "Failed to pin widget")}
+          </p>
         </div>
       );
     }

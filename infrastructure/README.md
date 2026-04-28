@@ -4,11 +4,15 @@ Deploys the full stack to **AWS ECS Fargate** behind an Application Load Balance
 Database: **RDS PostgreSQL** (or keep Railway's DB — your choice).
 
 ```
-Internet → ALB → /api/* → ECS Fargate (backend:8000)
-                → /*     → ECS Fargate (frontend:3000)
-                              ↕
-                          RDS PostgreSQL
+Internet → ALB:443 (HTTPS) → /api/* → ECS Fargate (backend:8000)
+                            → /*     → ECS Fargate (frontend:3000)
+                                          ↕
+                                      RDS PostgreSQL
+         ALB:80  (HTTP)   → redirect to HTTPS (301)
 ```
+
+> **HTTP-only fallback:** if no ACM certificate is configured, port 80 routes directly
+> to the services. See [Step 2b — SSL](#step-2b--ssl-optional) to add HTTPS later.
 
 ---
 
@@ -59,7 +63,7 @@ bash infrastructure/02-rds.sh
 # 3. Security groups (uses default VPC)
 bash infrastructure/03-network.sh
 
-# 4. Application Load Balancer + routing rules
+# 4. Application Load Balancer + routing rules (HTTP-only)
 bash infrastructure/04-alb.sh
 
 # 5. ECS cluster + task definitions + services
@@ -68,6 +72,42 @@ bash infrastructure/05-ecs.sh
 ```
 
 Each script is **idempotent** — safe to re-run if something fails halfway.
+
+---
+
+## Step 2b — SSL (optional)
+
+Adds HTTPS via a free **AWS ACM public certificate**. Requires a custom domain you control.
+
+**Prerequisites:** a domain with DNS access (e.g. Route 53, Cloudflare, Namecheap).
+
+```bash
+# 1. Request a public certificate (free) in ACM
+aws acm request-certificate \
+  --domain-name "yourdomain.com" \
+  --subject-alternative-names "www.yourdomain.com" \
+  --validation-method DNS \
+  --region "$AWS_REGION"
+# → copy the CertificateArn from the output
+
+# 2. Validate via DNS — ACM shows a CNAME record to add to your DNS provider.
+#    Check status until it says "ISSUED" (usually 1-5 minutes after DNS propagates):
+aws acm describe-certificate \
+  --certificate-arn arn:aws:acm:REGION:ACCOUNT:certificate/... \
+  --region "$AWS_REGION" \
+  --query "Certificate.Status"
+
+# 3. Run 04-alb.sh with the certificate ARN — upgrades HTTP-only to HTTPS.
+#    Safe to re-run; existing HTTP rules are removed and replaced with a redirect.
+CERTIFICATE_ARN=arn:aws:acm:REGION:ACCOUNT:certificate/... \
+  bash infrastructure/04-alb.sh
+
+# 4. Point your domain at the ALB — add a CNAME (or Alias for Route 53):
+#    CNAME  yourdomain.com  →  <alb-dns-name>.elb.amazonaws.com
+```
+
+After DNS propagates, `https://yourdomain.com` and `https://yourdomain.com/api/*` will work.
+Update `BACKEND_PUBLIC_URL` in GitHub vars to `https://yourdomain.com` (see Step 3 below).
 
 ---
 
@@ -86,7 +126,7 @@ Go to your GitHub repo → **Settings → Secrets and variables → Actions**.
 |------|-------|-----------------|
 | `AWS_REGION` | `eu-central-1` | your choice |
 | `AWS_ACCOUNT_ID` | 12-digit AWS account ID | `aws sts get-caller-identity` |
-| `BACKEND_PUBLIC_URL` | `http://<alb-dns-name>` | output of `04-alb.sh` |
+| `BACKEND_PUBLIC_URL` | `https://yourdomain.com` (SSL) or `http://<alb-dns>` (HTTP-only) | output of `04-alb.sh` |
 
 ---
 
@@ -185,11 +225,11 @@ GitHub Actions (push to main)
         │ (Next.js)       │
         └─────────────────┘
                 │
-        ALB (port 80)
-          /api/* → backend
+        ALB :443 HTTPS          ALB :80 HTTP
+          /api/* → backend       redirect → HTTPS
           /*     → frontend
                 │
-              Internet
+              Internet (https://yourdomain.com)
 ```
 
 Secrets live in **AWS SSM Parameter Store** (SecureString) — never in env vars committed to git.

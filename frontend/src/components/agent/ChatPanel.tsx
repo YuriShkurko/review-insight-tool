@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useAgentChat } from "@/lib/useAgentChat";
 import { ChatMessage } from "./ChatMessage";
@@ -23,6 +23,7 @@ export function ChatPanel({
     onWidgetPinned,
     onAgentStreamDone,
   );
+  const [pinError, setPinError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,9 +37,10 @@ export function ChatPanel({
           method: "POST",
           body: JSON.stringify({ widget_type: widgetType, title, data }),
         });
+        setPinError(null);
         onWidgetPinned();
       } catch {
-        // silently ignore — user can retry
+        setPinError("Failed to pin widget. Please try again.");
       }
     },
     [businessId, onWidgetPinned],
@@ -93,12 +95,15 @@ export function ChatPanel({
         )}
       </div>
 
-      {error && (
+      {(error || pinError) && (
         <div className="mx-4 mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center justify-between gap-2 shrink-0 dark:bg-red-950/30 dark:border-red-900 dark:text-red-400">
-          <span>{error}</span>
+          <span>{error ?? pinError}</span>
           <button
             type="button"
-            onClick={clearError}
+            onClick={() => {
+              clearError();
+              setPinError(null);
+            }}
             className="shrink-0 text-red-400 hover:text-red-600 transition-colors"
             aria-label="Dismiss error"
           >

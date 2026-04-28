@@ -70,7 +70,8 @@ jobs:
 
       # ── Frontend ────────────────────────────────────────────────────────────
       # NEXT_PUBLIC_API_URL is baked into client JS at build time.
-      # Set vars.BACKEND_PUBLIC_URL in GitHub → Settings → Variables to your ALB DNS.
+      # Set vars.BACKEND_PUBLIC_URL in GitHub → Settings → Variables.
+      # Use https://<your-domain> if SSL is configured, or http://<alb-dns> otherwise.
       - name: Build + push frontend
         id: frontend-image
         run: |
@@ -150,12 +151,18 @@ jobs:
 
       - name: Print public URL
         run: |
-          ALB_DNS=$(aws elbv2 describe-load-balancers \
-            --names review-insight-alb \
-            --query "LoadBalancers[0].DNSName" \
-            --output text --region "$AWS_REGION")
-          echo "✓ Deployed: http://${ALB_DNS}"
-          echo "::notice title=Deployed::http://${ALB_DNS}"
+          # Use the configured public URL (https:// for SSL, http:// for HTTP-only).
+          # Falls back to raw ALB DNS if BACKEND_PUBLIC_URL is not set.
+          PUBLIC_URL="${{ vars.BACKEND_PUBLIC_URL }}"
+          if [[ -z "$PUBLIC_URL" ]]; then
+            ALB_DNS=$(aws elbv2 describe-load-balancers \
+              --names review-insight-alb \
+              --query "LoadBalancers[0].DNSName" \
+              --output text --region "$AWS_REGION")
+            PUBLIC_URL="http://${ALB_DNS}"
+          fi
+          echo "✓ Deployed: ${PUBLIC_URL}"
+          echo "::notice title=Deployed::${PUBLIC_URL}"
 
   # ── Post-deploy smoke test ─────────────────────────────────────────────────
   smoke-test:

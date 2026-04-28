@@ -186,7 +186,7 @@ export default function BusinessDetailPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-surface">
+      <div className="flex justify-center items-center h-[calc(100dvh-3rem)] bg-surface">
         <span className="inline-block h-5 w-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -220,7 +220,7 @@ export default function BusinessDetailPage() {
   const hasAnalysis = !!dashboard.ai_summary;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-surface">
+    <div className="h-[calc(100dvh-3rem)] flex flex-col overflow-hidden bg-surface">
       {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
 
       {/* Header */}

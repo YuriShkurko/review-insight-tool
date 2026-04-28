@@ -196,6 +196,76 @@ TOOL_DEFINITIONS: list[dict] = [
     {
         "type": "function",
         "function": {
+            "name": "get_review_insights",
+            "description": (
+                "Return consultant-ready synthesized review insights for open-ended questions. "
+                "Use focus=negative for worst reviews, complaints, or improvement priorities; "
+                "focus=positive for good parts, strengths, praise, or what customers liked; "
+                "focus=balanced for general review summaries. Respects period values such as "
+                "this_week, this_month, last_month, and past_30d. Returns themes, examples, "
+                "limitations, and a recommended action instead of raw review dumps."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "focus": {
+                        "type": "string",
+                        "enum": ["negative", "positive", "balanced"],
+                        "default": "balanced",
+                    },
+                    "period": {
+                        "type": "string",
+                        "enum": [
+                            "this_week",
+                            "this_month",
+                            "last_month",
+                            "past_7d",
+                            "past_30d",
+                            "past_90d",
+                        ],
+                        "default": "past_30d",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "default": 4,
+                        "maximum": 6,
+                        "description": "Maximum number of themes to return.",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_review_change_summary",
+            "description": (
+                "Compare two review windows for questions like 'what changed compared to last month'. "
+                "Returns rating/count deltas, current and previous themes, examples, limitations, "
+                "and a recommended action. Use this before answering change-over-time questions."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "current_period": {
+                        "type": "string",
+                        "enum": ["this_week", "this_month", "past_7d", "past_30d"],
+                        "default": "this_month",
+                    },
+                    "previous_period": {
+                        "type": "string",
+                        "enum": ["last_week", "last_month", "previous_7d", "previous_30d"],
+                        "default": "last_month",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "pin_widget",
             "description": (
                 "Save a card or chart to the user's dashboard canvas. Call this in the same turn "
@@ -231,6 +301,8 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "get_review_series": "line_chart",
     "get_rating_distribution": "bar_chart",
     "get_top_issues": "insight_list",
+    "get_review_insights": "summary_card",
+    "get_review_change_summary": "summary_card",
     "pin_widget": None,
 }
 
@@ -285,6 +357,25 @@ def execute_tool(
         except (TypeError, ValueError):
             parsed_days = 30
         return _get_top_issues(db, business_id, limit=parsed_limit, days=parsed_days)
+    if name == "get_review_insights":
+        try:
+            parsed_limit = int(args.get("limit", 4))
+        except (TypeError, ValueError):
+            parsed_limit = 4
+        return _get_review_insights(
+            db,
+            business_id,
+            focus=str(args.get("focus", "balanced")),
+            period=str(args.get("period", "past_30d")),
+            limit=parsed_limit,
+        )
+    if name == "get_review_change_summary":
+        return _get_review_change_summary(
+            db,
+            business_id,
+            current_period=str(args.get("current_period", "this_month")),
+            previous_period=str(args.get("previous_period", "last_month")),
+        )
     if name == "pin_widget":
         coerced = _coerce_pin_widget_arguments(args)
         return _pin_widget(db, business_id, user_id, **coerced)
@@ -624,6 +715,308 @@ def _get_top_issues(
         "issues": issues[:limit],
         "period": f"{window_days}d",
         "total_reviews_analyzed": len(reviews),
+    }
+
+
+def _period_bounds(period: str, *, now: datetime | None = None) -> tuple[datetime, datetime, str]:
+    current = now or datetime.now(UTC)
+    today = current.date()
+    normalized = period.lower().strip()
+
+    if normalized == "this_week":
+        start_date = today - timedelta(days=today.weekday())
+        start = datetime.combine(start_date, datetime.min.time(), tzinfo=UTC)
+        return start, current, "this week"
+    if normalized == "last_week":
+        this_week_start = today - timedelta(days=today.weekday())
+        start = datetime.combine(this_week_start - timedelta(days=7), datetime.min.time(), UTC)
+        end = datetime.combine(this_week_start, datetime.min.time(), UTC)
+        return start, end, "last week"
+    if normalized == "this_month":
+        start = datetime(today.year, today.month, 1, tzinfo=UTC)
+        return start, current, "this month"
+    if normalized == "last_month":
+        first_this_month = datetime(today.year, today.month, 1, tzinfo=UTC)
+        last_month_end = first_this_month
+        last_month_day = first_this_month.date() - timedelta(days=1)
+        start = datetime(last_month_day.year, last_month_day.month, 1, tzinfo=UTC)
+        return start, last_month_end, "last month"
+    if normalized in {"previous_7d", "previous_30d"}:
+        days = 7 if normalized == "previous_7d" else 30
+        end = current - timedelta(days=days)
+        return end - timedelta(days=days), end, f"previous {days} days"
+
+    days_by_period = {"past_7d": 7, "past_30d": 30, "past_90d": 90}
+    days = days_by_period.get(normalized, 30)
+    return current - timedelta(days=days), current, f"past {days} days"
+
+
+def _reviews_in_period(db: Session, business_id: uuid.UUID, period: str) -> tuple[list, str]:
+    start, end, label = _period_bounds(period)
+    reviews = (
+        db.query(Review)
+        .filter(
+            Review.business_id == business_id,
+            Review.published_at >= start,
+            Review.published_at < end,
+        )
+        .order_by(Review.published_at.desc())
+        .all()
+    )
+    return reviews, label
+
+
+_NEGATIVE_THEMES: dict[str, tuple[str, ...]] = {
+    "slow service": ("slow", "wait", "waiting", "delay", "late", "ignored"),
+    "staff attitude": ("rude", "attitude", "unfriendly", "dismissive", "impolite"),
+    "food or drink quality": ("cold", "stale", "bland", "burnt", "watery", "flat", "bad"),
+    "cleanliness": ("dirty", "unclean", "smell", "sticky", "bathroom"),
+    "price/value": ("expensive", "overpriced", "price", "value", "cost"),
+    "noise or crowding": ("loud", "noise", "crowded", "packed", "music"),
+}
+
+_POSITIVE_THEMES: dict[str, tuple[str, ...]] = {
+    "friendly service": ("friendly", "kind", "helpful", "attentive", "welcoming"),
+    "atmosphere": ("atmosphere", "vibe", "music", "cozy", "ambience", "decor"),
+    "food or drink quality": ("tasty", "delicious", "fresh", "great", "excellent", "beer"),
+    "speed and convenience": ("quick", "fast", "efficient", "easy"),
+    "value": ("fair price", "good price", "value", "worth"),
+}
+
+
+def _match_theme(text: str, themes: dict[str, tuple[str, ...]]) -> str | None:
+    lower = text.lower()
+    for theme, keywords in themes.items():
+        if any(keyword in lower for keyword in keywords):
+            return theme
+    return None
+
+
+def _fallback_theme(rating: int, focus: str) -> str:
+    if focus == "positive":
+        return "positive experience"
+    if focus == "negative":
+        if rating <= 2:
+            return "low-rated experience"
+        return "mixed experience with improvement signals"
+    if rating >= 4:
+        return "positive experience"
+    if rating == 3:
+        return "mixed experience"
+    return "low-rated experience"
+
+
+def _quote(text: str | None) -> str | None:
+    if not text:
+        return None
+    clean = " ".join(text.split())
+    return (clean[:117] + "...") if len(clean) > 120 else clean
+
+
+def _theme_rows(reviews: list, *, focus: str, limit: int) -> list[dict]:
+    if focus == "positive":
+        candidates = [r for r in reviews if r.rating >= 3]
+        themes = _POSITIVE_THEMES
+    elif focus == "negative":
+        candidates = [r for r in reviews if r.rating <= 4]
+        themes = _NEGATIVE_THEMES
+    else:
+        candidates = reviews
+        themes = {**_NEGATIVE_THEMES, **_POSITIVE_THEMES}
+
+    groups: dict[str, list] = {}
+    for review in candidates:
+        text = review.text or ""
+        theme = _match_theme(text, themes) or _fallback_theme(int(review.rating), focus)
+        groups.setdefault(theme, []).append(review)
+
+    def _score(item: tuple[str, list]) -> tuple[float, int]:
+        _, grouped = item
+        avg = sum(r.rating for r in grouped) / len(grouped)
+        if focus == "positive":
+            rating_weight = avg / 5
+        elif focus == "negative":
+            rating_weight = (6 - avg) / 5
+        else:
+            rating_weight = 1
+        return (len(grouped) * rating_weight, len(grouped))
+
+    rows = []
+    for theme, grouped in sorted(groups.items(), key=_score, reverse=True)[:limit]:
+        avg = round(sum(r.rating for r in grouped) / len(grouped), 2)
+        example_review = sorted(
+            [r for r in grouped if r.text],
+            key=lambda r: (
+                abs((3 if focus == "balanced" else (5 if focus == "positive" else 1)) - r.rating),
+                len(r.text or ""),
+            ),
+        )
+        rows.append(
+            {
+                "theme": theme,
+                "count": len(grouped),
+                "avg_rating": avg,
+                "representative_quote": _quote(example_review[0].text) if example_review else None,
+            }
+        )
+    return rows
+
+
+def _stats(reviews: list) -> dict:
+    if not reviews:
+        return {"count": 0, "avg_rating": None}
+    return {
+        "count": len(reviews),
+        "avg_rating": round(sum(r.rating for r in reviews) / len(reviews), 2),
+    }
+
+
+def _get_review_insights(
+    db: Session,
+    business_id: uuid.UUID,
+    *,
+    focus: str = "balanced",
+    period: str = "past_30d",
+    limit: int = 4,
+) -> dict:
+    selected_focus = focus if focus in {"negative", "positive", "balanced"} else "balanced"
+    selected_limit = max(1, min(6, int(limit)))
+    reviews, label = _reviews_in_period(db, business_id, period)
+    stats = _stats(reviews)
+
+    if not reviews:
+        return {
+            "summary": f"I don't have reviews for {label}, so I can't draw a reliable conclusion.",
+            "period": label,
+            "focus": selected_focus,
+            "review_count": 0,
+            "themes": [],
+            "examples": [],
+            "limitation": f"No dated reviews found for {label}.",
+            "recommended_focus": "Fetch or import recent reviews, then rerun the question.",
+        }
+
+    themes = _theme_rows(reviews, focus=selected_focus, limit=selected_limit)
+    examples = [
+        {"theme": row["theme"], "quote": row["representative_quote"]}
+        for row in themes
+        if row.get("representative_quote")
+    ][:2]
+    sparse = len(reviews) < 3
+    limitation = (
+        f"Only {len(reviews)} review(s) found for {label}; treat this as directional."
+        if sparse
+        else None
+    )
+
+    if selected_focus == "positive":
+        lead = "The strongest positive signal"
+        action = "Reinforce the top praised experience in staff briefings and marketing copy."
+        list_key = "top_praise"
+    elif selected_focus == "negative":
+        lead = "The main improvement signal"
+        action = "Start with the highest-count, lowest-rating theme before chasing smaller issues."
+        list_key = "top_complaints"
+    else:
+        lead = "The main review pattern"
+        action = (
+            "Use the top theme as the next operating focus, then re-check after new reviews land."
+        )
+        list_key = "issues"
+
+    top_theme = themes[0]["theme"] if themes else "not enough signal"
+    summary = (
+        f"{lead} for {label} is {top_theme}. "
+        f"Based on {stats['count']} review(s), average rating is {stats['avg_rating']}."
+    )
+
+    result = {
+        "summary": summary,
+        "period": label,
+        "focus": selected_focus,
+        "review_count": stats["count"],
+        "avg_rating": stats["avg_rating"],
+        "themes": themes,
+        "examples": examples,
+        "limitation": limitation,
+        "recommended_focus": action,
+    }
+    result[list_key] = [{"label": row["theme"], "count": row["count"]} for row in themes]
+    if selected_focus != "positive":
+        result["issues"] = [
+            {
+                "theme": row["theme"],
+                "count": row["count"],
+                "avg_rating": row["avg_rating"],
+                "severity": "critical" if row["avg_rating"] <= 2 else "notable",
+                "representative_quote": row["representative_quote"],
+            }
+            for row in themes
+        ]
+    return result
+
+
+def _get_review_change_summary(
+    db: Session,
+    business_id: uuid.UUID,
+    *,
+    current_period: str = "this_month",
+    previous_period: str = "last_month",
+) -> dict:
+    current_reviews, current_label = _reviews_in_period(db, business_id, current_period)
+    previous_reviews, previous_label = _reviews_in_period(db, business_id, previous_period)
+    current = _stats(current_reviews)
+    previous = _stats(previous_reviews)
+
+    limitations = []
+    if current["count"] < 3:
+        limitations.append(f"Only {current['count']} review(s) in {current_label}.")
+    if previous["count"] < 3:
+        limitations.append(f"Only {previous['count']} review(s) in {previous_label}.")
+
+    rating_delta = None
+    if current["avg_rating"] is not None and previous["avg_rating"] is not None:
+        rating_delta = round(current["avg_rating"] - previous["avg_rating"], 2)
+    count_delta = current["count"] - previous["count"]
+
+    current_themes = _theme_rows(current_reviews, focus="balanced", limit=3)
+    previous_themes = _theme_rows(previous_reviews, focus="balanced", limit=3)
+    current_top = current_themes[0]["theme"] if current_themes else None
+    previous_top = previous_themes[0]["theme"] if previous_themes else None
+
+    if rating_delta is None:
+        summary = "There is not enough dated review data in both windows to compare reliably."
+    else:
+        direction = (
+            "improved" if rating_delta > 0 else "declined" if rating_delta < 0 else "held steady"
+        )
+        summary = (
+            f"Compared with {previous_label}, {current_label} {direction}: "
+            f"rating changed by {rating_delta:+.2f} and review volume changed by {count_delta:+d}."
+        )
+
+    recommended = "Collect more reviews in both periods before making a firm call."
+    if rating_delta is not None and abs(rating_delta) >= 0.3:
+        recommended = (
+            "Investigate the theme shift first; it is large enough to affect customer perception."
+        )
+    elif current_top and current_top != previous_top:
+        recommended = (
+            f"Watch the shift from {previous_top} to {current_top}; it may explain the change."
+        )
+
+    return {
+        "summary": summary,
+        "current_period": current_label,
+        "previous_period": previous_label,
+        "current": current,
+        "previous": previous,
+        "rating_delta": rating_delta,
+        "count_delta": count_delta,
+        "current_themes": current_themes,
+        "previous_themes": previous_themes,
+        "limitation": " ".join(limitations) if limitations else None,
+        "recommended_focus": recommended,
     }
 
 

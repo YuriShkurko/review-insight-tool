@@ -347,6 +347,63 @@ def test_agent_data_tool_pin_round_trip_emits_workspace_event(
     assert widgets[0]["data"] == pinned_data
 
 
+def test_agent_rejects_unsupported_widget_type_without_workspace_event(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """Even if the model asks for an unsupported chart, pin_widget rejects it."""
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="tc1",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "pie_chart",
+                                "title": "Unsupported pie",
+                                "data": {"slices": []},
+                            },
+                        )
+                    ],
+                )
+            return ("Pie charts are not supported; I can use a bar chart instead.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Pin a pie chart of rating share"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    pin_result = next(e for e in events if e["type"] == "tool_result")
+    assert pin_result["data"]["result"]["pinned"] is False
+    assert "Unknown widget_type" in pin_result["data"]["result"]["error"]
+    assert not any(e["type"] == "workspace_event" for e in events)
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json() == []
+
+
 def test_irrelevant_request_is_redirected(client: TestClient, auth_headers: dict):
     """Off-topic message returns a redirection response with no tool calls."""
     biz_id = _make_biz(client, auth_headers)

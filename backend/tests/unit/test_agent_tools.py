@@ -11,6 +11,8 @@ from app.agent.tools import (
     WIDGET_TYPES,
     _coerce_pin_widget_arguments,
     _get_rating_distribution,
+    _get_review_change_summary,
+    _get_review_insights,
     _get_top_issues,
     _pin_widget,
     execute_tool,
@@ -65,6 +67,51 @@ def _make_db(reviews: list, analysis_complaints: list | None = None) -> MagicMoc
             q.first.return_value = None
             q.all.return_value = []
         return q
+
+    db.query.side_effect = _query
+    return db
+
+
+def _make_chain_db(reviews: list) -> MagicMock:
+    """Build a mock Session whose Review queries support filter/order_by/all chains."""
+    db = MagicMock()
+    query = MagicMock()
+    query.filter.return_value = query
+    query.order_by.return_value = query
+    query.all.return_value = reviews
+
+    def _query(model):
+        if model.__name__ == "Review":
+            return query
+        fallback = MagicMock()
+        fallback.filter.return_value = fallback
+        fallback.first.return_value = None
+        fallback.all.return_value = []
+        return fallback
+
+    db.query.side_effect = _query
+    return db
+
+
+def _make_sequence_db(review_sets: list[list]) -> MagicMock:
+    db = MagicMock()
+    queries = []
+    for reviews in review_sets:
+        query = MagicMock()
+        query.filter.return_value = query
+        query.order_by.return_value = query
+        query.all.return_value = reviews
+        queries.append(query)
+    iterator = iter(queries)
+
+    def _query(model):
+        if model.__name__ == "Review":
+            return next(iterator)
+        fallback = MagicMock()
+        fallback.filter.return_value = fallback
+        fallback.first.return_value = None
+        fallback.all.return_value = []
+        return fallback
 
     db.query.side_effect = _query
     return db
@@ -199,6 +246,93 @@ class TestGetRatingDistribution:
         assert result["bars"][4]["label"] == "5★"
         assert result["bars"][4]["value"] == 2
         assert result["bars"][0]["value"] == 1
+
+
+class TestReviewInsightSynthesis:
+    def test_worst_reviews_this_month_uses_mixed_ratings_severity_and_examples(self):
+        biz_id = uuid.uuid4()
+        reviews = [
+            _make_review(
+                1, "Rude staff ignored us for twenty minutes", days_ago=2, business_id=biz_id
+            ),
+            _make_review(
+                3, "The wait was slow but the beer was good", days_ago=4, business_id=biz_id
+            ),
+            _make_review(4, "Loud music made it hard to talk", days_ago=5, business_id=biz_id),
+        ]
+        result = _get_review_insights(
+            _make_chain_db(reviews),
+            biz_id,
+            focus="negative",
+            period="this_month",
+        )
+
+        assert result["review_count"] == 3
+        assert result["issues"]
+        assert any(issue["avg_rating"] > 1 for issue in result["issues"])
+        assert any(issue["representative_quote"] for issue in result["issues"])
+        assert "recommended_focus" in result
+
+    def test_good_parts_this_week_identifies_positive_themes(self):
+        biz_id = uuid.uuid4()
+        reviews = [
+            _make_review(
+                5, "Friendly staff and excellent beer selection", days_ago=1, business_id=biz_id
+            ),
+            _make_review(4, "Cozy atmosphere with great music", days_ago=2, business_id=biz_id),
+            _make_review(3, "Good beer but service was slow", days_ago=3, business_id=biz_id),
+        ]
+        result = _get_review_insights(
+            _make_chain_db(reviews),
+            biz_id,
+            focus="positive",
+            period="this_week",
+        )
+
+        assert result["summary"]
+        assert result["top_praise"]
+        labels = {item["label"] for item in result["top_praise"]}
+        assert {"friendly service", "food or drink quality"} & labels
+        assert result["examples"]
+
+    def test_changed_compared_to_last_month_compares_two_windows(self):
+        biz_id = uuid.uuid4()
+        current = [
+            _make_review(5, "Friendly staff and fresh beer", days_ago=2, business_id=biz_id),
+            _make_review(4, "Great atmosphere", days_ago=3, business_id=biz_id),
+            _make_review(5, "Fast service this month", days_ago=4, business_id=biz_id),
+        ]
+        previous = [
+            _make_review(2, "Slow service last month", days_ago=35, business_id=biz_id),
+            _make_review(3, "Overpriced drinks last month", days_ago=40, business_id=biz_id),
+            _make_review(3, "Crowded bar last month", days_ago=45, business_id=biz_id),
+        ]
+        result = _get_review_change_summary(
+            _make_sequence_db([current, previous]),
+            biz_id,
+            current_period="this_month",
+            previous_period="last_month",
+        )
+
+        assert result["current"]["count"] == 3
+        assert result["previous"]["count"] == 3
+        assert result["rating_delta"] > 0
+        assert "current_themes" in result
+        assert "previous_themes" in result
+        assert result["recommended_focus"]
+
+    def test_sparse_data_case_returns_clear_limitation(self):
+        biz_id = uuid.uuid4()
+        reviews = [_make_review(4, "Nice place", days_ago=1, business_id=biz_id)]
+        result = _get_review_insights(
+            _make_chain_db(reviews),
+            biz_id,
+            focus="balanced",
+            period="this_week",
+        )
+
+        assert result["limitation"]
+        assert "Only 1 review" in result["limitation"]
 
 
 class TestExecuteToolPinWidgetIgnoresExtraKeys:
@@ -358,3 +492,28 @@ class TestSystemPrompt:
         mapped_types = {wt for wt in TOOL_WIDGET_TYPES.values() if wt is not None}
         for wt in mapped_types:
             assert wt in prompt, f"widget_type '{wt}' missing from system prompt mapping"
+
+    def test_prompt_routes_open_questions_to_synthesis_tools(self):
+        business = MagicMock()
+        business.name = "Test Bar"
+        business.business_type = "bar"
+        business.address = None
+        business.avg_rating = 4.1
+        business.total_reviews = 25
+
+        prompt = build_system_prompt(business)
+        assert "get_review_insights" in prompt
+        assert "get_review_change_summary" in prompt
+        assert "query_reviews only when the user explicitly asks for raw reviews" in prompt
+
+    def test_prompt_says_pie_charts_are_unsupported(self):
+        business = MagicMock()
+        business.name = "Test Bar"
+        business.business_type = "bar"
+        business.address = None
+        business.avg_rating = 4.1
+        business.total_reviews = 25
+
+        prompt = build_system_prompt(business)
+        assert "Pie charts are not supported" in prompt
+        assert "bar chart" in prompt

@@ -4,6 +4,7 @@ import { useReducer, useCallback, useRef } from "react";
 import { apiStreamFetch } from "./api";
 import type { MessageItem, WorkspaceWidget } from "./agentTypes";
 import type { WorkspaceAction } from "./workspaceBlackboard";
+import { normalizeWorkspaceWidget } from "./workspaceWidget";
 
 export interface AgentState {
   items: MessageItem[];
@@ -41,7 +42,7 @@ export function dispatchWorkspaceEvent(
   if (action === "widget_added" && data.widget && workspaceDispatch) {
     workspaceDispatch({
       type: "WIDGET_ADDED",
-      widget: data.widget as WorkspaceWidget,
+      widget: normalizeWorkspaceWidget(data.widget) as WorkspaceWidget,
     });
   }
 }

@@ -3,6 +3,9 @@ import { BarChart } from "./widgets/BarChart";
 import { LineChart } from "./widgets/LineChart";
 import { SummaryCard } from "./widgets/SummaryCard";
 import { TrendIndicator } from "./widgets/TrendIndicator";
+import { DonutChart } from "./widgets/DonutChart";
+import { HorizontalBarChart } from "./widgets/HorizontalBarChart";
+import { ComparisonChart } from "./widgets/ComparisonChart";
 
 type ReviewRow = {
   id: string;
@@ -95,6 +98,13 @@ export function WidgetRenderer({
       return <LineChart data={data} />;
     case "bar_chart":
       return <BarChart data={data} />;
+    case "pie_chart":
+    case "donut_chart":
+      return <DonutChart data={data} />;
+    case "horizontal_bar_chart":
+      return <HorizontalBarChart data={data} />;
+    case "comparison_chart":
+      return <ComparisonChart data={data} />;
     case "review_list":
       return <ReviewListWidget data={data} />;
     case "comparison_card":

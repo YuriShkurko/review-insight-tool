@@ -54,7 +54,11 @@ export function BarChart({ data }: { data: Record<string, unknown> }) {
                 height={Math.max(h, 0)}
                 rx={1}
                 className="fill-brand/90"
-              />
+              >
+                <title>
+                  {b.label}: {b.value}
+                </title>
+              </rect>
             );
           })}
         </svg>

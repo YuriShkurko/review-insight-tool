@@ -12,6 +12,7 @@ import {
 } from "react";
 import { apiFetch } from "./api";
 import type { WorkspaceWidget } from "./agentTypes";
+import { normalizeWorkspaceWidget, normalizeWorkspaceWidgets } from "./workspaceWidget";
 
 // ---------------------------------------------------------------------------
 // Actions
@@ -51,15 +52,16 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       return { ...state, isLoading: true, error: null };
 
     case "LOADED":
-      return { widgets: action.widgets, isLoading: false, error: null };
+      return { widgets: normalizeWorkspaceWidgets(action.widgets), isLoading: false, error: null };
 
     case "LOAD_ERROR":
       return { ...state, isLoading: false, error: action.error };
 
     case "WIDGET_ADDED": {
-      const exists = state.widgets.some((w) => w.id === action.widget.id);
+      const widget = normalizeWorkspaceWidget(action.widget);
+      const exists = state.widgets.some((w) => w.id === widget.id);
       if (exists) return state;
-      return { ...state, widgets: [...state.widgets, action.widget] };
+      return { ...state, isLoading: false, error: null, widgets: [...state.widgets, widget] };
     }
 
     case "WIDGET_REMOVED":

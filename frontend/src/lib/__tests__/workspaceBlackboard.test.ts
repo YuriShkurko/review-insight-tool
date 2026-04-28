@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 import { workspaceReducer, type WorkspaceState } from "../workspaceBlackboard";
+import { WidgetRenderer } from "../../components/agent/WidgetRenderer";
 import type { WorkspaceWidget } from "../agentTypes";
 
 const INITIAL: WorkspaceState = {
@@ -44,6 +46,37 @@ describe("workspaceReducer", () => {
     );
 
     expect(state.widgets.map((w) => w.id)).toEqual(["w1", "w2"]);
+  });
+
+  it("normalizes blackboard-added widgets and makes them renderable immediately", () => {
+    const state = workspaceReducer(
+      { ...INITIAL, isLoading: true },
+      {
+        type: "WIDGET_ADDED",
+        widget: {
+          id: "w1",
+          widgetType: "donut_chart",
+          title: "Rating share",
+          data: { slices: [{ label: "5 star", value: 4, percent: 80 }] },
+          position: "2",
+          createdAt: "2026-04-28T00:00:00Z",
+        } as never,
+      },
+    );
+
+    expect(state.isLoading).toBe(false);
+    expect(state.widgets[0]).toMatchObject({
+      id: "w1",
+      widget_type: "donut_chart",
+      title: "Rating share",
+      position: 2,
+      data: { slices: [{ label: "5 star", value: 4, percent: 80 }] },
+    });
+    const html = renderToStaticMarkup(
+      WidgetRenderer({ widgetType: state.widgets[0].widget_type, data: state.widgets[0].data }),
+    );
+    expect(html).toContain("5 star");
+    expect(html).not.toContain("No chart data available.");
   });
 
   it("removes widgets by id", () => {

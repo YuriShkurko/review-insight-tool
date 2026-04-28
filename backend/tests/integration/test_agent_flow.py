@@ -372,14 +372,14 @@ def test_agent_rejects_unsupported_widget_type_without_workspace_event(
                             id="tc1",
                             name="pin_widget",
                             arguments={
-                                "widget_type": "pie_chart",
-                                "title": "Unsupported pie",
+                                "widget_type": "radar_chart",
+                                "title": "Unsupported radar",
                                 "data": {"slices": []},
                             },
                         )
                     ],
                 )
-            return ("Pie charts are not supported; I can use a bar chart instead.", [])
+            return ("Radar charts are not supported; I can use a bar chart instead.", [])
 
         mock.complete_with_tools.side_effect = _complete_with_tools
         return mock
@@ -389,7 +389,7 @@ def test_agent_rejects_unsupported_widget_type_without_workspace_event(
     biz_id = _make_biz(client, auth_headers)
     r = client.post(
         f"/api/businesses/{biz_id}/agent/chat",
-        json={"message": "Pin a pie chart of rating share"},
+        json={"message": "Pin a radar chart of rating share"},
         headers=auth_headers,
     )
     assert r.status_code == 200

@@ -8,6 +8,10 @@ import type { WorkspaceWidget } from "@/lib/agentTypes";
 const FULL_WIDTH_TYPES = new Set([
   "line_chart",
   "bar_chart",
+  "pie_chart",
+  "donut_chart",
+  "horizontal_bar_chart",
+  "comparison_chart",
   "review_list",
   "summary_card",
   "insight_list",

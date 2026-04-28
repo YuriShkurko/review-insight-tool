@@ -4,6 +4,8 @@ import { ChatMessage } from "../ChatMessage";
 import { ToolCallIndicator } from "../ToolCallIndicator";
 import type { MessageItem } from "@/lib/agentTypes";
 
+const noop = () => {};
+
 const TOOL_CALL_ITEM: MessageItem = {
   id: "tc1",
   kind: "tool_call",
@@ -42,9 +44,7 @@ describe("ToolCallIndicator", () => {
 });
 
 describe("ChatMessage tool_call branch", () => {
-  const noop = () => {};
-
-  it("renders spinner inside ChatMessage when isGlobalStreaming=true", () => {
+  it("renders compact spinner inside ChatMessage when isGlobalStreaming=true", () => {
     const html = renderToStaticMarkup(
       <ChatMessage
         item={TOOL_CALL_ITEM}
@@ -54,10 +54,11 @@ describe("ChatMessage tool_call branch", () => {
       />,
     );
     expect(html).toContain("animate-spin");
+    expect(html).toContain("rounded-full");
     expect(html).not.toContain("✓");
   });
 
-  it("renders checkmark inside ChatMessage when isGlobalStreaming=false", () => {
+  it("renders compact checkmark inside ChatMessage when isGlobalStreaming=false", () => {
     const html = renderToStaticMarkup(
       <ChatMessage
         item={TOOL_CALL_ITEM}
@@ -68,6 +69,7 @@ describe("ChatMessage tool_call branch", () => {
     );
     expect(html).not.toContain("animate-spin");
     expect(html).toContain("✓");
+    expect(html).toContain("rounded-full");
   });
 
   it("defaults isGlobalStreaming to false (checkmark) when prop omitted", () => {
@@ -80,8 +82,6 @@ describe("ChatMessage tool_call branch", () => {
 });
 
 describe("ChatMessage pin_widget tool_result branch", () => {
-  const noop = () => {};
-
   it("shows 'Pinned to workspace' when pinned=true", () => {
     const item: MessageItem = {
       id: "tr1",
@@ -121,5 +121,25 @@ describe("ChatMessage pin_widget tool_result branch", () => {
     const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
     expect(html).toContain("Unknown widget_type");
     expect(html).toContain("text-red-500");
+  });
+});
+
+describe("ChatMessage widget preview", () => {
+  it("renders widget previews as collapsible details without raw JSON", () => {
+    const item: MessageItem = {
+      id: "tr4",
+      kind: "tool_result",
+      name: "get_rating_distribution",
+      widgetType: "donut_chart",
+      result: { slices: [{ label: "5 star", value: 4, percent: 80 }] },
+    };
+
+    const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
+
+    expect(html).toContain("<details");
+    expect(html).toContain("Expand");
+    expect(html).toContain("+ Dashboard");
+    expect(html).toContain("5 star");
+    expect(html).not.toContain("&quot;slices&quot;");
   });
 });

@@ -78,13 +78,12 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
             const x = index * xStep;
             const y = chartHeight - (((point.value ?? 0) - min) / range) * chartHeight;
             return (
-              <circle
-                key={`${point.date}-${index}`}
-                cx={x}
-                cy={y}
-                r="1.8"
-                className="fill-accent"
-              />
+              <circle key={`${point.date}-${index}`} cx={x} cy={y} r="1.8" className="fill-accent">
+                <title>
+                  {formatLabel(point.date)}: {point.value ?? 0}{" "}
+                  {metric === "avg_rating" ? "rating" : "reviews"}
+                </title>
+              </circle>
             );
           })}
         </svg>

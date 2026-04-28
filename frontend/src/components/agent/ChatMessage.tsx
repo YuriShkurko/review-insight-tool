@@ -9,6 +9,10 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   compare_competitors: "Competitor Comparison",
   get_review_trends: "Review Trends",
   get_review_series: "Review Trend Chart",
+  get_rating_distribution: "Rating Distribution",
+  get_top_issues: "Top Issues",
+  get_review_insights: "Review Insights",
+  get_review_change_summary: "Period Comparison",
 };
 
 function formatToolName(name: string): string {
@@ -53,7 +57,9 @@ export function ChatMessage({
   if (item.kind === "tool_call") {
     return (
       <div className="flex justify-start">
-        <ToolCallIndicator name={item.name} isStreaming={isGlobalStreaming} />
+        <div className="max-w-[85%] rounded-full border border-border-subtle bg-surface px-2.5 py-1">
+          <ToolCallIndicator name={item.name} isStreaming={isGlobalStreaming} />
+        </div>
       </div>
     );
   }
@@ -74,29 +80,47 @@ export function ChatMessage({
 
     const widgetType = item.widgetType ?? "summary_card";
     const title = formatToolName(item.name);
-    const isChartWidget = widgetType === "line_chart" || widgetType === "bar_chart";
+    const isChartWidget = [
+      "line_chart",
+      "bar_chart",
+      "pie_chart",
+      "donut_chart",
+      "horizontal_bar_chart",
+      "comparison_chart",
+    ].includes(widgetType);
 
     return (
-      <div className="flex justify-start w-full">
-        <div
-          className={`w-full border border-border rounded-xl overflow-hidden bg-surface-card shadow-sm ${
-            isChartWidget ? "max-w-2xl" : "max-w-sm"
+      <div className="flex w-full justify-start">
+        <details
+          className={`group w-full overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm ${
+            isChartWidget ? "max-w-xl" : "max-w-sm"
           }`}
         >
-          <div className="px-3 py-2 bg-surface-elevated border-b border-border-subtle flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-text-secondary truncate">{title}</span>
-            <button
-              type="button"
-              onClick={() => onPin(widgetType, title, item.result)}
-              className="shrink-0 text-xs text-text-muted hover:text-brand transition-colors font-medium"
-            >
-              + Dashboard
-            </button>
-          </div>
-          <div className="p-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 bg-surface-elevated px-3 py-2">
+            <span className="min-w-0 truncate text-xs font-medium text-text-secondary">
+              {title} preview
+            </span>
+            <span className="shrink-0 text-[10px] text-text-muted group-open:hidden">Expand</span>
+            <span className="hidden shrink-0 text-[10px] text-text-muted group-open:inline">
+              Collapse
+            </span>
+          </summary>
+          <div className="border-t border-border-subtle px-3 py-2">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="truncate text-xs text-text-muted">
+                {widgetType.replace(/_/g, " ")}
+              </span>
+              <button
+                type="button"
+                onClick={() => onPin(widgetType, title, item.result)}
+                className="shrink-0 text-xs text-text-muted hover:text-brand transition-colors font-medium"
+              >
+                + Dashboard
+              </button>
+            </div>
             <WidgetRenderer widgetType={widgetType} data={item.result} />
           </div>
-        </div>
+        </details>
       </div>
     );
   }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useAgentChat } from "@/lib/useAgentChat";
 import { useWorkspace } from "@/lib/workspaceBlackboard";
+import { normalizeWorkspaceWidget } from "@/lib/workspaceWidget";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { SuggestedPrompts } from "./SuggestedPrompts";
@@ -18,17 +19,13 @@ export function ChatPanel({
 }) {
   const { dispatch, reload } = useWorkspace();
 
-  const onWidgetPinned = useCallback(() => {
-    reload();
-  }, [reload]);
-
   const onAgentStreamDone = useCallback(async () => {
     await reload();
   }, [reload]);
 
   const { items, isStreaming, streamingId, error, sendMessage, clearError } = useAgentChat(
     businessId,
-    onWidgetPinned,
+    undefined,
     onAgentStreamDone,
     dispatch,
   );
@@ -50,7 +47,7 @@ export function ChatPanel({
           },
         );
         setPinError(null);
-        dispatch({ type: "WIDGET_ADDED", widget: result });
+        dispatch({ type: "WIDGET_ADDED", widget: normalizeWorkspaceWidget(result) });
       } catch {
         setPinError("Failed to pin widget. Please try again.");
       }

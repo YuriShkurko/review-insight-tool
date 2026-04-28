@@ -25,6 +25,10 @@ WidgetType = Literal[
     "trend_indicator",
     "line_chart",
     "bar_chart",
+    "pie_chart",
+    "donut_chart",
+    "horizontal_bar_chart",
+    "comparison_chart",
 ]
 
 WIDGET_TYPES: frozenset[str] = frozenset(get_args(WidgetType))
@@ -268,7 +272,9 @@ TOOL_DEFINITIONS: list[dict] = [
         "function": {
             "name": "pin_widget",
             "description": (
-                "Save a card or chart to the user's dashboard canvas. Call this in the same turn "
+                "Current supported chart mappings include get_rating_distribution->pie_chart/donut_chart/bar_chart, "
+                "get_top_issues->horizontal_bar_chart, and get_review_change_summary->comparison_chart. "
+                "Save a supported card or chart to the user's dashboard canvas. Call this after "
                 "after a data tool succeeds when the user asked to add, pin, or build the dashboard — "
                 "copy that tool's JSON return value into the data field unchanged. "
                 "widget_type must match the source: get_dashboard→summary_card; get_top_issues→insight_list; "
@@ -299,10 +305,10 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "compare_competitors": "comparison_card",
     "get_review_trends": "trend_indicator",
     "get_review_series": "line_chart",
-    "get_rating_distribution": "bar_chart",
-    "get_top_issues": "insight_list",
+    "get_rating_distribution": "donut_chart",
+    "get_top_issues": "horizontal_bar_chart",
     "get_review_insights": "summary_card",
-    "get_review_change_summary": "summary_card",
+    "get_review_change_summary": "comparison_chart",
     "pin_widget": None,
 }
 
@@ -600,11 +606,20 @@ def _get_rating_distribution(
 
     bars = [{"label": f"{star}★", "value": counts[star]} for star in (1, 2, 3, 4, 5)]
     total = sum(counts.values())
+    slices = [
+        {
+            "label": f"{star} star",
+            "value": counts[star],
+            "percent": round((counts[star] / total) * 100, 1) if total else 0,
+        }
+        for star in (1, 2, 3, 4, 5)
+    ]
 
     return {
         "period": f"{window_days}d",
         "days": window_days,
         "bars": bars,
+        "slices": slices,
         "total": total,
     }
 
@@ -711,8 +726,10 @@ def _get_top_issues(
     for issue in issues:
         del issue["_score"]
 
+    top_issues = issues[:limit]
     return {
-        "issues": issues[:limit],
+        "issues": top_issues,
+        "bars": [{"label": issue["theme"], "value": issue["count"]} for issue in top_issues],
         "period": f"{window_days}d",
         "total_reviews_analyzed": len(reviews),
     }
@@ -902,6 +919,22 @@ def _get_review_insights(
         for row in themes
         if row.get("representative_quote")
     ][:2]
+    review_rows = [
+        {
+            "id": str(review.id),
+            "rating": review.rating,
+            "text": review.text,
+            "author": review.author,
+            "published_at": review.published_at.isoformat() if review.published_at else None,
+        }
+        for review in sorted(
+            reviews,
+            key=lambda r: (
+                -r.rating if selected_focus == "positive" else r.rating,
+                -(r.published_at or datetime.min.replace(tzinfo=UTC)).timestamp(),
+            ),
+        )[:6]
+    ]
     sparse = len(reviews) < 3
     limitation = (
         f"Only {len(reviews)} review(s) found for {label}; treat this as directional."
@@ -937,7 +970,9 @@ def _get_review_insights(
         "review_count": stats["count"],
         "avg_rating": stats["avg_rating"],
         "themes": themes,
+        "bars": [{"label": row["theme"], "value": row["count"]} for row in themes],
         "examples": examples,
+        "reviews": review_rows,
         "limitation": limitation,
         "recommended_focus": action,
     }

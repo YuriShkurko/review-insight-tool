@@ -41,6 +41,30 @@ describe("dispatchWorkspaceEvent", () => {
     expect(actions).toEqual([{ type: "WIDGET_ADDED", widget }]);
   });
 
+  it("normalizes camelCase widget payloads from workspace_event", () => {
+    const actions: WorkspaceAction[] = [];
+
+    dispatchWorkspaceEvent(
+      {
+        action: "widget_added",
+        widget: {
+          id: "w1",
+          widgetType: "donut_chart",
+          title: "Rating share",
+          data: { slices: [{ label: "5 star", value: 4 }] },
+          position: 0,
+          createdAt: "2026-04-28T00:00:00Z",
+        },
+      },
+      (action) => actions.push(action),
+    );
+
+    expect(actions[0]).toMatchObject({
+      type: "WIDGET_ADDED",
+      widget: { id: "w1", widget_type: "donut_chart" },
+    });
+  });
+
   it("ignores unknown workspace events", () => {
     const actions: WorkspaceAction[] = [];
 

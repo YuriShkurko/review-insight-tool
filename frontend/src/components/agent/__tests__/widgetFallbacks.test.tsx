@@ -6,11 +6,11 @@ import { SummaryCard } from "../widgets/SummaryCard";
 describe("widget fallbacks", () => {
   it("renders an unsupported widget type message instead of raw JSON", () => {
     const html = renderToStaticMarkup(
-      <WidgetRenderer widgetType="pie_chart" data={{ value: 1 }} />,
+      <WidgetRenderer widgetType="radar_chart" data={{ value: 1 }} />,
     );
 
     expect(html).toContain("Unsupported widget type");
-    expect(html).toContain("pie_chart");
+    expect(html).toContain("radar_chart");
     expect(html).not.toContain("&quot;value&quot;");
   });
 

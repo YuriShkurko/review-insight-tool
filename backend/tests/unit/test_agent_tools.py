@@ -246,6 +246,8 @@ class TestGetRatingDistribution:
         assert result["bars"][4]["label"] == "5★"
         assert result["bars"][4]["value"] == 2
         assert result["bars"][0]["value"] == 1
+        assert result["slices"][4]["value"] == 2
+        assert result["slices"][4]["percent"] == 66.7
 
 
 class TestReviewInsightSynthesis:
@@ -506,7 +508,7 @@ class TestSystemPrompt:
         assert "get_review_change_summary" in prompt
         assert "query_reviews only when the user explicitly asks for raw reviews" in prompt
 
-    def test_prompt_says_pie_charts_are_unsupported(self):
+    def test_prompt_routes_rating_distribution_to_pie_or_donut(self):
         business = MagicMock()
         business.name = "Test Bar"
         business.business_type = "bar"
@@ -515,5 +517,13 @@ class TestSystemPrompt:
         business.total_reviews = 25
 
         prompt = build_system_prompt(business)
-        assert "Pie charts are not supported" in prompt
-        assert "bar chart" in prompt
+        assert "pie_chart or donut_chart" in prompt
+        assert "Rating distribution/share" in prompt
+
+    def test_tool_widget_type_defaults_choose_new_chart_types(self):
+        from app.agent.tools import TOOL_WIDGET_TYPES
+
+        assert TOOL_WIDGET_TYPES["get_rating_distribution"] == "donut_chart"
+        assert TOOL_WIDGET_TYPES["get_top_issues"] == "horizontal_bar_chart"
+        assert TOOL_WIDGET_TYPES["get_review_series"] == "line_chart"
+        assert TOOL_WIDGET_TYPES["get_review_change_summary"] == "comparison_chart"

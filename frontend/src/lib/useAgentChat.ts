@@ -2,7 +2,8 @@
 
 import { useReducer, useCallback, useRef } from "react";
 import { apiStreamFetch } from "./api";
-import type { MessageItem } from "./agentTypes";
+import type { MessageItem, WorkspaceWidget } from "./agentTypes";
+import type { WorkspaceAction } from "./workspaceBlackboard";
 
 export interface AgentState {
   items: MessageItem[];
@@ -30,6 +31,19 @@ export type Action =
 
 export function shouldTriggerWidgetPinned(name: string, result: Record<string, unknown>): boolean {
   return name === "pin_widget" && result?.pinned === true;
+}
+
+export function dispatchWorkspaceEvent(
+  data: Record<string, unknown>,
+  workspaceDispatch?: (action: WorkspaceAction) => void,
+): void {
+  const action = data.action as string;
+  if (action === "widget_added" && data.widget && workspaceDispatch) {
+    workspaceDispatch({
+      type: "WIDGET_ADDED",
+      widget: data.widget as WorkspaceWidget,
+    });
+  }
 }
 
 function createClientId(): string {
@@ -105,13 +119,15 @@ export function reducer(state: AgentState, action: Action): AgentState {
 
 /**
  * @param onWidgetPinned — called when the agent's pin_widget tool returns pinned: true (e.g. toast).
- * @param onAgentStreamDone — called when the SSE stream ends with a successful `done` event; use this
- *   to reload the workspace so pinned widgets appear even if the pin event was missed or coalesced.
+ * @param onAgentStreamDone — called when the SSE stream ends with a successful `done` event;
+ *   fires a safety-net workspace reload to reconcile blackboard state with the server.
+ * @param workspaceDispatch — blackboard dispatch; workspace_event SSE → WIDGET_ADDED.
  */
 export function useAgentChat(
   businessId: string,
   onWidgetPinned?: () => void,
   onAgentStreamDone?: () => void | Promise<void>,
+  workspaceDispatch?: (action: WorkspaceAction) => void,
 ) {
   const [state, dispatch] = useReducer(reducer, {
     items: [],
@@ -220,6 +236,8 @@ export function useAgentChat(
                 ) {
                   onWidgetPinned?.();
                 }
+              } else if (eventType === "workspace_event") {
+                dispatchWorkspaceEvent(data, workspaceDispatch);
               } else if (eventType === "done") {
                 const conversationId = (data.conversation_id as string) ?? "";
                 conversationIdRef.current = conversationId || null;
@@ -253,7 +271,7 @@ export function useAgentChat(
         isStreamingRef.current = false;
       }
     },
-    [businessId, onWidgetPinned, onAgentStreamDone],
+    [businessId, onWidgetPinned, onAgentStreamDone, workspaceDispatch],
   );
 
   const clearError = useCallback(() => dispatch({ type: "CLEAR_ERROR" }), []);

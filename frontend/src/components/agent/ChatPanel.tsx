@@ -3,25 +3,34 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useAgentChat } from "@/lib/useAgentChat";
+import { useWorkspace } from "@/lib/workspaceBlackboard";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { SuggestedPrompts } from "./SuggestedPrompts";
+import type { WorkspaceWidget } from "@/lib/agentTypes";
 
 export function ChatPanel({
   businessId,
-  onWidgetPinned,
-  onAgentStreamDone,
   onCollapse,
 }: {
   businessId: string;
-  onWidgetPinned: () => void;
-  onAgentStreamDone?: () => void | Promise<void>;
   onCollapse?: () => void;
 }) {
+  const { dispatch, reload } = useWorkspace();
+
+  const onWidgetPinned = useCallback(() => {
+    reload();
+  }, [reload]);
+
+  const onAgentStreamDone = useCallback(async () => {
+    await reload();
+  }, [reload]);
+
   const { items, isStreaming, streamingId, error, sendMessage, clearError } = useAgentChat(
     businessId,
     onWidgetPinned,
     onAgentStreamDone,
+    dispatch,
   );
   const [pinError, setPinError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -33,17 +42,20 @@ export function ChatPanel({
   const handlePin = useCallback(
     async (widgetType: string, title: string, data: Record<string, unknown>) => {
       try {
-        await apiFetch(`/businesses/${businessId}/agent/workspace`, {
-          method: "POST",
-          body: JSON.stringify({ widget_type: widgetType, title, data }),
-        });
+        const result = await apiFetch<WorkspaceWidget>(
+          `/businesses/${businessId}/agent/workspace`,
+          {
+            method: "POST",
+            body: JSON.stringify({ widget_type: widgetType, title, data }),
+          },
+        );
         setPinError(null);
-        onWidgetPinned();
+        dispatch({ type: "WIDGET_ADDED", widget: result });
       } catch {
         setPinError("Failed to pin widget. Please try again.");
       }
     },
-    [businessId, onWidgetPinned],
+    [businessId, dispatch],
   );
 
   const isEmpty = items.length === 0;

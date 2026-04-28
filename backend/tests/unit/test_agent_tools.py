@@ -247,10 +247,15 @@ class TestPinWidgetValidation:
         db.query.return_value = q
         db.refresh.side_effect = lambda w: None
 
-        # Should not raise
         result = _pin_widget(db, biz_id, user_id, widget_type="line_chart", title="Chart", data={})
         assert result["pinned"] is True
         assert "widget_id" in result
+        assert "widget" in result
+        assert result["widget"]["widget_type"] == "line_chart"
+        assert result["widget"]["title"] == "Chart"
+        assert result["widget"]["data"] == {}
+        assert "id" in result["widget"]
+        assert "position" in result["widget"]
 
     def test_invalid_widget_type_returns_pinned_false(self):
         db = MagicMock()

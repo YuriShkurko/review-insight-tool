@@ -19,6 +19,18 @@ export function SummaryCard({ data }: { data: Record<string, unknown> }) {
   const issues = data.issues as TopIssueRow[] | undefined;
   const period = data.period as string | undefined;
 
+  const hasContent =
+    summary ||
+    (issues && issues.length > 0) ||
+    (complaints && complaints.length > 0) ||
+    (praise && praise.length > 0) ||
+    (actions && actions.length > 0) ||
+    focus;
+
+  if (!hasContent) {
+    return <p className="text-xs text-text-muted">No summary data available.</p>;
+  }
+
   return (
     <div className="space-y-3 text-sm">
       {summary && <p className="text-text-secondary leading-relaxed">{summary}</p>}

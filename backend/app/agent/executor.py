@@ -159,6 +159,12 @@ async def run_agent(
                 {"name": tc.name, "widget_type": widget_type, "result": result},
             )
 
+            if tc.name == "pin_widget" and result.get("pinned") and result.get("widget"):
+                yield _sse(
+                    "workspace_event",
+                    {"action": "widget_added", "widget": result["widget"]},
+                )
+
             tool_msg = {
                 "role": "tool",
                 "tool_call_id": tc.id,

@@ -660,4 +660,15 @@ def _pin_widget(
     db.add(widget)
     db.commit()
     db.refresh(widget)
-    return {"widget_id": str(widget.id), "pinned": True}
+    return {
+        "pinned": True,
+        "widget_id": str(widget.id),
+        "widget": {
+            "id": str(widget.id),
+            "widget_type": widget.widget_type,
+            "title": widget.title,
+            "data": widget.data,
+            "position": widget.position,
+            "created_at": widget.created_at.isoformat() if widget.created_at else None,
+        },
+    }

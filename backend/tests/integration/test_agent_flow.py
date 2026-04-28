@@ -267,6 +267,86 @@ def test_agent_chat_tool_execution_pin_widget(client: TestClient, auth_headers: 
 # ---------------------------------------------------------------------------
 
 
+def test_agent_data_tool_pin_round_trip_emits_workspace_event(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """A data-tool result can be pinned, listed, and announced via workspace_event SSE."""
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+    pinned_data = {
+        "period": "30d",
+        "days": 30,
+        "bars": [
+            {"label": "1 star", "value": 0},
+            {"label": "5 stars", "value": 3},
+        ],
+        "total": 3,
+    }
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [ToolCall(id="tc1", name="get_rating_distribution", arguments={"days": 30})],
+                )
+            if call_count == 2:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="tc2",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "bar_chart",
+                                "title": "Rating distribution",
+                                "data": pinned_data,
+                            },
+                        )
+                    ],
+                )
+            return ("Added rating distribution to the dashboard.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Add rating distribution to my dashboard"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+
+    events = _parse_sse(r.text)
+    tool_names = [e["data"].get("name") for e in events if e["type"] == "tool_result"]
+    assert tool_names == ["get_rating_distribution", "pin_widget"]
+
+    workspace_event = next((e for e in events if e["type"] == "workspace_event"), None)
+    assert workspace_event is not None
+    assert workspace_event["data"]["action"] == "widget_added"
+    assert workspace_event["data"]["widget"]["widget_type"] == "bar_chart"
+    assert workspace_event["data"]["widget"]["title"] == "Rating distribution"
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    widgets = r.json()
+    assert len(widgets) == 1
+    assert widgets[0]["id"] == workspace_event["data"]["widget"]["id"]
+    assert widgets[0]["widget_type"] == "bar_chart"
+    assert widgets[0]["data"] == pinned_data
+
+
 def test_irrelevant_request_is_redirected(client: TestClient, auth_headers: dict):
     """Off-topic message returns a redirection response with no tool calls."""
     biz_id = _make_biz(client, auth_headers)

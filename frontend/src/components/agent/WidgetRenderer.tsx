@@ -101,9 +101,9 @@ export function WidgetRenderer({
       return <ComparisonWidget data={data} />;
     default:
       return (
-        <pre className="text-xs text-text-muted overflow-auto max-h-32 whitespace-pre-wrap">
-          {JSON.stringify(data, null, 2)}
-        </pre>
+        <p className="text-xs text-text-muted italic">
+          Unsupported widget type: <span className="font-mono">{widgetType}</span>
+        </p>
       );
   }
 }

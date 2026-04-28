@@ -10,8 +10,8 @@ import Toast from "@/components/Toast";
 import { ChatPanel } from "@/components/agent/ChatPanel";
 import { Workspace } from "@/components/agent/Workspace";
 import { ResizablePanel } from "@/components/ui/ResizablePanel";
+import { WorkspaceBlackboardProvider, useWorkspace } from "@/lib/workspaceBlackboard";
 import type { Dashboard, Review } from "@/lib/types";
-import type { WorkspaceWidget } from "@/lib/agentTypes";
 
 type ActiveTab = "workspace" | "chat";
 
@@ -27,8 +27,6 @@ export default function BusinessDetailPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [actionError, setActionError] = useState("");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const [workspace, setWorkspace] = useState<WorkspaceWidget[]>([]);
-  const [workspaceLoading, setWorkspaceLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>("workspace");
   const [chatCollapsed, setChatCollapsed] = useState(() => {
     try {
@@ -68,29 +66,11 @@ export default function BusinessDetailPage() {
     setDashboard(d);
   }, [id]);
 
-  const loadWorkspace = useCallback(async () => {
-    const routeId = id;
-    try {
-      const w = await apiFetch<WorkspaceWidget[]>(`/businesses/${routeId}/agent/workspace`);
-      if (activeRouteIdRef.current !== routeId) return;
-      setWorkspace(w);
-    } catch (err) {
-      if (activeRouteIdRef.current !== routeId) return;
-      if (process.env.NODE_ENV === "development") {
-        console.warn("loadWorkspace failed", err);
-      }
-    } finally {
-      if (activeRouteIdRef.current === routeId) setWorkspaceLoading(false);
-    }
-  }, [id]);
-
   useEffect(() => {
     if (!user) return;
     setDashboard(null);
     setLoadError("");
     setLoading(true);
-    setWorkspaceLoading(true);
-    setWorkspace([]);
 
     const routeId = id;
     trailEvent("biz:load-start", { businessId: routeId });
@@ -120,9 +100,7 @@ export default function BusinessDetailPage() {
         if (activeRouteIdRef.current === routeId) setLoading(false);
       }
     })();
-
-    loadWorkspace();
-  }, [user, id, loadDashboard, loadWorkspace]);
+  }, [user, id, loadDashboard]);
 
   async function handleFetchReviews() {
     trailEvent("biz:fetch-reviews", { businessId: id });
@@ -153,36 +131,6 @@ export default function BusinessDetailPage() {
       setAnalyzing(false);
     }
   }
-
-  async function handleDeleteWidget(widgetId: string) {
-    try {
-      await apiFetch(`/businesses/${id}/agent/workspace/${widgetId}`, { method: "DELETE" });
-      setWorkspace((ws) => ws.filter((w) => w.id !== widgetId));
-    } catch {
-      showToast("Failed to remove widget.", "error");
-    }
-  }
-
-  async function handleReorder(widgetIds: string[]) {
-    try {
-      await apiFetch(`/businesses/${id}/agent/workspace/reorder`, {
-        method: "PATCH",
-        body: JSON.stringify({ widget_ids: widgetIds }),
-      });
-    } catch {
-      await loadWorkspace();
-    }
-  }
-
-  const handleWidgetPinned = useCallback(async () => {
-    await loadWorkspace();
-    setToast({ message: "Added to dashboard.", type: "success" });
-  }, [loadWorkspace]);
-
-  /** Reload workspace after every successful agent turn so pins always appear (not only on pin_widget SSE). */
-  const handleAgentStreamDone = useCallback(async () => {
-    await loadWorkspace();
-  }, [loadWorkspace]);
 
   if (authLoading || loading) {
     return (
@@ -216,6 +164,92 @@ export default function BusinessDetailPage() {
 
   if (!dashboard) return null;
 
+  return (
+    <WorkspaceBlackboardProvider businessId={id}>
+      <BusinessDetailContent
+        id={id}
+        dashboard={dashboard}
+        toast={toast}
+        setToast={setToast}
+        actionError={actionError}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        chatCollapsed={chatCollapsed}
+        onCollapseChat={handleCollapseChat}
+        onExpandChat={handleExpandChat}
+        fetchingReviews={fetchingReviews}
+        analyzing={analyzing}
+        busy={busy}
+        onFetchReviews={handleFetchReviews}
+        onAnalyze={handleAnalyze}
+      />
+    </WorkspaceBlackboardProvider>
+  );
+}
+
+function BusinessDetailContent({
+  id,
+  dashboard,
+  toast,
+  setToast,
+  actionError,
+  activeTab,
+  setActiveTab,
+  chatCollapsed,
+  onCollapseChat,
+  onExpandChat,
+  fetchingReviews,
+  analyzing,
+  busy,
+  onFetchReviews,
+  onAnalyze,
+}: {
+  id: string;
+  dashboard: Dashboard;
+  toast: { message: string; type: "success" | "error" } | null;
+  setToast: (t: { message: string; type: "success" | "error" } | null) => void;
+  actionError: string;
+  activeTab: "workspace" | "chat";
+  setActiveTab: (tab: "workspace" | "chat") => void;
+  chatCollapsed: boolean;
+  onCollapseChat: () => void;
+  onExpandChat: () => void;
+  fetchingReviews: boolean;
+  analyzing: boolean;
+  busy: boolean;
+  onFetchReviews: () => void;
+  onAnalyze: () => void;
+}) {
+  const { state, dispatch, reload } = useWorkspace();
+
+  const handleDeleteWidget = useCallback(
+    async (widgetId: string) => {
+      dispatch({ type: "WIDGET_REMOVED", widgetId });
+      try {
+        await apiFetch(`/businesses/${id}/agent/workspace/${widgetId}`, { method: "DELETE" });
+      } catch {
+        setToast({ message: "Failed to remove widget.", type: "error" });
+        await reload();
+      }
+    },
+    [id, dispatch, reload, setToast],
+  );
+
+  const handleReorder = useCallback(
+    async (widgetIds: string[]) => {
+      dispatch({ type: "WIDGET_REORDERED", widgetIds });
+      try {
+        await apiFetch(`/businesses/${id}/agent/workspace/reorder`, {
+          method: "PATCH",
+          body: JSON.stringify({ widget_ids: widgetIds }),
+        });
+      } catch {
+        await reload();
+      }
+    },
+    [id, dispatch, reload],
+  );
+
   const hasReviews = dashboard.total_reviews > 0;
   const hasAnalysis = !!dashboard.ai_summary;
 
@@ -247,7 +281,7 @@ export default function BusinessDetailPage() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={handleFetchReviews}
+              onClick={onFetchReviews}
               disabled={busy}
               className="border border-border bg-surface-card text-text-secondary px-3 py-1.5 rounded-lg text-sm hover:bg-surface-elevated disabled:opacity-50 transition-colors"
             >
@@ -255,7 +289,7 @@ export default function BusinessDetailPage() {
             </button>
             <button
               type="button"
-              onClick={handleAnalyze}
+              onClick={onAnalyze}
               disabled={busy || !hasReviews}
               title={!hasReviews ? "Fetch reviews first" : undefined}
               className="bg-brand text-white px-3 py-1.5 rounded-lg text-sm hover:bg-brand-hover disabled:opacity-50 transition-colors"
@@ -277,7 +311,7 @@ export default function BusinessDetailPage() {
             activeTab === "workspace" ? "text-brand border-b-2 border-brand" : "text-text-muted"
           }`}
         >
-          Dashboard{workspace.length > 0 ? ` (${workspace.length})` : ""}
+          Dashboard{state.widgets.length > 0 ? ` (${state.widgets.length})` : ""}
         </button>
         <button
           type="button"
@@ -295,24 +329,16 @@ export default function BusinessDetailPage() {
         <ResizablePanel
           left={
             <Workspace
-              widgets={workspace}
+              widgets={state.widgets}
               onDelete={handleDeleteWidget}
               onReorder={handleReorder}
-              isLoading={workspaceLoading}
+              isLoading={state.isLoading}
             />
           }
-          right={
-            <ChatPanel
-              key={id}
-              businessId={id}
-              onWidgetPinned={handleWidgetPinned}
-              onAgentStreamDone={handleAgentStreamDone}
-              onCollapse={handleCollapseChat}
-            />
-          }
+          right={<ChatPanel key={id} businessId={id} onCollapse={onCollapseChat} />}
           defaultRatio={0.65}
           rightCollapsed={chatCollapsed}
-          onRightCollapsedChange={handleExpandChat}
+          onRightCollapsedChange={onExpandChat}
         />
       </div>
 
@@ -322,21 +348,16 @@ export default function BusinessDetailPage() {
           className={`${activeTab === "workspace" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}
         >
           <Workspace
-            widgets={workspace}
+            widgets={state.widgets}
             onDelete={handleDeleteWidget}
             onReorder={handleReorder}
-            isLoading={workspaceLoading}
+            isLoading={state.isLoading}
           />
         </div>
         <div
           className={`${activeTab === "chat" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}
         >
-          <ChatPanel
-            key={id}
-            businessId={id}
-            onWidgetPinned={handleWidgetPinned}
-            onAgentStreamDone={handleAgentStreamDone}
-          />
+          <ChatPanel key={id} businessId={id} />
         </div>
       </div>
     </div>

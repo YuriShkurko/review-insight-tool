@@ -54,6 +54,7 @@ Review Insight Tool solves this by:
 - **Agent dashboard builder (V7)** — business detail page evolves into a chat-driven command center. The agent can answer natural-language questions, generate chart-ready review trends, preview cards in the chat, and add useful results to a persistent dashboard canvas. Dashboard-building prompts can proactively pin widgets without requiring a separate click. Works with OpenAI or OpenRouter (same SDK, configurable `base_url`). No LLM key needed — mock path remains.
 - **Agent safety + stability (V8)** — intent classification routes each message to the right flow and blocks off-topic or injection attempts before they reach the LLM. System prompt enforces an explicit data-trust boundary so malicious review text cannot override agent behaviour. Tool spinner clears correctly after streaming ends; optimistic drag-reorder self-corrects on server refresh; `pin_widget` callback guarded by `result.pinned === true`. Synthetic monitor picks target vs competitor place IDs deterministically (`_pick_place_id`) so a run never treats the main business as its own competitor.
 - **Agent workspace + charts** — `get_rating_distribution` returns star-rating counts for a `bar_chart` widget; `pin_widget` coerces tool arguments so extra model-supplied JSON keys no longer break pinning; system prompt documents tool→`widget_type` mapping; pinned `get_top_issues` data renders via `issues` in the workspace summary card.
+- **Agent workspace blackboard (V9)** — dashboard widget state now flows through a `WorkspaceBlackboardProvider` reducer instead of prop-drilled refetch callbacks. Backend `pin_widget` returns the authoritative widget payload and emits a `workspace_event` SSE after commit; frontend applies `WIDGET_ADDED` immediately, deduplicates by id, and still reloads on stream completion as a reconciliation pass. Empty or unsupported widget data renders explicit fallbacks instead of blank cards, with regression tests covering the pin round trip, reducer actions, SSE dispatch, and widget fallbacks.
 - **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching. When `REVIEW_PROVIDER=offline`, **adding a business from a Google Maps link or free-form place ID is disabled** (`POST /api/businesses` → 403); use the **sandbox sample catalog** in the UI (`POST /api/sandbox/import`). **`GET /api/bootstrap`** (no auth) returns `{ "review_provider": "..." }` so the frontend can hide the form and match server mode.
 
 ## Quick Start
@@ -179,7 +180,7 @@ Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
 3. **Fetch reviews** — click "Fetch Reviews" (header button) to pull customer reviews
 4. **Run analysis** — click "Analyze" (header button) to run AI analysis
 5. **Chat with the agent** — use the chat command center to ask anything: "What are customers complaining about?", "Graph review volume for the last 3 days", "How do I compare to competitors?"
-6. **Build a dashboard** — click "Add to dashboard" on an agent result, or ask the agent to build/customize the dashboard for you. Pinned cards and charts persist in the dashboard canvas across sessions.
+6. **Build a dashboard** — click "Add to dashboard" on an agent result, or ask the agent to build/customize the dashboard for you. Pinned cards and charts persist in the dashboard canvas across sessions, and agent-pinned widgets appear immediately through the workspace blackboard event path.
 
 > **Tip:** Use **Share → Copy link** from the Google Maps business info panel. Search-bar URLs may not work.
 
@@ -698,7 +699,7 @@ For detailed system behavior, user flows, analysis output shapes, and known limi
 - [ ] Export reports — PDF/CSV
 - [x] CI/CD pipeline — GitHub Actions CI (lint + tests + build) + CD (ECS deploy) + synthetic monitor (every 30 min)
 - [x] Living demo world — autonomous 14-day narrative arc, sine-wave + weekly modulation, LLM burst reviews, soak report
-- [x] Agent dashboard builder — chat command center with tool calls, SSE streaming, chart-ready trends, and persistent dashboard canvas widgets
+- [x] Agent dashboard builder — chat command center with tool calls, SSE streaming, chart-ready trends, persistent dashboard canvas widgets, and blackboard-backed pin reliability
 
 ## License
 

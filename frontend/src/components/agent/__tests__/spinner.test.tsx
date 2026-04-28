@@ -90,9 +90,7 @@ describe("ChatMessage pin_widget tool_result branch", () => {
       widgetType: null,
       result: { pinned: true, widget_id: "abc" },
     };
-    const html = renderToStaticMarkup(
-      <ChatMessage item={item} isStreaming={false} onPin={noop} />,
-    );
+    const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
     expect(html).toContain("Pinned to workspace");
     expect(html).not.toContain("Failed to pin");
     expect(html).not.toContain("text-red-500");
@@ -106,9 +104,7 @@ describe("ChatMessage pin_widget tool_result branch", () => {
       widgetType: null,
       result: { pinned: false },
     };
-    const html = renderToStaticMarkup(
-      <ChatMessage item={item} isStreaming={false} onPin={noop} />,
-    );
+    const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
     expect(html).toContain("Failed to pin widget");
     expect(html).toContain("text-red-500");
     expect(html).not.toContain("Pinned to workspace");
@@ -122,9 +118,7 @@ describe("ChatMessage pin_widget tool_result branch", () => {
       widgetType: null,
       result: { pinned: false, error: "Unknown widget_type 'bad_type'" },
     };
-    const html = renderToStaticMarkup(
-      <ChatMessage item={item} isStreaming={false} onPin={noop} />,
-    );
+    const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
     expect(html).toContain("Unknown widget_type");
     expect(html).toContain("text-red-500");
   });

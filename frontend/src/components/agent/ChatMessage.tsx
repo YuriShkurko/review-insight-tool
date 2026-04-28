@@ -66,7 +66,7 @@ export function ChatMessage({
           <p className={`text-xs py-1 pl-1 ${succeeded ? "text-text-muted" : "text-red-500"}`}>
             {succeeded
               ? "Pinned to workspace"
-              : ((item.result?.error as string) || "Failed to pin widget")}
+              : (item.result?.error as string) || "Failed to pin widget"}
           </p>
         </div>
       );

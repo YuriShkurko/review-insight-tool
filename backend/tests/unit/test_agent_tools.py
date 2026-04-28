@@ -321,7 +321,9 @@ class TestSystemPrompt:
         # Step 2: pass data unchanged
         assert "unchanged" in prompt.lower()
         # Step 3: report what was added
-        assert "tell the user what was added" in prompt.lower() or "what was added" in prompt.lower()
+        assert (
+            "tell the user what was added" in prompt.lower() or "what was added" in prompt.lower()
+        )
 
     def test_prompt_forbids_invented_widget_types(self):
         """Prompt must instruct agent to use only known widget_type values."""

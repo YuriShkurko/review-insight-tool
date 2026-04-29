@@ -23,6 +23,35 @@ function widget(id: string, position: number): WorkspaceWidget {
 }
 
 describe("workspaceReducer", () => {
+  it("does not hide existing widgets during a reconciliation reload", () => {
+    const existing = widget("w1", 0);
+    const state = workspaceReducer(
+      { ...INITIAL, widgets: [existing] },
+      {
+        type: "INIT_LOAD",
+      },
+    );
+
+    expect(state.isLoading).toBe(false);
+    expect(state.error).toBeNull();
+    expect(state.widgets).toEqual([existing]);
+  });
+
+  it("preserves existing widgets when a reload fails", () => {
+    const existing = widget("w1", 0);
+    const state = workspaceReducer(
+      { ...INITIAL, widgets: [existing] },
+      {
+        type: "LOAD_ERROR",
+        error: "Network error. Please check your connection.",
+      },
+    );
+
+    expect(state.isLoading).toBe(false);
+    expect(state.error).toBe("Network error. Please check your connection.");
+    expect(state.widgets).toEqual([existing]);
+  });
+
   it("deduplicates WIDGET_ADDED by id", () => {
     const existing = widget("w1", 0);
     const state = workspaceReducer(

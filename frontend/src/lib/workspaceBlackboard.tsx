@@ -10,7 +10,7 @@ import {
   type ReactNode,
   type Dispatch,
 } from "react";
-import { apiFetch } from "./api";
+import { apiFetch, ApiError } from "./api";
 import type { WorkspaceWidget } from "./agentTypes";
 import { normalizeWorkspaceWidget, normalizeWorkspaceWidgets } from "./workspaceWidget";
 
@@ -49,7 +49,7 @@ const INITIAL_STATE: WorkspaceState = {
 export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): WorkspaceState {
   switch (action.type) {
     case "INIT_LOAD":
-      return { ...state, isLoading: true, error: null };
+      return { ...state, isLoading: state.widgets.length === 0, error: null };
 
     case "LOADED":
       return { widgets: normalizeWorkspaceWidgets(action.widgets), isLoading: false, error: null };
@@ -120,9 +120,13 @@ export function WorkspaceBlackboardProvider({
       const widgets = await apiFetch<WorkspaceWidget[]>(`/businesses/${id}/agent/workspace`);
       if (activeIdRef.current !== id) return;
       dispatch({ type: "LOADED", widgets });
-    } catch {
+    } catch (err) {
       if (activeIdRef.current !== id) return;
-      dispatch({ type: "LOAD_ERROR", error: "Failed to load workspace." });
+      const detail = err instanceof ApiError ? err.detail : "Failed to load workspace.";
+      dispatch({
+        type: "LOAD_ERROR",
+        error: detail,
+      });
     }
   }, []);
 

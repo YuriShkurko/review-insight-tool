@@ -12,6 +12,15 @@ from app.tracing import TraceMiddleware
 setup_logging()
 logger = logging.getLogger(__name__)
 
+LOCAL_DEV_ORIGIN_REGEX = (
+    r"^https?://("
+    r"localhost|127\.0\.0\.1|"
+    r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+    r"192\.168\.\d{1,3}\.\d{1,3}|"
+    r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"
+    r")(:\d+)?$"
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -51,6 +60,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
+        allow_origin_regex=LOCAL_DEV_ORIGIN_REGEX,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

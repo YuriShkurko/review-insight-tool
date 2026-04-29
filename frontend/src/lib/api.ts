@@ -1,6 +1,6 @@
 import { trailEvent } from "./debugTrail";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const CONFIGURED_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const FRIENDLY_MESSAGES: Record<number, string> = {
   401: "Your session has expired. Please sign in again.",
@@ -27,6 +27,27 @@ export function setOnUnauthorized(cb: () => void) {
   onUnauthorized = cb;
 }
 
+export function getApiBaseUrl(): string {
+  if (typeof window === "undefined") return CONFIGURED_BASE_URL;
+
+  try {
+    const configured = new URL(CONFIGURED_BASE_URL);
+    const pageHost = window.location.hostname;
+    const configuredHost = configured.hostname;
+    const isConfiguredLocalhost = configuredHost === "localhost" || configuredHost === "127.0.0.1";
+    const isPageLocalhost = pageHost === "localhost" || pageHost === "127.0.0.1";
+
+    if (isConfiguredLocalhost && !isPageLocalhost) {
+      configured.hostname = pageHost;
+      return configured.toString().replace(/\/$/, "");
+    }
+  } catch {
+    return CONFIGURED_BASE_URL;
+  }
+
+  return CONFIGURED_BASE_URL;
+}
+
 export function apiStreamFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers: Record<string, string> = {
@@ -34,7 +55,7 @@ export function apiStreamFetch(path: string, options: RequestInit = {}): Promise
     ...((options.headers as Record<string, string>) || {}),
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  return fetch(`${BASE_URL}/api${path}`, { ...options, headers });
+  return fetch(`${getApiBaseUrl()}/api${path}`, { ...options, headers });
 }
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -54,7 +75,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}/api${path}`, { ...options, headers });
+    res = await fetch(`${getApiBaseUrl()}/api${path}`, { ...options, headers });
   } catch {
     trailEvent("api:fail", { method, path, status: 0, detail: "Network error" });
     throw new ApiError(0, "Network error. Please check your connection.");

@@ -77,7 +77,7 @@ export function Workspace({
     );
   }
 
-  if (error) {
+  if (error && ordered.length === 0) {
     return (
       <div className="h-full flex flex-col overflow-hidden bg-surface">
         <div className="shrink-0 px-4 pt-4 pb-2">
@@ -117,6 +117,22 @@ export function Workspace({
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
+        {error && ordered.length > 0 && (
+          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">
+            <div className="flex items-center justify-between gap-3">
+              <span>{error}</span>
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="shrink-0 font-medium text-red-800 hover:text-red-950 dark:text-red-200"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         {ordered.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center border-2 border-dashed border-border rounded-2xl px-8 py-12 max-w-xs">

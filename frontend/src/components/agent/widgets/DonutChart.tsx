@@ -104,7 +104,9 @@ export function DonutChart({ data }: { data: Record<string, unknown> }) {
                 />
                 <span className="truncate">{slice.label}</span>
               </span>
-              <span className={`shrink-0 tabular-nums ${isSelected ? "text-text-primary font-medium" : "text-text-primary"}`}>
+              <span
+                className={`shrink-0 tabular-nums ${isSelected ? "text-text-primary font-medium" : "text-text-primary"}`}
+              >
                 {slice.value} ({slice.percent}%)
               </span>
             </div>

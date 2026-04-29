@@ -53,7 +53,12 @@ describe("WidgetRenderer supported widget fixtures", () => {
     const html = renderToStaticMarkup(
       <WidgetRenderer
         widgetType="bar_chart"
-        data={{ bars: [{ label: "5★", value: 8 }, { label: "1★", value: 2 }] }}
+        data={{
+          bars: [
+            { label: "5★", value: 8 },
+            { label: "1★", value: 2 },
+          ],
+        }}
       />,
     );
     // SVG <title> elements must contain label, value, and percentage
@@ -87,12 +92,12 @@ describe("WidgetRenderer supported widget fixtures", () => {
     expect(
       renderToStaticMarkup(<WidgetRenderer widgetType="comparison_chart" data={{}} />),
     ).toContain("No comparison data available.");
-    expect(
-      renderToStaticMarkup(<WidgetRenderer widgetType="line_chart" data={{}} />),
-    ).toContain("No chart data available.");
-    expect(
-      renderToStaticMarkup(<WidgetRenderer widgetType="bar_chart" data={{}} />),
-    ).toContain("No chart data available.");
+    expect(renderToStaticMarkup(<WidgetRenderer widgetType="line_chart" data={{}} />)).toContain(
+      "No chart data available.",
+    );
+    expect(renderToStaticMarkup(<WidgetRenderer widgetType="bar_chart" data={{}} />)).toContain(
+      "No chart data available.",
+    );
   });
 
   it("donut_chart legend shows label, value, and percentage for each slice", () => {

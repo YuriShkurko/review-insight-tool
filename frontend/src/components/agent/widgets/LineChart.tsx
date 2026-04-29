@@ -107,8 +107,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
         <div className="flex items-center justify-between rounded-lg bg-surface-elevated px-3 py-1.5 text-xs">
           <span className="text-text-secondary">{formatLabel(points[selectedIdx].date)}</span>
           <span className="font-medium text-text-primary">
-            {points[selectedIdx].value ?? 0}{" "}
-            {metric === "avg_rating" ? "rating" : "reviews"}
+            {points[selectedIdx].value ?? 0} {metric === "avg_rating" ? "rating" : "reviews"}
           </span>
         </div>
       )}

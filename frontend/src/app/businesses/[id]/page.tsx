@@ -333,6 +333,8 @@ function BusinessDetailContent({
               onDelete={handleDeleteWidget}
               onReorder={handleReorder}
               isLoading={state.isLoading}
+              error={state.error}
+              onRetry={reload}
             />
           }
           right={<ChatPanel key={id} businessId={id} onCollapse={onCollapseChat} />}
@@ -352,6 +354,8 @@ function BusinessDetailContent({
             onDelete={handleDeleteWidget}
             onReorder={handleReorder}
             isLoading={state.isLoading}
+            error={state.error}
+            onRetry={reload}
           />
         </div>
         <div

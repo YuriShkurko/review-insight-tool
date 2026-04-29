@@ -29,11 +29,15 @@ export function Workspace({
   onDelete,
   onReorder,
   isLoading,
+  error,
+  onRetry,
 }: {
   widgets: WorkspaceWidget[];
   onDelete: (widgetId: string) => void;
   onReorder?: (widgetIds: string[]) => void;
   isLoading: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }) {
   const [dragState, setDragState] = useState<DragState | null>(null);
 
@@ -69,6 +73,32 @@ export function Workspace({
     return (
       <div className="flex items-center justify-center h-full bg-surface">
         <span className="inline-block h-5 w-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col overflow-hidden bg-surface">
+        <div className="shrink-0 px-4 pt-4 pb-2">
+          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-widest">
+            Dashboard
+          </h2>
+        </div>
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center border-2 border-dashed border-red-300 rounded-xl px-8 py-10 max-w-sm bg-red-50 dark:bg-red-950/20 dark:border-red-900">
+            <p className="text-sm font-medium text-red-700 dark:text-red-300">{error}</p>
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="mt-4 inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     );
   }

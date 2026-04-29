@@ -188,6 +188,11 @@ async def run_agent(
                     "workspace_event",
                     {"action": "widget_added", "widget": result["widget"]},
                 )
+            if tc.name == "remove_widget" and result.get("removed") and result.get("widget_id"):
+                yield _sse(
+                    "workspace_event",
+                    {"action": "widget_removed", "widget_id": result["widget_id"]},
+                )
 
             tool_msg = {
                 "role": "tool",

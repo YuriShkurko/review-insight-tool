@@ -1,8 +1,8 @@
 "use client";
 
-import { useReducer, useCallback, useRef } from "react";
-import { apiStreamFetch } from "./api";
-import type { MessageItem, WorkspaceWidget } from "./agentTypes";
+import { useReducer, useCallback, useEffect, useRef, useState } from "react";
+import { apiFetch, ApiError, apiStreamFetch } from "./api";
+import type { ConversationDetail, MessageItem, WorkspaceWidget } from "./agentTypes";
 import type { WorkspaceAction } from "./workspaceBlackboard";
 import { normalizeWorkspaceWidget } from "./workspaceWidget";
 
@@ -26,6 +26,7 @@ export type Action =
       widgetType: string | null;
       result: Record<string, unknown>;
     }
+  | { type: "SEED_HISTORY"; items: MessageItem[]; conversationId: string }
   | { type: "DONE"; conversationId: string }
   | { type: "ERROR"; message: string }
   | { type: "CLEAR_ERROR" };
@@ -44,6 +45,8 @@ export function dispatchWorkspaceEvent(
       type: "WIDGET_ADDED",
       widget: normalizeWorkspaceWidget(data.widget) as WorkspaceWidget,
     });
+  } else if (action === "widget_removed" && data.widget_id && workspaceDispatch) {
+    workspaceDispatch({ type: "WIDGET_REMOVED", widgetId: String(data.widget_id) });
   }
 }
 
@@ -102,6 +105,15 @@ export function reducer(state: AgentState, action: Action): AgentState {
           },
         ],
       };
+    case "SEED_HISTORY":
+      return {
+        ...state,
+        items: action.items,
+        isStreaming: false,
+        streamingId: null,
+        conversationId: action.conversationId,
+        error: null,
+      };
     case "DONE":
       return {
         ...state,
@@ -130,10 +142,14 @@ export function useAgentChat(
   onAgentStreamDone?: () => void | Promise<void>,
   workspaceDispatch?: (action: WorkspaceAction) => void,
 ) {
+  const [storedConversationId] = useState(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(`conv_${businessId}`);
+  });
   const [state, dispatch] = useReducer(reducer, {
     items: [],
     isStreaming: false,
-    conversationId: null,
+    conversationId: storedConversationId,
     streamingId: null,
     error: null,
   });
@@ -143,7 +159,42 @@ export function useAgentChat(
   // being visible before the next render. conversationIdRef keeps the latest
   // conversation ID available in the sendMessage closure without needing it in deps.
   const isStreamingRef = useRef(false);
-  const conversationIdRef = useRef<string | null>(null);
+  const conversationIdRef = useRef<string | null>(storedConversationId);
+
+  useEffect(() => {
+    if (!storedConversationId) return;
+    let cancelled = false;
+
+    async function loadHistory() {
+      try {
+        const conversation = await apiFetch<ConversationDetail>(
+          `/businesses/${businessId}/agent/conversations/${storedConversationId}`,
+        );
+        if (cancelled) return;
+        const items = conversation.messages
+          .filter(
+            (message) =>
+              (message.role === "user" || message.role === "assistant") &&
+              typeof message.content === "string" &&
+              message.content.trim().length > 0,
+          )
+          .map((message) => ({
+            id: createClientId(),
+            kind: message.role === "user" ? "user" : "assistant_text",
+            text: message.content as string,
+          })) as MessageItem[];
+        dispatch({ type: "SEED_HISTORY", items, conversationId: conversation.id });
+        conversationIdRef.current = conversation.id;
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) return;
+      }
+    }
+
+    void loadHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [businessId, storedConversationId]);
 
   const sendMessage = useCallback(
     async (message: string) => {
@@ -242,6 +293,9 @@ export function useAgentChat(
               } else if (eventType === "done") {
                 const conversationId = (data.conversation_id as string) ?? "";
                 conversationIdRef.current = conversationId || null;
+                if (conversationId && typeof window !== "undefined") {
+                  localStorage.setItem(`conv_${businessId}`, conversationId);
+                }
                 dispatch({ type: "DONE", conversationId });
                 streamCompleted = true;
                 void Promise.resolve(onAgentStreamDone?.());

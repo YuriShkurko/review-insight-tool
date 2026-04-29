@@ -16,6 +16,7 @@ from app.agent.tools import (
     _get_review_insights,
     _get_top_issues,
     _pin_widget,
+    _remove_widget,
     execute_tool,
 )
 
@@ -265,13 +266,14 @@ class TestDataToolNames:
 
         missing = [
             name
-            for name in TOOL_WIDGET_TYPES
-            if name != "pin_widget" and name not in DATA_TOOL_NAMES
+            for name, widget_type in TOOL_WIDGET_TYPES.items()
+            if widget_type is not None and name not in DATA_TOOL_NAMES
         ]
         assert missing == [], f"Tools missing from DATA_TOOL_NAMES: {missing}"
 
     def test_pin_widget_not_in_data_tool_names(self):
         assert "pin_widget" not in DATA_TOOL_NAMES
+        assert "remove_widget" not in DATA_TOOL_NAMES
 
 
 class TestGetRatingDistribution:
@@ -458,6 +460,51 @@ class TestPinWidgetValidation:
                 db, uuid.uuid4(), uuid.uuid4(), widget_type=wt, title="T", data={}
             )
             assert result["pinned"] is True, f"widget_type={wt!r} should be accepted"
+
+
+class TestRemoveWidget:
+    def test_removes_existing_widget(self):
+        biz_id = uuid.uuid4()
+        user_id = uuid.uuid4()
+        widget_id = uuid.uuid4()
+        widget = MagicMock()
+
+        db = MagicMock()
+        q = MagicMock()
+        q.filter.return_value = q
+        q.first.return_value = widget
+        db.query.return_value = q
+
+        result = _remove_widget(db, biz_id, user_id, widget_id=str(widget_id))
+
+        assert result == {"removed": True, "widget_id": str(widget_id)}
+        db.delete.assert_called_once_with(widget)
+        db.commit.assert_called_once()
+
+    def test_missing_widget_returns_error(self):
+        db = MagicMock()
+        q = MagicMock()
+        q.filter.return_value = q
+        q.first.return_value = None
+        db.query.return_value = q
+        widget_id = uuid.uuid4()
+
+        result = _remove_widget(db, uuid.uuid4(), uuid.uuid4(), widget_id=str(widget_id))
+
+        assert result["removed"] is False
+        assert result["widget_id"] == str(widget_id)
+        assert "not found" in result["error"].lower()
+        db.delete.assert_not_called()
+        db.commit.assert_not_called()
+
+    def test_invalid_uuid_returns_error_without_query(self):
+        db = MagicMock()
+
+        result = _remove_widget(db, uuid.uuid4(), uuid.uuid4(), widget_id="not-a-uuid")
+
+        assert result["removed"] is False
+        assert "invalid" in result["error"].lower()
+        db.query.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

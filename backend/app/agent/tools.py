@@ -322,6 +322,27 @@ TOOL_DEFINITIONS: list[dict] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "remove_widget",
+            "description": (
+                "Remove a dashboard widget by exact widget_id UUID. Never guess or fabricate "
+                "widget IDs; ask the user to clarify if the target widget is ambiguous."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "widget_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Exact UUID of the workspace widget to remove.",
+                    }
+                },
+                "required": ["widget_id"],
+            },
+        },
+    },
 ]
 
 # Maps tool name → widget_type hint for tool_result SSE events
@@ -337,6 +358,7 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "get_review_insights": "summary_card",
     "get_review_change_summary": "comparison_chart",
     "pin_widget": None,
+    "remove_widget": None,
 }
 
 # ---------------------------------------------------------------------------
@@ -412,6 +434,8 @@ def execute_tool(
     if name == "pin_widget":
         coerced = _coerce_pin_widget_arguments(args)
         return _pin_widget(db, business_id, user_id, **coerced)
+    if name == "remove_widget":
+        return _remove_widget(db, business_id, user_id, widget_id=str(args.get("widget_id", "")))
     return {"error": f"Unknown tool: {name}"}
 
 
@@ -1127,3 +1151,32 @@ def _pin_widget(
             "created_at": widget.created_at.isoformat() if widget.created_at else None,
         },
     }
+
+
+def _remove_widget(
+    db: Session,
+    business_id: uuid.UUID,
+    user_id: uuid.UUID,
+    *,
+    widget_id: str,
+) -> dict:
+    try:
+        parsed_widget_id = uuid.UUID(str(widget_id))
+    except (TypeError, ValueError):
+        return {"removed": False, "error": "Invalid widget_id UUID."}
+
+    widget = (
+        db.query(WorkspaceWidget)
+        .filter(
+            WorkspaceWidget.id == parsed_widget_id,
+            WorkspaceWidget.business_id == business_id,
+            WorkspaceWidget.user_id == user_id,
+        )
+        .first()
+    )
+    if not widget:
+        return {"removed": False, "widget_id": str(parsed_widget_id), "error": "Widget not found."}
+
+    db.delete(widget)
+    db.commit()
+    return {"removed": True, "widget_id": str(parsed_widget_id)}

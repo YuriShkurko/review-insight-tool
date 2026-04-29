@@ -27,3 +27,11 @@ export interface Conversation {
   created_at: string;
   updated_at: string;
 }
+
+export interface ConversationDetail extends Conversation {
+  messages: Array<{
+    role?: string;
+    content?: string | null;
+    tool_calls?: unknown;
+  }>;
+}

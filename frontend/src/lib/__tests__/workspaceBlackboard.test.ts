@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { workspaceReducer, type WorkspaceState } from "../workspaceBlackboard";
+import { dispatchWorkspaceEvent } from "../useAgentChat";
 import { WidgetRenderer } from "../../components/agent/WidgetRenderer";
 import type { WorkspaceWidget } from "../agentTypes";
 
@@ -89,6 +90,29 @@ describe("workspaceReducer", () => {
     );
 
     expect(state.widgets.map((w) => w.id)).toEqual(["w2"]);
+  });
+
+  it("ignores WIDGET_REMOVED for an unknown id", () => {
+    const before = [widget("w1", 0), widget("w2", 1)];
+    const state = workspaceReducer(
+      { ...INITIAL, widgets: before },
+      {
+        type: "WIDGET_REMOVED",
+        widgetId: "missing",
+      },
+    );
+
+    expect(state.widgets.map((w) => w.id)).toEqual(["w1", "w2"]);
+  });
+
+  it("dispatches widget_removed workspace events to the reducer action", () => {
+    const actions: unknown[] = [];
+
+    dispatchWorkspaceEvent({ action: "widget_removed", widget_id: "w1" }, (action) =>
+      actions.push(action),
+    );
+
+    expect(actions).toEqual([{ type: "WIDGET_REMOVED", widgetId: "w1" }]);
   });
 
   it("reorders requested widgets and preserves unspecified widgets after them", () => {

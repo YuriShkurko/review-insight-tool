@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 
 from fastapi.testclient import TestClient
 
@@ -111,6 +112,11 @@ def test_workspace_crud(client: TestClient, auth_headers: dict):
     remaining_ids = [w["id"] for w in r.json()]
     assert widget_id not in remaining_ids
 
+    r = client.delete(
+        f"/api/businesses/{biz_id}/agent/workspace/{widget_id}", headers=auth_headers
+    )
+    assert r.status_code == 404
+
 
 def test_pin_widget_invalid_type_returns_422(client: TestClient, auth_headers: dict):
     """PinWidgetRequest validates widget_type; invalid values return 422."""
@@ -138,6 +144,26 @@ def test_pin_widget_creates_correct_state(client: TestClient, auth_headers: dict
 
     r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
     assert any(w["widget_type"] == "summary_card" for w in r.json())
+
+
+def test_pin_widget_survives_workspace_reload(client: TestClient, auth_headers: dict):
+    biz_id = _make_biz(client, auth_headers)
+    payload = {"series": [{"date": "2026-04-29", "count": 3}], "summary": {"total": 3}}
+
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/workspace",
+        json={"widget_type": "line_chart", "title": "Review trend", "data": payload},
+        headers=auth_headers,
+    )
+    assert r.status_code == 201
+    created = r.json()
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    widgets = r.json()
+    assert [w["id"] for w in widgets] == [created["id"]]
+    assert widgets[0]["data"] == payload
+    assert widgets[0]["position"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -204,6 +230,76 @@ def test_agent_chat_with_tool_execution(client: TestClient, auth_headers: dict, 
     assert done_event["data"].get("conversation_id")
 
 
+def test_get_conversation_detail(client: TestClient, auth_headers: dict, monkeypatch):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+
+    def _mock_provider():
+        mock = MagicMock()
+        mock.complete_with_tools.return_value = ("Here is the review summary.", [])
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Summarize my reviews"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    conversation_id = next(e for e in events if e["type"] == "done")["data"]["conversation_id"]
+
+    r = client.get(
+        f"/api/businesses/{biz_id}/agent/conversations/{conversation_id}",
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    detail = r.json()
+    assert detail["id"] == conversation_id
+    assert any(m["role"] == "user" and m["content"] == "Summarize my reviews" for m in detail["messages"])
+    assert any(m["role"] == "assistant" and m["content"] == "Here is the review summary." for m in detail["messages"])
+
+
+def test_get_conversation_detail_wrong_user_returns_404(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+
+    def _mock_provider():
+        mock = MagicMock()
+        mock.complete_with_tools.return_value = ("Saved answer.", [])
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Summarize my reviews"},
+        headers=auth_headers,
+    )
+    events = _parse_sse(r.text)
+    conversation_id = next(e for e in events if e["type"] == "done")["data"]["conversation_id"]
+
+    r = client.post(
+        "/api/auth/register",
+        json={"email": f"other-{uuid.uuid4().hex[:8]}@test.com", "password": "testpass123"},
+    )
+    assert r.status_code == 201
+    other_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+    r = client.get(
+        f"/api/businesses/{biz_id}/agent/conversations/{conversation_id}",
+        headers=other_headers,
+    )
+    assert r.status_code == 404
+
+
 def test_agent_chat_tool_execution_pin_widget(client: TestClient, auth_headers: dict, monkeypatch):
     """pin_widget tool call creates a workspace widget and returns pinned: true."""
     from unittest.mock import MagicMock
@@ -260,6 +356,70 @@ def test_agent_chat_tool_execution_pin_widget(client: TestClient, auth_headers: 
     # Widget should be in workspace
     r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
     assert any(w["widget_type"] == "metric_card" for w in r.json())
+
+
+def test_agent_remove_widget_tool_emits_workspace_event(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/workspace",
+        json={"widget_type": "metric_card", "title": "Avg Rating", "data": {"value": 4.2}},
+        headers=auth_headers,
+    )
+    assert r.status_code == 201
+    widget_id = r.json()["id"]
+    call_count = 0
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="tc1",
+                            name="remove_widget",
+                            arguments={"widget_id": widget_id},
+                        )
+                    ],
+                )
+            return ("Removed it from your dashboard.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": f"Remove widget {widget_id}"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    remove_result = next(
+        e
+        for e in events
+        if e["type"] == "tool_result" and e["data"].get("name") == "remove_widget"
+    )
+    assert remove_result["data"]["result"]["removed"] is True
+
+    workspace_event = next(e for e in events if e["type"] == "workspace_event")
+    assert workspace_event["data"] == {"action": "widget_removed", "widget_id": widget_id}
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json() == []
 
 
 # ---------------------------------------------------------------------------

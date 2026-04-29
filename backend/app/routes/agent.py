@@ -11,6 +11,7 @@ from app.models.user import User
 from app.models.workspace_widget import WorkspaceWidget
 from app.schemas.agent import (
     ChatRequest,
+    ConversationDetail,
     ConversationRead,
     PinWidgetRequest,
     ReorderRequest,
@@ -156,3 +157,29 @@ def list_conversations(
         .order_by(Conversation.updated_at.desc())
         .all()
     )
+
+
+@router.get(
+    "/businesses/{business_id}/agent/conversations/{conversation_id}",
+    response_model=ConversationDetail,
+)
+def get_conversation(
+    business_id: uuid.UUID,
+    conversation_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models.conversation import Conversation
+
+    conversation = (
+        db.query(Conversation)
+        .filter(
+            Conversation.id == conversation_id,
+            Conversation.business_id == business_id,
+            Conversation.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return conversation

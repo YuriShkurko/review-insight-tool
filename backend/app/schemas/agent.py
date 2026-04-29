@@ -20,6 +20,10 @@ class ConversationRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ConversationDetail(ConversationRead):
+    messages: list[dict]
+
+
 class PinWidgetRequest(BaseModel):
     widget_type: str
     title: str

@@ -82,6 +82,34 @@ describe("useAgentChat reducer", () => {
     expect(state.isStreaming).toBe(true);
   });
 
+  it("SEED_HISTORY replaces items and clears streaming state", () => {
+    const streaming: AgentState = {
+      ...INITIAL,
+      items: [{ id: "old", kind: "assistant_text", text: "loading" }],
+      isStreaming: true,
+      streamingId: "old",
+      error: "previous error",
+    };
+
+    const state = reducer(streaming, {
+      type: "SEED_HISTORY",
+      conversationId: "conv-1",
+      items: [
+        { id: "u1", kind: "user", text: "hello" },
+        { id: "a1", kind: "assistant_text", text: "answer" },
+      ],
+    });
+
+    expect(state.items).toEqual([
+      { id: "u1", kind: "user", text: "hello" },
+      { id: "a1", kind: "assistant_text", text: "answer" },
+    ]);
+    expect(state.isStreaming).toBe(false);
+    expect(state.streamingId).toBeNull();
+    expect(state.conversationId).toBe("conv-1");
+    expect(state.error).toBeNull();
+  });
+
   it("BEGIN_ASSISTANT then ERROR: spinner fully cleared", () => {
     let state = reducer(INITIAL, { type: "ADD_USER", id: "u1", text: "hi" });
     state = reducer(state, { type: "BEGIN_ASSISTANT", id: "a1" });

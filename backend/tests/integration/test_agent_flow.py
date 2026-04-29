@@ -259,8 +259,13 @@ def test_get_conversation_detail(client: TestClient, auth_headers: dict, monkeyp
     assert r.status_code == 200
     detail = r.json()
     assert detail["id"] == conversation_id
-    assert any(m["role"] == "user" and m["content"] == "Summarize my reviews" for m in detail["messages"])
-    assert any(m["role"] == "assistant" and m["content"] == "Here is the review summary." for m in detail["messages"])
+    assert any(
+        m["role"] == "user" and m["content"] == "Summarize my reviews" for m in detail["messages"]
+    )
+    assert any(
+        m["role"] == "assistant" and m["content"] == "Here is the review summary."
+        for m in detail["messages"]
+    )
 
 
 def test_get_conversation_detail_wrong_user_returns_404(

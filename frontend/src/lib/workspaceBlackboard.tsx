@@ -73,7 +73,9 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         .map((id) => byId.get(id))
         .filter(Boolean) as WorkspaceWidget[];
       const remaining = state.widgets.filter((w) => !action.widgetIds.includes(w.id));
-      return { ...state, widgets: [...reordered, ...remaining] };
+      const all = [...reordered, ...remaining];
+      // Update position fields so sort-by-position in Workspace reflects the new order.
+      return { ...state, widgets: all.map((w, i) => ({ ...w, position: i })) };
     }
 
     default:

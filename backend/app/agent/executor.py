@@ -111,6 +111,11 @@ async def run_agent(
         base = [{"role": "system", "content": system_prompt}]
         return base + truncate_messages(history)
 
+    # Registry of successful data-tool results keyed by tool name.
+    # pin_widget resolves source_tool against this dict so each widget is wired
+    # to the exact tool that produced its data, not just whatever ran last.
+    tool_results: dict[str, dict] = {}
+
     for _ in range(MAX_ITERATIONS):
         llm_messages = _build_llm_messages()
         try:
@@ -148,7 +153,26 @@ async def run_agent(
         for tc in tool_calls:
             yield _sse("tool_call", {"name": tc.name, "args": tc.arguments})
             try:
-                result = execute_tool(tc.name, tc.arguments, db, business_id, user_id)
+                if tc.name == "pin_widget":
+                    args = dict(tc.arguments)
+                    incoming_data = args.get("data")
+                    data_is_empty = (
+                        not incoming_data
+                        or not isinstance(incoming_data, dict)
+                        or len(incoming_data) == 0
+                    )
+                    if data_is_empty:
+                        # Resolve source_tool first; fall back to most recent result.
+                        source_tool = args.get("source_tool")
+                        if source_tool and source_tool in tool_results:
+                            args["data"] = tool_results[source_tool]
+                        elif tool_results:
+                            args["data"] = next(reversed(tool_results.values()))
+                    result = execute_tool(tc.name, args, db, business_id, user_id)
+                else:
+                    result = execute_tool(tc.name, tc.arguments, db, business_id, user_id)
+                    if isinstance(result, dict) and "error" not in result:
+                        tool_results[tc.name] = result
             except Exception as exc:
                 logger.error("op=agent_tool tool=%s error=%s", tc.name, exc)
                 result = {"error": str(exc)}

@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 type SeriesPoint = {
   date: string;
   count?: number | null;
@@ -25,6 +29,7 @@ export function formatLabel(dateIso: string): string {
 }
 
 export function LineChart({ data }: { data: Record<string, unknown> }) {
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const rawSeries = Array.isArray(data.series) ? data.series : [];
   const metric = data.metric === "avg_rating" || data.metric === "count" ? data.metric : "count";
   const points = rawSeries
@@ -77,8 +82,17 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
           {points.map((point, index) => {
             const x = index * xStep;
             const y = chartHeight - (((point.value ?? 0) - min) / range) * chartHeight;
+            const isSelected = selectedIdx === index;
             return (
-              <circle key={`${point.date}-${index}`} cx={x} cy={y} r="1.8" className="fill-accent">
+              <circle
+                key={`${point.date}-${index}`}
+                cx={x}
+                cy={y}
+                r={isSelected ? 3 : 1.8}
+                className={isSelected ? "fill-brand" : "fill-accent"}
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedIdx(isSelected ? null : index)}
+              >
                 <title>
                   {formatLabel(point.date)}: {point.value ?? 0}{" "}
                   {metric === "avg_rating" ? "rating" : "reviews"}
@@ -88,6 +102,16 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
           })}
         </svg>
       </div>
+
+      {selectedIdx !== null && points[selectedIdx] !== undefined && (
+        <div className="flex items-center justify-between rounded-lg bg-surface-elevated px-3 py-1.5 text-xs">
+          <span className="text-text-secondary">{formatLabel(points[selectedIdx].date)}</span>
+          <span className="font-medium text-text-primary">
+            {points[selectedIdx].value ?? 0}{" "}
+            {metric === "avg_rating" ? "rating" : "reviews"}
+          </span>
+        </div>
+      )}
 
       <div className="flex items-center justify-between text-xs">
         <div className="text-text-muted">

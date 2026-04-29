@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 
 from app.agent.system_prompt import build_system_prompt
 from app.agent.tools import (
+    DATA_TOOL_NAMES,
     WIDGET_TYPES,
     _coerce_pin_widget_arguments,
     _get_rating_distribution,
@@ -230,6 +231,47 @@ class TestCoercePinWidgetArguments:
             {"widget_type": "metric_card", "title": "X", "data": [1, 2]}
         )
         assert coerced["data"] == {}
+
+    def test_missing_data_key_becomes_empty_dict(self):
+        coerced = _coerce_pin_widget_arguments({"widget_type": "bar_chart", "title": "T"})
+        assert coerced["data"] == {}
+
+    def test_null_data_becomes_empty_dict(self):
+        coerced = _coerce_pin_widget_arguments(
+            {"widget_type": "bar_chart", "title": "T", "data": None}
+        )
+        assert coerced["data"] == {}
+
+    def test_source_tool_is_stripped_before_reaching_pin_widget(self):
+        # source_tool is an executor-only field; _coerce_pin_widget_arguments must
+        # not surface it to _pin_widget (which would error on an unexpected key).
+        coerced = _coerce_pin_widget_arguments(
+            {
+                "widget_type": "bar_chart",
+                "title": "Rating Dist",
+                "source_tool": "get_rating_distribution",
+                "data": {"bars": [{"label": "5★", "value": 3}]},
+            }
+        )
+        assert "source_tool" not in coerced
+        assert coerced["data"] == {"bars": [{"label": "5★", "value": 3}]}
+
+
+class TestDataToolNames:
+    def test_all_data_tool_names_are_present(self):
+        # Every key in TOOL_WIDGET_TYPES that is not pin_widget should appear in
+        # DATA_TOOL_NAMES so the source_tool enum stays in sync.
+        from app.agent.tools import TOOL_WIDGET_TYPES
+
+        missing = [
+            name
+            for name in TOOL_WIDGET_TYPES
+            if name != "pin_widget" and name not in DATA_TOOL_NAMES
+        ]
+        assert missing == [], f"Tools missing from DATA_TOOL_NAMES: {missing}"
+
+    def test_pin_widget_not_in_data_tool_names(self):
+        assert "pin_widget" not in DATA_TOOL_NAMES
 
 
 class TestGetRatingDistribution:
@@ -459,8 +501,8 @@ class TestSystemPrompt:
         assert "pin_widget" in prompt
         # Step 1: data tool first
         assert "data tool" in prompt.lower() or "appropriate data tool" in prompt.lower()
-        # Step 2: pass data unchanged
-        assert "unchanged" in prompt.lower()
+        # Step 2: set source_tool to the data tool name
+        assert "source_tool" in prompt
         # Step 3: report what was added
         assert (
             "tell the user what was added" in prompt.lower() or "what was added" in prompt.lower()

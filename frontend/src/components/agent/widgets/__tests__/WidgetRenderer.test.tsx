@@ -49,6 +49,34 @@ describe("WidgetRenderer supported widget fixtures", () => {
     expect(html).toContain("<title>Positive: 8 (80%)</title>");
   });
 
+  it("bar_chart tooltip title includes label, value, and percentage", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRenderer
+        widgetType="bar_chart"
+        data={{ bars: [{ label: "5★", value: 8 }, { label: "1★", value: 2 }] }}
+      />,
+    );
+    // SVG <title> elements must contain label, value, and percentage
+    expect(html).toContain("5★: 8 (80.0%)");
+    expect(html).toContain("1★: 2 (20.0%)");
+    // Labels also appear in the bottom legend
+    expect(html).toContain("5★: 8");
+    expect(html).toContain("1★: 2");
+  });
+
+  it("line_chart tooltip uses readable date labels not raw ISO keys", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRenderer
+        widgetType="line_chart"
+        data={{ series: [{ date: "2026-04-01", count: 3 }], metric: "count" }}
+      />,
+    );
+    // Title must contain formatted date (e.g. "Apr 1") and value+unit, not the raw ISO key
+    expect(html).toContain("reviews");
+    expect(html).not.toContain('"date"');
+    expect(html).not.toContain('"count"');
+  });
+
   it("renders empty states for new chart widgets", () => {
     expect(renderToStaticMarkup(<WidgetRenderer widgetType="donut_chart" data={{}} />)).toContain(
       "No chart data available.",
@@ -59,5 +87,29 @@ describe("WidgetRenderer supported widget fixtures", () => {
     expect(
       renderToStaticMarkup(<WidgetRenderer widgetType="comparison_chart" data={{}} />),
     ).toContain("No comparison data available.");
+    expect(
+      renderToStaticMarkup(<WidgetRenderer widgetType="line_chart" data={{}} />),
+    ).toContain("No chart data available.");
+    expect(
+      renderToStaticMarkup(<WidgetRenderer widgetType="bar_chart" data={{}} />),
+    ).toContain("No chart data available.");
+  });
+
+  it("donut_chart legend shows label, value, and percentage for each slice", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRenderer
+        widgetType="donut_chart"
+        data={{
+          slices: [
+            { label: "5 star", value: 8, percent: 80 },
+            { label: "1 star", value: 2, percent: 20 },
+          ],
+        }}
+      />,
+    );
+    expect(html).toContain("5 star");
+    expect(html).toContain("80%");
+    expect(html).toContain("1 star");
+    expect(html).toContain("20%");
   });
 });

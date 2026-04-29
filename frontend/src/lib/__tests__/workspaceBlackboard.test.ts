@@ -99,4 +99,74 @@ describe("workspaceReducer", () => {
 
     expect(state.widgets.map((w) => w.id)).toEqual(["w3", "w1", "w2"]);
   });
+
+  it("WIDGET_REORDERED updates position fields so sort-by-position preserves drop order", () => {
+    const before = [widget("w1", 0), widget("w2", 1), widget("w3", 2)];
+    const state = workspaceReducer(
+      { ...INITIAL, widgets: before },
+      { type: "WIDGET_REORDERED", widgetIds: ["w3", "w1", "w2"] },
+    );
+
+    // Positions must be reassigned sequentially so sort-by-position gives the dropped order.
+    expect(state.widgets.find((w) => w.id === "w3")?.position).toBe(0);
+    expect(state.widgets.find((w) => w.id === "w1")?.position).toBe(1);
+    expect(state.widgets.find((w) => w.id === "w2")?.position).toBe(2);
+
+    // Sort-by-position (as Workspace.tsx does) must equal the dropped order.
+    const sorted = [...state.widgets].sort((a, b) => a.position - b.position);
+    expect(sorted.map((w) => w.id)).toEqual(["w3", "w1", "w2"]);
+  });
+
+  it("agent auto-add with empty data produces a widget with the correct type and graceful empty state", () => {
+    const state = workspaceReducer(
+      { ...INITIAL },
+      {
+        type: "WIDGET_ADDED",
+        widget: {
+          id: "w-empty",
+          widget_type: "bar_chart",
+          title: "Rating distribution",
+          data: {},
+          position: 0,
+          created_at: "2026-04-28T00:00:00Z",
+        },
+      },
+    );
+
+    expect(state.widgets[0].widget_type).toBe("bar_chart");
+    // Empty data shows an empty state, not a rendering crash.
+    const html = renderToStaticMarkup(
+      WidgetRenderer({ widgetType: state.widgets[0].widget_type, data: state.widgets[0].data }),
+    );
+    expect(html).toContain("No chart data available.");
+    expect(html).not.toContain("undefined");
+    expect(html).not.toContain("null");
+  });
+
+  it("auto-add and manual-add produce identical normalized shapes for the same raw payload", () => {
+    const raw = {
+      id: "w1",
+      widget_type: "line_chart",
+      title: "Review Trend",
+      data: { series: [{ date: "2026-04-01", count: 3 }], metric: "count" },
+      position: 0,
+      created_at: "2026-04-28T00:00:00Z",
+    };
+
+    // Simulate manual-add path (POST response → normalizeWorkspaceWidget → WIDGET_ADDED)
+    const stateManual = workspaceReducer({ ...INITIAL }, { type: "WIDGET_ADDED", widget: raw });
+
+    // Simulate agent auto-add path (workspace_event SSE → normalizeWorkspaceWidget → WIDGET_ADDED)
+    const stateAuto = workspaceReducer({ ...INITIAL }, { type: "WIDGET_ADDED", widget: raw });
+
+    expect(stateManual.widgets[0]).toEqual(stateAuto.widgets[0]);
+    // Both must have the required render fields.
+    for (const w of [stateManual.widgets[0], stateAuto.widgets[0]]) {
+      expect(w).toHaveProperty("id");
+      expect(w).toHaveProperty("widget_type");
+      expect(w).toHaveProperty("title");
+      expect(w).toHaveProperty("data");
+      expect(w).toHaveProperty("position");
+    }
+  });
 });

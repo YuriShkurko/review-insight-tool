@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 type BarRow = { label: string; value: number };
 
 function toInt(value: unknown): number {
@@ -12,6 +14,7 @@ function toInt(value: unknown): number {
 }
 
 export function BarChart({ data }: { data: Record<string, unknown> }) {
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const raw = Array.isArray(data.bars) ? data.bars : [];
   const bars: BarRow[] = raw
     .map((row) => {
@@ -31,6 +34,9 @@ export function BarChart({ data }: { data: Record<string, unknown> }) {
   const n = bars.length;
   const slot = (chartW - gap * Math.max(0, n - 1)) / n;
   const maxVal = Math.max(...bars.map((b) => b.value), 1);
+  const total = bars.reduce((sum, b) => sum + b.value, 0);
+
+  const selectedBar = selectedIdx !== null ? bars[selectedIdx] : null;
 
   return (
     <div className="space-y-2">
@@ -45,6 +51,7 @@ export function BarChart({ data }: { data: Record<string, unknown> }) {
             const h = (b.value / maxVal) * (chartH - 10);
             const y = chartH - h;
             const w = Math.max(slot - 1, 0.5);
+            const isSelected = selectedIdx === i;
             return (
               <rect
                 key={`${b.label}-${i}`}
@@ -53,19 +60,38 @@ export function BarChart({ data }: { data: Record<string, unknown> }) {
                 width={w}
                 height={Math.max(h, 0)}
                 rx={1}
-                className="fill-brand/90"
+                className={isSelected ? "fill-brand" : "fill-brand/70"}
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedIdx(isSelected ? null : i)}
               >
-                <title>
-                  {b.label}: {b.value}
-                </title>
+                <title>{`${b.label}: ${b.value}${total > 0 ? ` (${((b.value / total) * 100).toFixed(1)}%)` : ""}`}</title>
               </rect>
             );
           })}
         </svg>
       </div>
+
+      {selectedBar !== null && (
+        <div className="flex items-center justify-between rounded-lg bg-surface-elevated px-3 py-1.5 text-xs">
+          <span className="text-text-secondary">{selectedBar.label}</span>
+          <span className="font-medium text-text-primary">
+            {selectedBar.value}
+            {total > 0 && (
+              <span className="ml-1 text-text-muted">
+                ({((selectedBar.value / total) * 100).toFixed(1)}%)
+              </span>
+            )}
+          </span>
+        </div>
+      )}
+
       <div className="flex flex-wrap justify-between gap-x-1 gap-y-0.5 text-[10px] text-text-muted leading-tight">
-        {bars.map((b) => (
-          <span key={b.label} className="tabular-nums">
+        {bars.map((b, i) => (
+          <span
+            key={b.label}
+            className={`tabular-nums cursor-pointer ${selectedIdx === i ? "text-text-primary font-medium" : ""}`}
+            onClick={() => setSelectedIdx(selectedIdx === i ? null : i)}
+          >
             {b.label}: {b.value}
           </span>
         ))}

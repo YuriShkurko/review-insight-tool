@@ -33,6 +33,20 @@ WidgetType = Literal[
 
 WIDGET_TYPES: frozenset[str] = frozenset(get_args(WidgetType))
 
+# Names of all data-fetching tools that can be referenced by source_tool in pin_widget.
+DATA_TOOL_NAMES: list[str] = [
+    "get_dashboard",
+    "query_reviews",
+    "run_analysis",
+    "compare_competitors",
+    "get_review_trends",
+    "get_review_series",
+    "get_rating_distribution",
+    "get_top_issues",
+    "get_review_insights",
+    "get_review_change_summary",
+]
+
 
 def _coerce_pin_widget_arguments(arguments: dict | None) -> dict[str, str | dict]:
     """Strip unknown keys so models that emit extra JSON fields do not break _pin_widget."""
@@ -272,14 +286,16 @@ TOOL_DEFINITIONS: list[dict] = [
         "function": {
             "name": "pin_widget",
             "description": (
-                "Current supported chart mappings include get_rating_distribution->pie_chart/donut_chart/bar_chart, "
-                "get_top_issues->horizontal_bar_chart, and get_review_change_summary->comparison_chart. "
-                "Save a supported card or chart to the user's dashboard canvas. Call this after "
-                "after a data tool succeeds when the user asked to add, pin, or build the dashboard — "
-                "copy that tool's JSON return value into the data field unchanged. "
-                "widget_type must match the source: get_dashboard→summary_card; get_top_issues→insight_list; "
-                "query_reviews→review_list; run_analysis→insight_list; compare_competitors→comparison_card; "
-                "get_review_trends→trend_indicator; get_review_series→line_chart; get_rating_distribution→bar_chart."
+                "Save a supported card or chart to the user's dashboard canvas. "
+                "Always set source_tool to the name of the data tool you just called — "
+                "the executor uses it to wire the exact tool result to the widget. "
+                "widget_type must match the source: get_dashboard→summary_card; "
+                "get_top_issues→insight_list; query_reviews→review_list; "
+                "run_analysis→insight_list; compare_competitors→comparison_card; "
+                "get_review_trends→trend_indicator; get_review_series→line_chart; "
+                "get_rating_distribution→pie_chart or donut_chart; "
+                "get_review_insights→summary_card; get_review_change_summary→comparison_chart. "
+                "Only use widget_type values from that mapping — do not invent new types."
             ),
             "parameters": {
                 "type": "object",
@@ -289,9 +305,20 @@ TOOL_DEFINITIONS: list[dict] = [
                         "enum": sorted(WIDGET_TYPES),
                     },
                     "title": {"type": "string"},
-                    "data": {"type": "object"},
+                    "source_tool": {
+                        "type": "string",
+                        "enum": DATA_TOOL_NAMES,
+                        "description": (
+                            "Name of the data tool whose result to pin. "
+                            "Must match the tool called immediately before this pin_widget call."
+                        ),
+                    },
+                    "data": {
+                        "type": "object",
+                        "description": "Tool result payload. Omit or leave empty — the executor fills it from source_tool.",
+                    },
                 },
-                "required": ["widget_type", "title", "data"],
+                "required": ["widget_type", "title", "source_tool"],
             },
         },
     },

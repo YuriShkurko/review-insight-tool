@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 type Slice = { label: string; value: number; percent?: number };
 
 const COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2"];
@@ -38,6 +40,7 @@ function arcPath(cx: number, cy: number, r: number, start: number, end: number):
 }
 
 export function DonutChart({ data }: { data: Record<string, unknown> }) {
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const slices = normalizeSlices(data);
   const total = slices.reduce((sum, slice) => sum + slice.value, 0);
 
@@ -59,31 +62,54 @@ export function DonutChart({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="grid grid-cols-[88px_1fr] items-center gap-3">
       <svg viewBox="0 0 100 100" className="h-24 w-24" role="img" aria-label="Donut chart">
-        {segments.map(({ slice, path }, index) => (
-          <path key={slice.label} d={path} fill={COLORS[index % COLORS.length]}>
-            <title>{`${slice.label}: ${slice.value} (${slice.percent}%)`}</title>
-          </path>
-        ))}
+        {segments.map(({ slice, path }, index) => {
+          const isSelected = selectedIdx === index;
+          return (
+            <path
+              key={slice.label}
+              d={path}
+              fill={COLORS[index % COLORS.length]}
+              opacity={selectedIdx !== null && !isSelected ? 0.45 : 1}
+              stroke={isSelected ? "white" : "none"}
+              strokeWidth={isSelected ? 2 : 0}
+              style={{ cursor: "pointer" }}
+              onClick={() => setSelectedIdx(isSelected ? null : index)}
+            >
+              <title>{`${slice.label}: ${slice.value} (${slice.percent}%)`}</title>
+            </path>
+          );
+        })}
         <circle cx="50" cy="50" r="25" className="fill-surface-card" />
         <text x="50" y="53" textAnchor="middle" className="fill-text-primary text-[13px] font-bold">
-          {total}
+          {selectedIdx !== null && slices[selectedIdx] !== undefined
+            ? slices[selectedIdx].value
+            : total}
         </text>
       </svg>
       <div className="space-y-1 text-xs">
-        {slices.map((slice, index) => (
-          <div key={slice.label} className="flex items-center justify-between gap-2">
-            <span className="flex min-w-0 items-center gap-1.5 text-text-secondary">
+        {slices.map((slice, index) => {
+          const isSelected = selectedIdx === index;
+          return (
+            <div
+              key={slice.label}
+              className={`flex cursor-pointer items-center justify-between gap-2 rounded transition-colors ${isSelected ? "bg-surface-elevated" : ""}`}
+              onClick={() => setSelectedIdx(isSelected ? null : index)}
+            >
               <span
-                className="h-2 w-2 shrink-0 rounded-sm"
-                style={{ backgroundColor: COLORS[index % COLORS.length] }}
-              />
-              <span className="truncate">{slice.label}</span>
-            </span>
-            <span className="shrink-0 tabular-nums text-text-primary">
-              {slice.value} ({slice.percent}%)
-            </span>
-          </div>
-        ))}
+                className={`flex min-w-0 items-center gap-1.5 ${isSelected ? "text-text-primary font-medium" : "text-text-secondary"}`}
+              >
+                <span
+                  className="h-2 w-2 shrink-0 rounded-sm"
+                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                />
+                <span className="truncate">{slice.label}</span>
+              </span>
+              <span className={`shrink-0 tabular-nums ${isSelected ? "text-text-primary font-medium" : "text-text-primary"}`}>
+                {slice.value} ({slice.percent}%)
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

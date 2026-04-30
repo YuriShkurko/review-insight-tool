@@ -9,8 +9,12 @@ from unittest.mock import MagicMock
 from app.agent.system_prompt import build_system_prompt
 from app.agent.tools import (
     DATA_TOOL_NAMES,
+    TOOL_COMPATIBLE_WIDGETS,
+    TOOL_DEFINITIONS,
     WIDGET_TYPES,
     _coerce_pin_widget_arguments,
+    _create_custom_chart_data,
+    _duplicate_widget,
     _get_rating_distribution,
     _get_review_change_summary,
     _get_review_insights,
@@ -18,6 +22,7 @@ from app.agent.tools import (
     _pin_widget,
     _remove_widget,
     execute_tool,
+    format_compatibility_for_prompt,
 )
 
 # ---------------------------------------------------------------------------
@@ -274,6 +279,12 @@ class TestDataToolNames:
     def test_pin_widget_not_in_data_tool_names(self):
         assert "pin_widget" not in DATA_TOOL_NAMES
         assert "remove_widget" not in DATA_TOOL_NAMES
+        assert "duplicate_widget" not in DATA_TOOL_NAMES
+
+    def test_create_custom_chart_data_is_a_data_tool_name(self):
+        # create_custom_chart_data builds chart-ready payloads itself, so the
+        # model must be allowed to use it as source_tool when pinning.
+        assert "create_custom_chart_data" in DATA_TOOL_NAMES
 
 
 class TestGetRatingDistribution:
@@ -616,3 +627,274 @@ class TestSystemPrompt:
         assert TOOL_WIDGET_TYPES["get_top_issues"] == "horizontal_bar_chart"
         assert TOOL_WIDGET_TYPES["get_review_series"] == "line_chart"
         assert TOOL_WIDGET_TYPES["get_review_change_summary"] == "comparison_chart"
+
+
+# ---------------------------------------------------------------------------
+# Compatibility table is the single source of truth and is auto-rendered into
+# the system prompt + per-tool descriptions.
+# ---------------------------------------------------------------------------
+
+
+class TestCompatibilityExposure:
+    def test_format_compatibility_for_prompt_lists_every_source_tool(self):
+        rendered = format_compatibility_for_prompt()
+        for source_tool in TOOL_COMPATIBLE_WIDGETS:
+            assert source_tool in rendered
+
+    def test_compatibility_table_is_in_system_prompt(self):
+        business = MagicMock()
+        business.name = "Cafe"
+        business.business_type = "cafe"
+        business.address = None
+        business.avg_rating = 4.0
+        business.total_reviews = 10
+
+        prompt = build_system_prompt(business)
+        assert "COMPATIBILITY TABLE" in prompt
+        # Every source_tool->widget_type pair should be discoverable in the
+        # rendered table; spot-check a couple known-tricky ones.
+        assert "get_top_issues" in prompt
+        assert "horizontal_bar_chart" in prompt
+        assert "create_custom_chart_data" in prompt
+
+    def test_data_tool_descriptions_include_allowed_widget_types(self):
+        # The post-processing block enriches each data-tool description with
+        # its compatible widget_types so the model sees the rule at tool-pick
+        # time, not just in the system prompt.
+        for tool_def in TOOL_DEFINITIONS:
+            fn = tool_def.get("function") or {}
+            name = fn.get("name")
+            if name in TOOL_COMPATIBLE_WIDGETS:
+                description = fn.get("description") or ""
+                assert "Compatible widget_types" in description, (
+                    f"Tool {name!r} description missing compatibility hint"
+                )
+
+
+# ---------------------------------------------------------------------------
+# _create_custom_chart_data validation
+# ---------------------------------------------------------------------------
+
+
+class TestCreateCustomChartData:
+    def test_valid_pie_distribution_returns_chart_ready_payload(self):
+        result = _create_custom_chart_data(
+            {
+                "widget_type": "pie_chart",
+                "labels": ["likely female", "likely male", "unknown"],
+                "values": [3.0, 2.0, 5.0],
+                "source_summary": ("Derived from query_reviews + name-based gender inference."),
+                "uncertainty_note": (
+                    "Names were used to infer likely gender; this may be inaccurate."
+                ),
+            }
+        )
+        assert "error" not in result
+        assert result["widget_type"] == "pie_chart"
+        assert result["labels"] == ["likely female", "likely male", "unknown"]
+        assert result["values"] == [3.0, 2.0, 5.0]
+        assert len(result["bars"]) == 3
+        assert len(result["slices"]) == 3
+        # percent should sum (within rounding) to ~100 when total > 0
+        assert sum(s["percent"] for s in result["slices"]) > 99
+        assert result["uncertainty_note"]
+
+    def test_inferred_segmentation_without_uncertainty_is_rejected(self):
+        # The model promised "inferred name-gender" segmentation; missing
+        # uncertainty_note must be rejected so the chart cannot be read as fact.
+        result = _create_custom_chart_data(
+            {
+                "widget_type": "pie_chart",
+                "labels": ["likely female", "likely male"],
+                "values": [3.0, 2.0],
+                "source_summary": "Inferred name-gender from review author names.",
+            }
+        )
+        assert "error" in result
+        assert "uncertainty_note" in result["error"]
+
+    def test_label_value_length_mismatch_is_rejected(self):
+        result = _create_custom_chart_data(
+            {
+                "widget_type": "bar_chart",
+                "labels": ["a", "b", "c"],
+                "values": [1, 2],
+                "source_summary": "Manual roll-up.",
+            }
+        )
+        assert "error" in result
+        assert "same length" in result["error"]
+
+    def test_empty_labels_or_values_are_rejected(self):
+        result = _create_custom_chart_data(
+            {
+                "widget_type": "bar_chart",
+                "labels": [],
+                "values": [],
+                "source_summary": "Manual roll-up.",
+            }
+        )
+        assert "error" in result
+
+    def test_negative_or_non_finite_values_are_rejected(self):
+        nan_result = _create_custom_chart_data(
+            {
+                "widget_type": "bar_chart",
+                "labels": ["a"],
+                "values": [float("nan")],
+                "source_summary": "Manual roll-up.",
+            }
+        )
+        assert "error" in nan_result
+        neg_result = _create_custom_chart_data(
+            {
+                "widget_type": "bar_chart",
+                "labels": ["a"],
+                "values": [-1],
+                "source_summary": "Manual roll-up.",
+            }
+        )
+        assert "error" in neg_result
+
+    def test_pie_chart_needs_at_least_two_positive_slices(self):
+        result = _create_custom_chart_data(
+            {
+                "widget_type": "donut_chart",
+                "labels": ["only", "empty"],
+                "values": [3, 0],
+                "source_summary": "Manual roll-up.",
+            }
+        )
+        assert "error" in result
+        assert "at least 2" in result["error"]
+
+    def test_insight_list_requires_items_with_themes(self):
+        good = _create_custom_chart_data(
+            {
+                "widget_type": "insight_list",
+                "items": [
+                    {"theme": "slow service", "count": 4},
+                    {"label": "noise", "count": 2},
+                ],
+                "source_summary": "Composed from get_top_issues + query_reviews keyword filter.",
+            }
+        )
+        assert "error" not in good
+        assert good["items"][0]["theme"] == "slow service"
+        assert good["items"][1]["theme"] == "noise"
+
+        bad = _create_custom_chart_data(
+            {
+                "widget_type": "insight_list",
+                "items": [{"count": 5}],  # no theme/label
+                "source_summary": "Composed.",
+            }
+        )
+        assert "error" in bad
+
+    def test_unsupported_widget_type_is_rejected(self):
+        result = _create_custom_chart_data(
+            {
+                "widget_type": "line_chart",  # not allowed by this tool
+                "labels": ["a", "b"],
+                "values": [1, 2],
+                "source_summary": "Manual roll-up.",
+            }
+        )
+        assert "error" in result
+
+
+# ---------------------------------------------------------------------------
+# _duplicate_widget
+# ---------------------------------------------------------------------------
+
+
+class TestDuplicateWidget:
+    def test_duplicates_existing_widget_with_deep_copied_data(self):
+        from app.models.workspace_widget import WorkspaceWidget
+
+        biz_id = uuid.uuid4()
+        user_id = uuid.uuid4()
+        widget_id = uuid.uuid4()
+        source_widget = MagicMock(spec=WorkspaceWidget)
+        source_widget.id = widget_id
+        source_widget.widget_type = "bar_chart"
+        source_widget.title = "Top issues"
+        source_widget.data = {"bars": [{"label": "slow service", "value": 4}]}
+        source_widget.position = 2
+
+        db = MagicMock()
+        # Two separate query() calls: one for the source row, one for count.
+        first_query = MagicMock()
+        first_query.filter.return_value = first_query
+        first_query.first.return_value = source_widget
+        count_query = MagicMock()
+        count_query.filter.return_value = count_query
+        count_query.count.return_value = 3
+
+        db.query.side_effect = [first_query, count_query]
+        db.refresh.side_effect = lambda w: None
+
+        result = _duplicate_widget(db, biz_id, user_id, widget_id=str(widget_id))
+        assert result["duplicated"] is True
+        assert result["source_widget_id"] == str(widget_id)
+        assert result["widget_id"] != str(widget_id)
+        assert result["widget"]["widget_type"] == "bar_chart"
+        assert result["widget"]["title"] == "Top issues (copy)"
+        # Data is deep-copied — mutating the original after the fact must not
+        # affect the duplicate's payload.
+        source_widget.data["bars"][0]["value"] = 999
+        assert result["widget"]["data"]["bars"][0]["value"] == 4
+        db.add.assert_called_once()
+        db.commit.assert_called_once()
+
+    def test_missing_source_widget_returns_error(self):
+        biz_id = uuid.uuid4()
+        user_id = uuid.uuid4()
+        widget_id = uuid.uuid4()
+
+        db = MagicMock()
+        q = MagicMock()
+        q.filter.return_value = q
+        q.first.return_value = None
+        db.query.return_value = q
+
+        result = _duplicate_widget(db, biz_id, user_id, widget_id=str(widget_id))
+        assert result["duplicated"] is False
+        assert "not found" in result["error"].lower()
+        db.add.assert_not_called()
+        db.commit.assert_not_called()
+
+    def test_invalid_uuid_returns_error_without_query(self):
+        db = MagicMock()
+        result = _duplicate_widget(db, uuid.uuid4(), uuid.uuid4(), widget_id="not-a-uuid")
+        assert result["duplicated"] is False
+        assert "invalid" in result["error"].lower()
+        db.query.assert_not_called()
+
+    def test_duplicate_of_already_copied_title_does_not_double_suffix(self):
+        from app.models.workspace_widget import WorkspaceWidget
+
+        biz_id = uuid.uuid4()
+        user_id = uuid.uuid4()
+        widget_id = uuid.uuid4()
+        source_widget = MagicMock(spec=WorkspaceWidget)
+        source_widget.id = widget_id
+        source_widget.widget_type = "bar_chart"
+        source_widget.title = "Top issues (copy)"
+        source_widget.data = {"bars": []}
+        source_widget.position = 0
+
+        db = MagicMock()
+        first_query = MagicMock()
+        first_query.filter.return_value = first_query
+        first_query.first.return_value = source_widget
+        count_query = MagicMock()
+        count_query.filter.return_value = count_query
+        count_query.count.return_value = 1
+        db.query.side_effect = [first_query, count_query]
+        db.refresh.side_effect = lambda w: None
+
+        result = _duplicate_widget(db, biz_id, user_id, widget_id=str(widget_id))
+        assert result["duplicated"] is True
+        assert result["widget"]["title"] == "Top issues (copy)"

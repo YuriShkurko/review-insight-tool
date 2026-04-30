@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { createElement } from "react";
 import {
   workspaceReducer,
   workspaceLoadErrorMessage,
@@ -81,6 +82,56 @@ describe("workspaceReducer", () => {
     );
 
     expect(state.widgets.map((w) => w.id)).toEqual(["w1", "w2"]);
+  });
+
+  it("keeps duplicate widgets with identical data when ids differ", () => {
+    const sharedData = {
+      bars: [{ label: "slow service", value: 4 }],
+      total: 4,
+    };
+    const first: WorkspaceWidget = {
+      id: "original-widget",
+      widget_type: "bar_chart",
+      title: "Top issues",
+      data: sharedData,
+      position: 0,
+      created_at: "2026-04-28T00:00:00Z",
+    };
+    const copy: WorkspaceWidget = {
+      ...first,
+      id: "copied-widget",
+      title: "Top issues (copy)",
+      position: 1,
+    };
+
+    const state = workspaceReducer(
+      workspaceReducer({ ...INITIAL }, { type: "WIDGET_ADDED", widget: first }),
+      { type: "WIDGET_ADDED", widget: copy },
+    );
+
+    expect(state.widgets).toHaveLength(2);
+    expect(state.widgets.map((w) => w.id)).toEqual(["original-widget", "copied-widget"]);
+    expect(state.widgets.map((w) => w.data)).toEqual([sharedData, sharedData]);
+
+    const html = renderToStaticMarkup(
+      createElement(
+        "div",
+        null,
+        state.widgets.map((w) =>
+          createElement(
+            "section",
+            { key: w.id, "data-widget-id": w.id },
+            createElement("h2", null, w.title),
+            createElement(WidgetRenderer, { widgetType: w.widget_type, data: w.data }),
+          ),
+        ),
+      ),
+    );
+    expect(html).toContain("original-widget");
+    expect(html).toContain("copied-widget");
+    expect(html).toContain("Top issues (copy)");
+    expect(html.match(/slow service/g)).toHaveLength(4);
+    expect(html).not.toContain("No chart data available.");
   });
 
   it("normalizes blackboard-added widgets and makes them renderable immediately", () => {

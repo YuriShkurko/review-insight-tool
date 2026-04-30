@@ -1000,3 +1000,539 @@ def test_injection_in_review_text_does_not_block_normal_request(
     # The mocked LLM did not reveal any system prompt text
     assert "system prompt" not in combined_text.lower()
     assert "instructions" not in combined_text.lower()
+
+
+# ---------------------------------------------------------------------------
+# Recovery + custom chart + duplicate flows (v3.7.x)
+# ---------------------------------------------------------------------------
+
+
+def test_pin_recovery_uses_rehydrated_tool_results_across_turns(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """After an incompatible pin, the next turn can re-pin with a compatible widget_type.
+
+    Reproduces the 'No data available to pin' regression: the first turn calls a
+    data tool then asks for an incompatible widget_type; the executor refuses.
+    The user replies in a NEW turn ('use the bar chart instead'), and the model
+    immediately calls pin_widget without re-fetching. The executor must rehydrate
+    `tool_results` from the conversation history so the recovery pin succeeds.
+    """
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    biz_id = _make_biz(client, auth_headers)
+
+    # Turn 1: data tool then incompatible pin (pie_chart for get_top_issues).
+    call_count_1 = 0
+
+    def _provider_1():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count_1
+            call_count_1 += 1
+            if call_count_1 == 1:
+                return ("", [ToolCall(id="t1", name="get_top_issues", arguments={"limit": 3})])
+            if call_count_1 == 2:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="t2",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "pie_chart",
+                                "title": "Top issues",
+                                "source_tool": "get_top_issues",
+                            },
+                        )
+                    ],
+                )
+            return ("That widget pair isn't supported. Try a bar chart instead.", [])
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider_1)
+    r1 = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Pin a pie chart of top complaints"},
+        headers=auth_headers,
+    )
+    assert r1.status_code == 200
+    events_1 = _parse_sse(r1.text)
+    pin_1 = next(
+        e for e in events_1 if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin_1["data"]["result"]["pinned"] is False
+    assert "compatible" in pin_1["data"]["result"]["error"].lower()
+    # Rich error: tells the model exactly what's allowed for this source_tool.
+    assert "allowed_widget_types" in pin_1["data"]["result"]
+    conversation_id = next(e for e in events_1 if e["type"] == "done")["data"]["conversation_id"]
+
+    # Turn 2: model retries with a compatible widget_type but does NOT call the
+    # data tool again. With rehydration, the cached get_top_issues result is
+    # restored and the pin succeeds.
+    call_count_2 = 0
+
+    def _provider_2():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count_2
+            call_count_2 += 1
+            if call_count_2 == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="t3",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "horizontal_bar_chart",
+                                "title": "Top issues",
+                                "source_tool": "get_top_issues",
+                            },
+                        )
+                    ],
+                )
+            return ("Pinned the bar chart for you.", [])
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider_2)
+    r2 = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "yes use the bar chart", "conversation_id": conversation_id},
+        headers=auth_headers,
+    )
+    assert r2.status_code == 200
+    events_2 = _parse_sse(r2.text)
+    pin_2 = next(
+        e for e in events_2 if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin_2["data"]["result"]["pinned"] is True, (
+        f"recovery pin should succeed via rehydrated tool_results; got: {pin_2['data']['result']}"
+    )
+    workspace_event = next(e for e in events_2 if e["type"] == "workspace_event")
+    assert workspace_event["data"]["action"] == "widget_added"
+    assert workspace_event["data"]["widget"]["widget_type"] == "horizontal_bar_chart"
+    # The widget data was wired from the cached get_top_issues payload.
+    assert workspace_event["data"]["widget"]["data"]
+
+
+def test_pin_widget_incompatibility_error_lists_allowed_widgets_and_sources(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """Incompatibility error must surface allowed_widget_types and available_source_tools."""
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _provider():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return ("", [ToolCall(id="d1", name="get_review_series", arguments={"days": 7})])
+            if call_count == 2:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="p1",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "pie_chart",
+                                "title": "Per day",
+                                "source_tool": "get_review_series",
+                            },
+                        )
+                    ],
+                )
+            return ("Wrong shape; try a line chart.", [])
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider)
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Pie of reviews per day"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    pin = next(
+        e for e in events if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    result = pin["data"]["result"]
+    assert result["pinned"] is False
+    assert result["allowed_widget_types"] == ["line_chart"]
+    assert "get_review_series" in result["available_source_tools"]
+
+
+def test_create_custom_chart_data_pins_with_uncertainty_note(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """Custom segmentation flow: data tool -> create_custom_chart_data -> pin_widget."""
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _provider():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                # Pull raw rows
+                return (
+                    "",
+                    [ToolCall(id="q1", name="query_reviews", arguments={"limit": 50})],
+                )
+            if call_count == 2:
+                # Build derived chart-ready data with required uncertainty
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="c1",
+                            name="create_custom_chart_data",
+                            arguments={
+                                "widget_type": "pie_chart",
+                                "labels": ["likely female", "likely male", "unknown"],
+                                "values": [3, 2, 5],
+                                "source_summary": (
+                                    "Derived from query_reviews + name-based gender inference."
+                                ),
+                                "uncertainty_note": (
+                                    "Names were used to infer likely gender; "
+                                    "this may be inaccurate."
+                                ),
+                            },
+                        )
+                    ],
+                )
+            if call_count == 3:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="p1",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "pie_chart",
+                                "title": "Complaints by inferred name attribute",
+                                "source_tool": "create_custom_chart_data",
+                            },
+                        )
+                    ],
+                )
+            return ("Pinned the inferred-segment pie chart.", [])
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider)
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Pie chart of complaints by inferred name-gender"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    custom = next(
+        e
+        for e in events
+        if e["type"] == "tool_result" and e["data"].get("name") == "create_custom_chart_data"
+    )
+    assert "error" not in custom["data"]["result"]
+    pin = next(
+        e for e in events if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin["data"]["result"]["pinned"] is True
+    workspace_event = next(e for e in events if e["type"] == "workspace_event")
+    assert workspace_event["data"]["widget"]["widget_type"] == "pie_chart"
+    assert workspace_event["data"]["widget"]["data"]["uncertainty_note"]
+
+
+def test_create_custom_chart_data_inferred_without_uncertainty_is_refused(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """If the model claims an inferred segmentation, uncertainty_note is required."""
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _provider():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="c1",
+                            name="create_custom_chart_data",
+                            arguments={
+                                "widget_type": "pie_chart",
+                                "labels": ["female", "male"],
+                                "values": [3, 2],
+                                "source_summary": (
+                                    "Inferred name-gender from review author names."
+                                ),
+                            },
+                        )
+                    ],
+                )
+            return ("I can't claim that as fact without an uncertainty note.", [])
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider)
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Pin gender split"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    custom = next(
+        e
+        for e in events
+        if e["type"] == "tool_result" and e["data"].get("name") == "create_custom_chart_data"
+    )
+    assert "error" in custom["data"]["result"]
+    assert "uncertainty_note" in custom["data"]["result"]["error"]
+    # No widget should be pinned.
+    assert not any(e["type"] == "workspace_event" for e in events)
+
+
+def test_duplicate_widget_creates_second_widget_with_non_empty_data(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """duplicate_widget tool produces a second widget with the same data and a fresh id."""
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    biz_id = _make_biz(client, auth_headers)
+
+    # First, manually create a widget with real data.
+    real_data = {"bars": [{"label": "slow service", "value": 4}], "total": 4}
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/workspace",
+        json={"widget_type": "bar_chart", "title": "Top issues", "data": real_data},
+        headers=auth_headers,
+    )
+    assert r.status_code == 201
+    source_widget_id = r.json()["id"]
+
+    call_count = 0
+
+    def _provider():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="d1",
+                            name="duplicate_widget",
+                            arguments={"widget_id": source_widget_id},
+                        )
+                    ],
+                )
+            return ("Duplicated.", [])
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "make a copy of the top issues chart"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    dup = next(
+        e
+        for e in events
+        if e["type"] == "tool_result" and e["data"].get("name") == "duplicate_widget"
+    )
+    assert dup["data"]["result"]["duplicated"] is True
+    assert dup["data"]["result"]["source_widget_id"] == source_widget_id
+    new_widget_id = dup["data"]["result"]["widget_id"]
+    assert new_widget_id != source_widget_id
+
+    workspace_event = next(e for e in events if e["type"] == "workspace_event")
+    assert workspace_event["data"]["action"] == "widget_added"
+    assert workspace_event["data"]["widget"]["id"] == new_widget_id
+    assert workspace_event["data"]["widget"]["widget_type"] == "bar_chart"
+    assert workspace_event["data"]["widget"]["title"] == "Top issues (copy)"
+    # Data is preserved end-to-end — the copy must be renderable.
+    assert workspace_event["data"]["widget"]["data"] == real_data
+
+    # GET workspace returns BOTH widgets, with distinct ids and identical data.
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    widgets = r.json()
+    assert len(widgets) == 2
+    ids = sorted(w["id"] for w in widgets)
+    assert source_widget_id in ids
+    assert new_widget_id in ids
+    for w in widgets:
+        assert w["data"] == real_data
+
+
+def test_duplicate_widget_with_invalid_id_is_refused(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _provider():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="d1",
+                            name="duplicate_widget",
+                            arguments={"widget_id": "not-a-uuid"},
+                        )
+                    ],
+                )
+            return ("Couldn't duplicate.", [])
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider)
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "duplicate it"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    dup = next(
+        e
+        for e in events
+        if e["type"] == "tool_result" and e["data"].get("name") == "duplicate_widget"
+    )
+    assert dup["data"]["result"]["duplicated"] is False
+    assert "invalid" in dup["data"]["result"]["error"].lower()
+    assert not any(e["type"] == "workspace_event" for e in events)
+
+
+def test_same_data_tool_called_twice_in_one_turn_overwrites_in_tool_results(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """Documented limitation: tool_results is keyed by tool name; second call wins.
+
+    This pins the current expected behavior so a future tool_call_id-keyed
+    registry can be added deliberately rather than as a silent regression.
+    """
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _provider():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [ToolCall(id="r1", name="get_review_series", arguments={"days": 7})],
+                )
+            if call_count == 2:
+                return (
+                    "",
+                    [ToolCall(id="r2", name="get_review_series", arguments={"days": 30})],
+                )
+            if call_count == 3:
+                # Pin without explicit data — uses the most recent (30d) result.
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="p1",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "line_chart",
+                                "title": "Reviews per day",
+                                "source_tool": "get_review_series",
+                            },
+                        )
+                    ],
+                )
+            return ("Pinned the 30-day series.", [])
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider)
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Show 7d then 30d series, pin the 30d"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    pin = next(
+        e for e in events if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin["data"]["result"]["pinned"] is True
+    workspace_event = next(e for e in events if e["type"] == "workspace_event")
+    # The pinned widget reflects the SECOND call's window — pinned data shows
+    # 30-day metric/days. This is the current keyed-by-name behavior.
+    pinned = workspace_event["data"]["widget"]["data"]
+    assert pinned.get("days") == 30 or pinned.get("period") == "30d"

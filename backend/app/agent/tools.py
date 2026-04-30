@@ -45,7 +45,27 @@ DATA_TOOL_NAMES: list[str] = [
     "get_top_issues",
     "get_review_insights",
     "get_review_change_summary",
+    "create_custom_chart_data",
 ]
+
+# Inference keywords that require an explicit uncertainty_note in
+# create_custom_chart_data results. Detected case-insensitively against
+# source_summary, labels, and notes.
+_INFERENCE_KEYWORDS: tuple[str, ...] = (
+    "infer",
+    "inferred",
+    "assume",
+    "assumed",
+    "guess",
+    "name-based",
+    "name based",
+    "name-inferred",
+    "gender",
+    "ethnic",
+    "demographic",
+    "predicted",
+    "estimated",
+)
 
 
 def _coerce_pin_widget_arguments(arguments: dict | None) -> dict[str, str | dict]:
@@ -284,18 +304,94 @@ TOOL_DEFINITIONS: list[dict] = [
     {
         "type": "function",
         "function": {
+            "name": "create_custom_chart_data",
+            "description": (
+                "Build a chart-ready payload from data you derived yourself (composing other tools, "
+                "custom buckets, or inferred segments). The result IS the widget data — pin it next "
+                "with source_tool='create_custom_chart_data'. Use this when no fixed data tool covers "
+                "the user's question (e.g. complaints by inferred name attribute, custom themes, "
+                "composed metrics). When inference is involved (e.g. inferring gender from names), "
+                "uncertainty_note is REQUIRED and must say so plainly. The executor validates the "
+                "shape; invalid shapes are rejected with a clear error."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "widget_type": {
+                        "type": "string",
+                        "enum": [
+                            "bar_chart",
+                            "horizontal_bar_chart",
+                            "pie_chart",
+                            "donut_chart",
+                            "insight_list",
+                        ],
+                        "description": "Widget shape this payload is for.",
+                    },
+                    "labels": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Segment labels for chart variants. Required for bar/pie/donut.",
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": (
+                            "Numeric values aligned with labels. Required for bar/pie/donut. "
+                            "All values must be finite and >= 0."
+                        ),
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {"type": "object"},
+                        "description": (
+                            "List items for widget_type=insight_list. Each item should have a "
+                            "'theme' or 'label' key plus optional 'count'/'severity'/'representative_quote'."
+                        ),
+                    },
+                    "title_hint": {
+                        "type": "string",
+                        "description": "Short label describing the segmentation (e.g. 'Complaints by inferred name attribute').",
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Short caveat or observation rendered alongside the chart.",
+                    },
+                    "source_summary": {
+                        "type": "string",
+                        "description": (
+                            "One-sentence summary of which existing tool(s) this was derived from "
+                            "and how. Used to surface methodology to the user."
+                        ),
+                    },
+                    "uncertainty_note": {
+                        "type": "string",
+                        "description": (
+                            "Required when inference is involved (gender from names, demographic "
+                            "guesses, predicted attributes). State the limitation plainly, e.g. "
+                            "'Names were used to infer likely gender; this may be inaccurate.'"
+                        ),
+                    },
+                },
+                "required": ["widget_type", "source_summary"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "pin_widget",
             "description": (
                 "Save a supported card or chart to the user's dashboard canvas. "
                 "Always set source_tool to the name of the data tool you just called — "
                 "the executor uses it to wire the exact tool result to the widget. "
-                "widget_type must match the source: get_dashboard→summary_card; "
-                "get_top_issues→insight_list; query_reviews→review_list; "
-                "run_analysis→insight_list; compare_competitors→comparison_card; "
-                "get_review_trends→trend_indicator; get_review_series→line_chart; "
-                "get_rating_distribution→pie_chart or donut_chart; "
-                "get_review_insights→summary_card; get_review_change_summary→comparison_chart. "
-                "Only use widget_type values from that mapping — do not invent new types."
+                "widget_type MUST be in the compatibility table for that source_tool "
+                "(see the system prompt's COMPATIBILITY TABLE). If the user asks for a "
+                "chart shape your source_tool cannot produce, EITHER pick a different "
+                "source_tool that does, OR call create_custom_chart_data first and pin "
+                "with source_tool='create_custom_chart_data'. Do not invent new "
+                "widget_types and do not force an incompatible pair — the executor "
+                "rejects mismatches and the turn is lost."
             ),
             "parameters": {
                 "type": "object",
@@ -343,6 +439,29 @@ TOOL_DEFINITIONS: list[dict] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "duplicate_widget",
+            "description": (
+                "Copy an existing dashboard widget by exact widget_id UUID. The copy is created "
+                "directly from the persisted row, so its data is always renderable — never goes "
+                "through pin_widget or source_tool resolution. Use this when the user asks for "
+                "another copy of a widget on the dashboard. Never guess widget IDs."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "widget_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Exact UUID of the workspace widget to duplicate.",
+                    }
+                },
+                "required": ["widget_id"],
+            },
+        },
+    },
 ]
 
 # Maps tool name → widget_type hint for tool_result SSE events
@@ -357,8 +476,10 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "get_top_issues": "horizontal_bar_chart",
     "get_review_insights": "summary_card",
     "get_review_change_summary": "comparison_chart",
+    "create_custom_chart_data": None,
     "pin_widget": None,
     "remove_widget": None,
+    "duplicate_widget": None,
 }
 
 # Per-tool acceptable widget types. The model occasionally picks a chart
@@ -376,7 +497,45 @@ TOOL_COMPATIBLE_WIDGETS: dict[str, frozenset[str]] = {
     "get_top_issues": frozenset({"horizontal_bar_chart", "bar_chart", "insight_list"}),
     "get_review_insights": frozenset({"summary_card", "insight_list"}),
     "get_review_change_summary": frozenset({"comparison_chart", "comparison_card"}),
+    # create_custom_chart_data builds chart-ready payloads itself; widget_type
+    # is enforced inside the tool, but pin_widget still gates against this map.
+    "create_custom_chart_data": frozenset(
+        {"bar_chart", "horizontal_bar_chart", "pie_chart", "donut_chart", "insight_list"}
+    ),
 }
+
+
+def format_compatibility_for_prompt() -> str:
+    """Render the source_tool → allowed widget_types map for the system prompt.
+
+    Sourced from TOOL_COMPATIBLE_WIDGETS so the prompt and the executor's
+    safety rail can never drift.
+    """
+    lines = []
+    for source_tool in sorted(TOOL_COMPATIBLE_WIDGETS):
+        allowed = sorted(TOOL_COMPATIBLE_WIDGETS[source_tool])
+        lines.append(f"  - {source_tool} -> {', '.join(allowed)}")
+    return "\n".join(lines)
+
+
+# Inline the compatibility hint into each data-tool description at module
+# load. The model sees the rule at tool-pick time, not just in the system
+# prompt — this is what closes the "agent picks an incompatible widget"
+# loop after the v3.6.1 hotfix added the executor-side rejection.
+def _enrich_tool_descriptions() -> None:
+    for tool_def in TOOL_DEFINITIONS:
+        fn = tool_def.get("function") or {}
+        name = fn.get("name")
+        if name in TOOL_COMPATIBLE_WIDGETS:
+            allowed = ", ".join(sorted(TOOL_COMPATIBLE_WIDGETS[name]))
+            existing = fn.get("description") or ""
+            if "Compatible widget_types" not in existing:
+                fn["description"] = (
+                    f"{existing} Compatible widget_types when pinning this result: [{allowed}]."
+                ).strip()
+
+
+_enrich_tool_descriptions()
 
 # ---------------------------------------------------------------------------
 # Execution
@@ -448,11 +607,17 @@ def execute_tool(
             current_period=str(args.get("current_period", "this_month")),
             previous_period=str(args.get("previous_period", "last_month")),
         )
+    if name == "create_custom_chart_data":
+        return _create_custom_chart_data(args)
     if name == "pin_widget":
         coerced = _coerce_pin_widget_arguments(args)
         return _pin_widget(db, business_id, user_id, **coerced)
     if name == "remove_widget":
         return _remove_widget(db, business_id, user_id, widget_id=str(args.get("widget_id", "")))
+    if name == "duplicate_widget":
+        return _duplicate_widget(
+            db, business_id, user_id, widget_id=str(args.get("widget_id", ""))
+        )
     return {"error": f"Unknown tool: {name}"}
 
 
@@ -1197,3 +1362,235 @@ def _remove_widget(
     db.delete(widget)
     db.commit()
     return {"removed": True, "widget_id": str(parsed_widget_id)}
+
+
+def _duplicate_widget(
+    db: Session,
+    business_id: uuid.UUID,
+    user_id: uuid.UUID,
+    *,
+    widget_id: str,
+) -> dict:
+    """Copy an existing WorkspaceWidget row directly.
+
+    Bypasses pin_widget / source_tool resolution: the new row is a deep copy
+    of an existing persisted widget, so its data is renderable by construction.
+    Returns the same shape as `_pin_widget` so the executor's SSE emission
+    path can treat duplication as another `widget_added` event.
+    """
+    import copy
+
+    try:
+        parsed_widget_id = uuid.UUID(str(widget_id))
+    except (TypeError, ValueError):
+        return {"duplicated": False, "error": "Invalid widget_id UUID."}
+
+    source = (
+        db.query(WorkspaceWidget)
+        .filter(
+            WorkspaceWidget.id == parsed_widget_id,
+            WorkspaceWidget.business_id == business_id,
+            WorkspaceWidget.user_id == user_id,
+        )
+        .first()
+    )
+    if not source:
+        return {
+            "duplicated": False,
+            "widget_id": str(parsed_widget_id),
+            "error": "Widget not found.",
+        }
+
+    existing_count = (
+        db.query(WorkspaceWidget)
+        .filter(
+            WorkspaceWidget.business_id == business_id,
+            WorkspaceWidget.user_id == user_id,
+        )
+        .count()
+    )
+
+    base_title = source.title or "Pinned widget"
+    new_title = base_title if base_title.endswith(" (copy)") else f"{base_title} (copy)"
+
+    new_widget = WorkspaceWidget(
+        id=uuid.uuid4(),
+        business_id=business_id,
+        user_id=user_id,
+        widget_type=source.widget_type,
+        title=new_title,
+        data=copy.deepcopy(source.data) if source.data is not None else {},
+        position=existing_count,
+    )
+    db.add(new_widget)
+    db.commit()
+    db.refresh(new_widget)
+    return {
+        "duplicated": True,
+        "widget_id": str(new_widget.id),
+        "source_widget_id": str(parsed_widget_id),
+        "widget": {
+            "id": str(new_widget.id),
+            "widget_type": new_widget.widget_type,
+            "title": new_widget.title,
+            "data": new_widget.data,
+            "position": new_widget.position,
+            "created_at": new_widget.created_at.isoformat() if new_widget.created_at else None,
+        },
+    }
+
+
+def _create_custom_chart_data(args: dict) -> dict:
+    """Validate and package an agent-derived chart payload.
+
+    The model uses this when no fixed data tool covers the question (e.g.
+    inferred segments, custom buckets, composed metrics). The result IS the
+    widget data — pin it next with source_tool='create_custom_chart_data'.
+    Validation is strict: invalid shapes are rejected so an empty/misleading
+    chart can never reach the dashboard.
+    """
+    import math
+
+    raw = args or {}
+    widget_type = raw.get("widget_type")
+    if not isinstance(widget_type, str) or widget_type not in {
+        "bar_chart",
+        "horizontal_bar_chart",
+        "pie_chart",
+        "donut_chart",
+        "insight_list",
+    }:
+        return {
+            "error": (
+                "widget_type must be one of bar_chart, horizontal_bar_chart, "
+                "pie_chart, donut_chart, insight_list."
+            ),
+        }
+
+    source_summary = raw.get("source_summary")
+    if not isinstance(source_summary, str) or not source_summary.strip():
+        return {"error": "source_summary is required and must be a non-empty string."}
+
+    notes = raw.get("notes") if isinstance(raw.get("notes"), str) else None
+    title_hint = raw.get("title_hint") if isinstance(raw.get("title_hint"), str) else None
+    uncertainty_note = (
+        raw.get("uncertainty_note") if isinstance(raw.get("uncertainty_note"), str) else None
+    )
+
+    # Inference detection: if the source/labels/title smell like inferred
+    # attributes, an explicit uncertainty_note is mandatory. The product
+    # rule is: never claim a heuristic is fact.
+    inference_haystack_parts: list[str] = [source_summary, notes or "", title_hint or ""]
+    labels_raw = raw.get("labels")
+    if isinstance(labels_raw, list):
+        inference_haystack_parts.extend(str(label) for label in labels_raw)
+    haystack = " ".join(inference_haystack_parts).lower()
+    looks_inferred = any(keyword in haystack for keyword in _INFERENCE_KEYWORDS)
+    if looks_inferred and (not uncertainty_note or not uncertainty_note.strip()):
+        return {
+            "error": (
+                "uncertainty_note is required when the segmentation is inferred "
+                "(e.g. gender from names, demographic guesses). State the limitation "
+                "plainly so the chart cannot be read as fact."
+            ),
+        }
+
+    if widget_type == "insight_list":
+        items_raw = raw.get("items")
+        if not isinstance(items_raw, list) or not items_raw:
+            return {"error": "items must be a non-empty list for widget_type=insight_list."}
+        items: list[dict] = []
+        for entry in items_raw:
+            if not isinstance(entry, dict):
+                return {"error": "Each item must be an object with at least 'theme' or 'label'."}
+            theme = entry.get("theme") or entry.get("label")
+            if not isinstance(theme, str) or not theme.strip():
+                return {"error": "Each item must have a non-empty 'theme' or 'label'."}
+            items.append({**entry, "theme": theme})
+        result = {
+            "widget_type": widget_type,
+            "items": items,
+            "source_summary": source_summary,
+        }
+        if notes:
+            result["notes"] = notes
+        if title_hint:
+            result["title_hint"] = title_hint
+        if uncertainty_note:
+            result["uncertainty_note"] = uncertainty_note
+        return result
+
+    # Chart variants (bar / horizontal_bar / pie / donut) — labels + values.
+    if not isinstance(labels_raw, list) or not labels_raw:
+        return {
+            "error": f"labels is required and must be a non-empty list for widget_type={widget_type}."
+        }
+    values_raw = raw.get("values")
+    if not isinstance(values_raw, list) or not values_raw:
+        return {
+            "error": f"values is required and must be a non-empty list for widget_type={widget_type}."
+        }
+    if len(labels_raw) != len(values_raw):
+        return {
+            "error": (
+                f"labels and values must be the same length "
+                f"(got {len(labels_raw)} labels, {len(values_raw)} values)."
+            ),
+        }
+
+    cleaned_labels: list[str] = []
+    cleaned_values: list[float] = []
+    for label, value in zip(labels_raw, values_raw, strict=True):
+        if not isinstance(label, str) or not label.strip():
+            return {"error": "All labels must be non-empty strings."}
+        try:
+            num = float(value)
+        except (TypeError, ValueError):
+            return {"error": f"Value for label '{label}' must be numeric."}
+        if not math.isfinite(num):
+            return {"error": f"Value for label '{label}' must be finite."}
+        if num < 0:
+            return {"error": f"Value for label '{label}' must be >= 0."}
+        cleaned_labels.append(label.strip())
+        cleaned_values.append(num)
+
+    if widget_type in {"pie_chart", "donut_chart"}:
+        positive_count = sum(1 for v in cleaned_values if v > 0)
+        if positive_count < 2:
+            return {
+                "error": (
+                    "pie_chart/donut_chart need at least 2 slices with value > 0; "
+                    "use a different widget type for sparse data."
+                ),
+            }
+
+    bars = [
+        {"label": label, "value": value}
+        for label, value in zip(cleaned_labels, cleaned_values, strict=True)
+    ]
+    total = sum(cleaned_values)
+    slices = [
+        {
+            "label": label,
+            "value": value,
+            "percent": round((value / total) * 100, 1) if total > 0 else 0,
+        }
+        for label, value in zip(cleaned_labels, cleaned_values, strict=True)
+    ]
+
+    result = {
+        "widget_type": widget_type,
+        "labels": cleaned_labels,
+        "values": cleaned_values,
+        "bars": bars,
+        "slices": slices,
+        "total": total,
+        "source_summary": source_summary,
+    }
+    if notes:
+        result["notes"] = notes
+    if title_hint:
+        result["title_hint"] = title_hint
+    if uncertainty_note:
+        result["uncertainty_note"] = uncertainty_note
+    return result

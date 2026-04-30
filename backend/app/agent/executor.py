@@ -26,10 +26,64 @@ from app.models.conversation import Conversation
 logger = logging.getLogger(__name__)
 
 MAX_ITERATIONS = 8  # guard against runaway tool loops
+# Cap how many tool_results we restore from prior turns so the registry
+# does not grow unbounded across long conversations. The model still has
+# the full history; this only governs the cached-payload registry that
+# pin_widget uses to wire data.
+_REHYDRATE_TOOL_LIMIT = 12
 
 
 def _sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+def _rehydrate_tool_results(history: list[dict]) -> dict[str, dict]:
+    """Reconstruct tool_results from prior conversation turns.
+
+    pin_widget resolves source_tool against tool_results[name]. Without
+    rehydration, that registry is empty at the start of every user turn,
+    so a recovery flow ("yes, use the bar chart instead") can't reach the
+    data the agent already fetched. We walk the history backwards, match
+    each tool message to its preceding assistant tool_call, and seed the
+    registry with the most recent successful payload per tool name.
+    """
+    pending: dict[str, dict] = {}
+    # Map tool_call_id -> tool name from assistant messages so tool messages
+    # can be resolved without an O(n^2) scan.
+    call_id_to_name: dict[str, str] = {}
+    for msg in history:
+        if msg.get("role") == "assistant":
+            for tc in msg.get("tool_calls") or []:
+                call_id = tc.get("id")
+                fn = (tc.get("function") or {}).get("name")
+                if isinstance(call_id, str) and isinstance(fn, str):
+                    call_id_to_name[call_id] = fn
+
+    # Walk backwards so the most recent successful result wins.
+    for msg in reversed(history):
+        if msg.get("role") != "tool":
+            continue
+        if len(pending) >= _REHYDRATE_TOOL_LIMIT:
+            break
+        call_id = msg.get("tool_call_id")
+        name = call_id_to_name.get(call_id) if isinstance(call_id, str) else None
+        if not name or name in pending:
+            continue
+        # Skip non-data tools — pin_widget/remove_widget/duplicate_widget
+        # do not produce reusable payloads.
+        if name in {"pin_widget", "remove_widget", "duplicate_widget"}:
+            continue
+        raw = msg.get("content")
+        if not isinstance(raw, str):
+            continue
+        try:
+            payload = json.loads(raw)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict) or "error" in payload:
+            continue
+        pending[name] = payload
+    return pending
 
 
 async def run_agent(
@@ -119,7 +173,9 @@ async def run_agent(
     # Registry of successful data-tool results keyed by tool name.
     # pin_widget resolves source_tool against this dict so each widget is wired
     # to the exact tool that produced its data, not just whatever ran last.
-    tool_results: dict[str, dict] = {}
+    # Seeded from prior turns so the agent can recover ("yes, use the bar
+    # chart instead") without re-fetching data it already has.
+    tool_results: dict[str, dict] = _rehydrate_tool_results(history)
 
     for _ in range(MAX_ITERATIONS):
         llm_messages = _build_llm_messages()
@@ -176,13 +232,19 @@ async def run_agent(
                         and requested_widget
                         and requested_widget not in compatible
                     ):
+                        available_sources = sorted(tool_results.keys())
                         result = {
                             "pinned": False,
                             "error": (
                                 f"widget_type '{requested_widget}' is not compatible with "
                                 f"source_tool '{requested_source}'. "
-                                f"Use one of: {sorted(compatible)}."
+                                f"Use one of: {sorted(compatible)}. "
+                                "To recover: pick an allowed widget_type for this source_tool, "
+                                "OR call create_custom_chart_data and re-pin with "
+                                "source_tool='create_custom_chart_data'."
                             ),
+                            "allowed_widget_types": sorted(compatible),
+                            "available_source_tools": available_sources,
                         }
                         widget_type_hint = TOOL_WIDGET_TYPES.get(tc.name)
                         yield _sse(
@@ -215,14 +277,23 @@ async def run_agent(
                             # Refuse to persist an empty widget. The model gets a
                             # tool result it can react to in the next turn instead
                             # of leaving an empty card on the dashboard.
+                            available_sources = sorted(tool_results.keys())
+                            hint = (
+                                f"Cached results currently available as source_tool: "
+                                f"{available_sources}. "
+                                if available_sources
+                                else ""
+                            )
                             result = {
                                 "pinned": False,
                                 "error": (
-                                    "No data available to pin. Call a data tool "
-                                    "(e.g. get_dashboard, get_rating_distribution) "
-                                    "first, then call pin_widget with that tool's "
-                                    "name as source_tool."
+                                    "No data available to pin. "
+                                    f"{hint}"
+                                    "Call a data tool (e.g. get_dashboard, "
+                                    "get_rating_distribution) first, then call "
+                                    "pin_widget with that tool's name as source_tool."
                                 ),
+                                "available_source_tools": available_sources,
                             }
                         else:
                             args["data"] = resolved
@@ -231,7 +302,15 @@ async def run_agent(
                         result = execute_tool(tc.name, args, db, business_id, user_id)
                 else:
                     result = execute_tool(tc.name, tc.arguments, db, business_id, user_id)
-                    if isinstance(result, dict) and "error" not in result:
+                    # Only cache data-producing tools as future source_tool
+                    # candidates. remove_widget / duplicate_widget produce
+                    # workspace ack payloads that should not be reused as
+                    # widget data.
+                    if (
+                        isinstance(result, dict)
+                        and "error" not in result
+                        and tc.name not in {"remove_widget", "duplicate_widget"}
+                    ):
                         tool_results[tc.name] = result
             except Exception as exc:
                 logger.error("op=agent_tool tool=%s error=%s", tc.name, exc)
@@ -252,6 +331,11 @@ async def run_agent(
                 yield _sse(
                     "workspace_event",
                     {"action": "widget_removed", "widget_id": result["widget_id"]},
+                )
+            if tc.name == "duplicate_widget" and result.get("duplicated") and result.get("widget"):
+                yield _sse(
+                    "workspace_event",
+                    {"action": "widget_added", "widget": result["widget"]},
                 )
 
             tool_msg = {

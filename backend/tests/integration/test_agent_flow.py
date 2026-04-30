@@ -512,6 +512,116 @@ def test_agent_data_tool_pin_round_trip_emits_workspace_event(
     assert widgets[0]["data"] == pinned_data
 
 
+def test_list_workspace_skips_unserializable_rows_and_keeps_endpoint_alive(
+    client: TestClient, auth_headers: dict, db_session
+):
+    """A single corrupt widget row must not 500 the whole endpoint.
+
+    Reproduces the v3.6.x dashboard-block bug: previously, a row with NULL
+    `data` (or an unexpected JSON shape) caused the entire GET to fail with
+    Internal Server Error, and the frontend showed the user
+    "Server error: Something went wrong." with no way to recover. Now the
+    bad row is logged and skipped; the rest of the dashboard loads.
+    """
+    from app.models.workspace_widget import WorkspaceWidget
+
+    biz_id = _make_biz(client, auth_headers)
+
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/workspace",
+        json={"widget_type": "metric_card", "title": "Good widget", "data": {"value": 7}},
+        headers=auth_headers,
+    )
+    assert r.status_code == 201
+    good_id = r.json()["id"]
+
+    # Inject a row with a list-shaped data payload — historically this was
+    # enough to crash response_model validation.
+    bad = WorkspaceWidget(
+        id=uuid.uuid4(),
+        business_id=uuid.UUID(biz_id),
+        user_id=uuid.UUID(client.get("/api/auth/me", headers=auth_headers).json()["id"]),
+        widget_type="bar_chart",
+        title="Bad shape",
+        data=[1, 2, 3],
+        position=99,
+    )
+    db_session.add(bad)
+    db_session.commit()
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    ids = [w["id"] for w in r.json()]
+    assert good_id in ids
+
+
+def test_agent_pin_widget_rejects_incompatible_widget_type(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """pin_widget(pie_chart, source_tool=get_review_series) must be refused.
+
+    Reproduces the v3.6.x "no chart data available" bug where the model
+    would pin time-series data into a pie chart and the renderer had nothing
+    to draw. The executor now rejects the call before persistence and
+    surfaces a clear error so the model can self-correct.
+    """
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return ("", [ToolCall(id="t1", name="get_review_series", arguments={"days": 7})])
+            if call_count == 2:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="t2",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "pie_chart",
+                                "title": "Reviews/day",
+                                "source_tool": "get_review_series",
+                            },
+                        )
+                    ],
+                )
+            return ("Pie chart isn't compatible with a time series.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "pie chart of reviews per day"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    pin_result = next(
+        e for e in events if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin_result["data"]["result"]["pinned"] is False
+    assert "compatible" in pin_result["data"]["result"]["error"].lower()
+    assert not any(e["type"] == "workspace_event" for e in events)
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json() == []
+
+
 def test_agent_pin_widget_without_resolvable_data_is_refused(
     client: TestClient, auth_headers: dict, monkeypatch
 ):

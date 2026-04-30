@@ -24,7 +24,8 @@ export type WorkspaceAction =
   | { type: "LOAD_ERROR"; error: string }
   | { type: "WIDGET_ADDED"; widget: WorkspaceWidget }
   | { type: "WIDGET_REMOVED"; widgetId: string }
-  | { type: "WIDGET_REORDERED"; widgetIds: string[] };
+  | { type: "WIDGET_REORDERED"; widgetIds: string[] }
+  | { type: "CLEAR_ERROR" };
 
 // ---------------------------------------------------------------------------
 // State
@@ -85,7 +86,15 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     }
 
     case "WIDGET_REMOVED":
-      return { ...state, widgets: state.widgets.filter((w) => w.id !== action.widgetId) };
+      // A successful removal supersedes any stale reload-error state.
+      // Without this, deleting the last widget would leave widgets=[] AND
+      // error=<previous reload failure>, which makes Workspace render the
+      // full failed state — even though the just-completed delete succeeded.
+      return {
+        ...state,
+        error: null,
+        widgets: state.widgets.filter((w) => w.id !== action.widgetId),
+      };
 
     case "WIDGET_REORDERED": {
       const byId = new Map(state.widgets.map((w) => [w.id, w]));
@@ -95,8 +104,11 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       const remaining = state.widgets.filter((w) => !action.widgetIds.includes(w.id));
       const all = [...reordered, ...remaining];
       // Update position fields so sort-by-position in Workspace reflects the new order.
-      return { ...state, widgets: all.map((w, i) => ({ ...w, position: i })) };
+      return { ...state, error: null, widgets: all.map((w, i) => ({ ...w, position: i })) };
     }
+
+    case "CLEAR_ERROR":
+      return { ...state, error: null };
 
     default:
       return state;

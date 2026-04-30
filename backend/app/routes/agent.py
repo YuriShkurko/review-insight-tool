@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -17,6 +18,8 @@ from app.schemas.agent import (
     ReorderRequest,
     WorkspaceWidgetRead,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["agent"])
 
@@ -54,7 +57,11 @@ def list_workspace(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return (
+    # Per-row safe serialization: a single corrupt row (NULL data, NULL
+    # created_at, unexpected JSON shape) used to crash the whole endpoint
+    # with an opaque 500, blocking the dashboard for the entire user. Now
+    # bad rows are logged and skipped; the rest of the dashboard loads.
+    rows = (
         db.query(WorkspaceWidget)
         .filter(
             WorkspaceWidget.business_id == business_id,
@@ -63,6 +70,18 @@ def list_workspace(
         .order_by(WorkspaceWidget.position)
         .all()
     )
+    out: list[WorkspaceWidgetRead] = []
+    for row in rows:
+        try:
+            out.append(WorkspaceWidgetRead.model_validate(row, from_attributes=True))
+        except Exception as exc:
+            logger.exception(
+                "op=list_workspace skipping bad widget id=%s business_id=%s error=%s",
+                getattr(row, "id", None),
+                business_id,
+                exc,
+            )
+    return out
 
 
 @router.post(

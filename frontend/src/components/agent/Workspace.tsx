@@ -31,6 +31,7 @@ export function Workspace({
   isLoading,
   error,
   onRetry,
+  onDismissError,
 }: {
   widgets: WorkspaceWidget[];
   onDelete: (widgetId: string) => void;
@@ -38,6 +39,7 @@ export function Workspace({
   isLoading: boolean;
   error?: string | null;
   onRetry?: () => void;
+  onDismissError?: () => void;
 }) {
   const [dragState, setDragState] = useState<DragState | null>(null);
 
@@ -88,15 +90,26 @@ export function Workspace({
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="text-center border-2 border-dashed border-red-300 rounded-xl px-8 py-10 max-w-sm bg-red-50 dark:bg-red-950/20 dark:border-red-900">
             <p className="text-sm font-medium text-red-700 dark:text-red-300">{error}</p>
-            {onRetry && (
-              <button
-                type="button"
-                onClick={onRetry}
-                className="mt-4 inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
-              >
-                Retry
-              </button>
-            )}
+            <div className="mt-4 flex items-center justify-center gap-3">
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                >
+                  Retry
+                </button>
+              )}
+              {onDismissError && (
+                <button
+                  type="button"
+                  onClick={onDismissError}
+                  className="inline-flex items-center justify-center rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors dark:border-red-900 dark:text-red-200 dark:hover:bg-red-950/40"
+                >
+                  Dismiss
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -121,15 +134,27 @@ export function Workspace({
           <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">
             <div className="flex items-center justify-between gap-3">
               <span>{error}</span>
-              {onRetry && (
-                <button
-                  type="button"
-                  onClick={onRetry}
-                  className="shrink-0 font-medium text-red-800 hover:text-red-950 dark:text-red-200"
-                >
-                  Retry
-                </button>
-              )}
+              <div className="flex shrink-0 items-center gap-3">
+                {onRetry && (
+                  <button
+                    type="button"
+                    onClick={onRetry}
+                    className="font-medium text-red-800 hover:text-red-950 dark:text-red-200"
+                  >
+                    Retry
+                  </button>
+                )}
+                {onDismissError && (
+                  <button
+                    type="button"
+                    onClick={onDismissError}
+                    aria-label="Dismiss error"
+                    className="font-medium text-red-800 hover:text-red-950 dark:text-red-200"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

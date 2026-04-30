@@ -13,7 +13,12 @@ from sqlalchemy.orm import Session
 from app.agent.context import truncate_messages
 from app.agent.guardrails import Intent, classify_intent
 from app.agent.system_prompt import build_system_prompt
-from app.agent.tools import TOOL_DEFINITIONS, TOOL_WIDGET_TYPES, execute_tool
+from app.agent.tools import (
+    TOOL_COMPATIBLE_WIDGETS,
+    TOOL_DEFINITIONS,
+    TOOL_WIDGET_TYPES,
+    execute_tool,
+)
 from app.llm import get_llm_provider
 from app.models.business import Business
 from app.models.conversation import Conversation
@@ -155,6 +160,43 @@ async def run_agent(
             try:
                 if tc.name == "pin_widget":
                     args = dict(tc.arguments)
+                    # Refuse incompatible widget_type ↔ source_tool combos
+                    # before resolving data, so the dashboard never gets a
+                    # widget that the renderer can't draw (e.g. pie_chart
+                    # of get_review_series time series).
+                    requested_widget = str(args.get("widget_type") or "")
+                    requested_source = args.get("source_tool")
+                    compatible = (
+                        TOOL_COMPATIBLE_WIDGETS.get(requested_source)
+                        if isinstance(requested_source, str)
+                        else None
+                    )
+                    if (
+                        compatible is not None
+                        and requested_widget
+                        and requested_widget not in compatible
+                    ):
+                        result = {
+                            "pinned": False,
+                            "error": (
+                                f"widget_type '{requested_widget}' is not compatible with "
+                                f"source_tool '{requested_source}'. "
+                                f"Use one of: {sorted(compatible)}."
+                            ),
+                        }
+                        widget_type_hint = TOOL_WIDGET_TYPES.get(tc.name)
+                        yield _sse(
+                            "tool_result",
+                            {"name": tc.name, "widget_type": widget_type_hint, "result": result},
+                        )
+                        tool_msg = {
+                            "role": "tool",
+                            "tool_call_id": tc.id,
+                            "content": json.dumps(result),
+                        }
+                        history.append(tool_msg)
+                        new_messages.append(tool_msg)
+                        continue
                     incoming_data = args.get("data")
                     data_is_empty = (
                         not incoming_data

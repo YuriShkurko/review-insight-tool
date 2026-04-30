@@ -201,6 +201,30 @@ describe("workspaceReducer", () => {
     expect(html).not.toContain("null");
   });
 
+  it("WIDGET_REMOVED clears stale error so deleting the last widget does not lock the dashboard", () => {
+    const before: WorkspaceState = {
+      ...INITIAL,
+      error: "Server error: Something went wrong.",
+      widgets: [widget("w1", 0)],
+    };
+    const state = workspaceReducer(before, { type: "WIDGET_REMOVED", widgetId: "w1" });
+
+    expect(state.widgets).toEqual([]);
+    expect(state.error).toBeNull();
+  });
+
+  it("CLEAR_ERROR drops the banner without touching widgets", () => {
+    const before: WorkspaceState = {
+      ...INITIAL,
+      error: "Server error: Something went wrong.",
+      widgets: [widget("w1", 0)],
+    };
+    const state = workspaceReducer(before, { type: "CLEAR_ERROR" });
+
+    expect(state.widgets).toEqual([widget("w1", 0)]);
+    expect(state.error).toBeNull();
+  });
+
   it("workspaceLoadErrorMessage classifies common HTTP failures", () => {
     expect(workspaceLoadErrorMessage(new ApiError(0, "Network error."))).toBe(
       "Network: Network error.",

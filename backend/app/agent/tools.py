@@ -361,6 +361,23 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "remove_widget": None,
 }
 
+# Per-tool acceptable widget types. The model occasionally picks a chart
+# that is incompatible with the data shape (e.g. pie_chart of a time series),
+# which renders "No chart data available." on the dashboard. The executor
+# uses this map to refuse the pin before persisting an unrenderable widget.
+TOOL_COMPATIBLE_WIDGETS: dict[str, frozenset[str]] = {
+    "get_dashboard": frozenset({"summary_card", "metric_card"}),
+    "query_reviews": frozenset({"review_list"}),
+    "run_analysis": frozenset({"insight_list", "summary_card"}),
+    "compare_competitors": frozenset({"comparison_card", "comparison_chart"}),
+    "get_review_trends": frozenset({"trend_indicator", "metric_card"}),
+    "get_review_series": frozenset({"line_chart"}),
+    "get_rating_distribution": frozenset({"bar_chart", "donut_chart", "pie_chart"}),
+    "get_top_issues": frozenset({"horizontal_bar_chart", "bar_chart", "insight_list"}),
+    "get_review_insights": frozenset({"summary_card", "insight_list"}),
+    "get_review_change_summary": frozenset({"comparison_chart", "comparison_card"}),
+}
+
 # ---------------------------------------------------------------------------
 # Execution
 # ---------------------------------------------------------------------------

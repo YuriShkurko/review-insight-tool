@@ -221,6 +221,7 @@ function BusinessDetailContent({
   onAnalyze: () => void;
 }) {
   const { state, dispatch, reload } = useWorkspace();
+  const dismissError = useCallback(() => dispatch({ type: "CLEAR_ERROR" }), [dispatch]);
 
   const handleDeleteWidget = useCallback(
     async (widgetId: string) => {
@@ -335,6 +336,7 @@ function BusinessDetailContent({
               isLoading={state.isLoading}
               error={state.error}
               onRetry={reload}
+              onDismissError={dismissError}
             />
           }
           right={<ChatPanel key={id} businessId={id} onCollapse={onCollapseChat} />}
@@ -356,6 +358,7 @@ function BusinessDetailContent({
             isLoading={state.isLoading}
             error={state.error}
             onRetry={reload}
+            onDismissError={dismissError}
           />
         </div>
         <div

@@ -139,6 +139,21 @@ Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
 
 </details>
 
+<details>
+<summary><strong>Mobile / LAN access (test on a phone)</strong></summary>
+
+To open the dev app from a phone on the same Wi-Fi network:
+
+```bash
+make dev-mobile
+```
+
+This binds the backend to `0.0.0.0:8000` and the frontend to `0.0.0.0:3000`. Find your machine's LAN IP (`ipconfig` on Windows, `ifconfig` / `ip addr` on macOS/Linux), then open `http://<your-LAN-IP>:3000` from the phone's browser. The frontend's `getApiBaseUrl()` automatically rewrites `localhost:8000` → the page host, so API calls go to `http://<your-LAN-IP>:8000` without any env changes.
+
+The backend's CORS middleware accepts private RFC1918 ranges (`10.x`, `192.168.x`, `172.16-31.x`) by default in dev. Production still relies on explicit `CORS_ORIGINS`.
+
+</details>
+
 ## Screenshots
 
 1. Login  
@@ -410,6 +425,7 @@ For a **remote staging/demo** on Railway (PostgreSQL, `PORT`, `CORS_ORIGINS`, bu
 | `make backend` | Start backend locally (no Docker) |
 | `make frontend` | Start frontend locally (no Docker) |
 | `make dev` | Start both locally (Windows) |
+| `make dev-mobile` | Start both bound to `0.0.0.0` so a phone on the same Wi-Fi can hit the dev box |
 | `make validate` | Same checks as GitHub Actions: `lint` + unit tests + integration tests + `npm run build` (frontend) |
 | `make ci-local` | Alias for `make validate` |
 | `make test` | Run backend unit tests |

@@ -43,6 +43,26 @@ const INITIAL_STATE: WorkspaceState = {
 };
 
 // ---------------------------------------------------------------------------
+// Error classification
+// ---------------------------------------------------------------------------
+
+// Surfaces the exact failure category in the workspace banner so a user (or a
+// debug-trail reader) can tell at a glance whether reload failed because the
+// network is down, the session expired, the resource was missing, or the
+// backend itself errored.
+export function workspaceLoadErrorMessage(err: unknown): string {
+  if (!(err instanceof ApiError)) return "Failed to load workspace.";
+  const detail = err.detail || "Failed to load workspace.";
+  if (err.status === 0) return `Network: ${detail}`;
+  if (err.status === 401) return `Unauthorized: ${detail}`;
+  if (err.status === 403) return `Forbidden: ${detail}`;
+  if (err.status === 404) return `Not found: ${detail}`;
+  if (err.status === 422) return `Validation: ${detail}`;
+  if (err.status >= 500) return `Server error: ${detail}`;
+  return detail;
+}
+
+// ---------------------------------------------------------------------------
 // Reducer
 // ---------------------------------------------------------------------------
 
@@ -122,11 +142,7 @@ export function WorkspaceBlackboardProvider({
       dispatch({ type: "LOADED", widgets });
     } catch (err) {
       if (activeIdRef.current !== id) return;
-      const detail = err instanceof ApiError ? err.detail : "Failed to load workspace.";
-      dispatch({
-        type: "LOAD_ERROR",
-        error: detail,
-      });
+      dispatch({ type: "LOAD_ERROR", error: workspaceLoadErrorMessage(err) });
     }
   }, []);
 

@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { workspaceReducer, type WorkspaceState } from "../workspaceBlackboard";
+import {
+  workspaceReducer,
+  workspaceLoadErrorMessage,
+  type WorkspaceState,
+} from "../workspaceBlackboard";
+import { ApiError } from "../api";
 import { dispatchWorkspaceEvent } from "../useAgentChat";
 import { WidgetRenderer } from "../../components/agent/WidgetRenderer";
 import type { WorkspaceWidget } from "../agentTypes";
@@ -194,6 +199,28 @@ describe("workspaceReducer", () => {
     expect(html).toContain("No chart data available.");
     expect(html).not.toContain("undefined");
     expect(html).not.toContain("null");
+  });
+
+  it("workspaceLoadErrorMessage classifies common HTTP failures", () => {
+    expect(workspaceLoadErrorMessage(new ApiError(0, "Network error."))).toBe(
+      "Network: Network error.",
+    );
+    expect(workspaceLoadErrorMessage(new ApiError(401, "Session expired."))).toBe(
+      "Unauthorized: Session expired.",
+    );
+    expect(workspaceLoadErrorMessage(new ApiError(403, "Forbidden."))).toBe(
+      "Forbidden: Forbidden.",
+    );
+    expect(workspaceLoadErrorMessage(new ApiError(404, "Not found."))).toBe(
+      "Not found: Not found.",
+    );
+    expect(workspaceLoadErrorMessage(new ApiError(422, "Bad payload."))).toBe(
+      "Validation: Bad payload.",
+    );
+    expect(workspaceLoadErrorMessage(new ApiError(503, "Backend down."))).toBe(
+      "Server error: Backend down.",
+    );
+    expect(workspaceLoadErrorMessage(new Error("nope"))).toBe("Failed to load workspace.");
   });
 
   it("auto-add and manual-add produce identical normalized shapes for the same raw payload", () => {

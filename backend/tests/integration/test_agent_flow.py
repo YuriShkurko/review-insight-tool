@@ -512,6 +512,204 @@ def test_agent_data_tool_pin_round_trip_emits_workspace_event(
     assert widgets[0]["data"] == pinned_data
 
 
+def test_agent_pin_widget_without_resolvable_data_is_refused(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """pin_widget with empty data and no prior data tool must not persist a widget.
+
+    Reproduces the v3.6.0 regression where the agent could push an empty chart
+    onto the dashboard if the model emitted pin_widget without first calling a
+    data tool. The executor must respond with pinned: false, emit no
+    workspace_event, and leave the workspace untouched.
+    """
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="tc1",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "donut_chart",
+                                "title": "Rating share",
+                                "source_tool": "get_rating_distribution",
+                                "data": {},
+                            },
+                        )
+                    ],
+                )
+            return ("I need to fetch the data first.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Pin the rating share chart"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    pin_result = next(
+        e for e in events if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin_result["data"]["result"]["pinned"] is False
+    assert "data" in pin_result["data"]["result"].get("error", "").lower()
+    assert not any(e["type"] == "workspace_event" for e in events)
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_agent_duplicate_chart_pin_does_not_introduce_empty_widget(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """Asking for the same chart twice must not replace the dashboard with an empty chart.
+
+    The first turn calls a data tool then pin_widget — this commits a widget
+    with real data. The second turn re-asks for the same chart, but the model
+    skips the data tool. With the v3.6.0 fix in place, the second pin must be
+    refused (pinned: false) and the workspace must still contain only the
+    original widget — not an empty duplicate that would supplant it visually.
+    """
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+    real_data = {
+        "period": "30d",
+        "days": 30,
+        "bars": [{"label": "5 stars", "value": 4}],
+        "total": 4,
+    }
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            # Turn 1: data tool then pin
+            if call_count == 1:
+                return (
+                    "",
+                    [ToolCall(id="t1a", name="get_rating_distribution", arguments={"days": 30})],
+                )
+            if call_count == 2:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="t1b",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "bar_chart",
+                                "title": "Rating distribution",
+                                "source_tool": "get_rating_distribution",
+                                "data": real_data,
+                            },
+                        )
+                    ],
+                )
+            # Turn 1 wrap-up
+            return ("Pinned.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r1 = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Pin the rating distribution"},
+        headers=auth_headers,
+    )
+    assert r1.status_code == 200
+    first_events = _parse_sse(r1.text)
+    first_pin = next(
+        e
+        for e in first_events
+        if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert first_pin["data"]["result"]["pinned"] is True
+    first_widget_id = first_pin["data"]["result"]["widget_id"]
+
+    # Reset the mock for turn 2: model immediately tries pin_widget without
+    # calling the data tool again.
+    call_count_2 = 0
+
+    def _mock_provider_2():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count_2
+            call_count_2 += 1
+            if call_count_2 == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="t2a",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "bar_chart",
+                                "title": "Rating distribution",
+                                "source_tool": "get_rating_distribution",
+                                "data": {},
+                            },
+                        )
+                    ],
+                )
+            return ("Need fresh data first.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider_2)
+
+    r2 = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Add the rating distribution again"},
+        headers=auth_headers,
+    )
+    assert r2.status_code == 200
+    second_events = _parse_sse(r2.text)
+    second_pin = next(
+        e
+        for e in second_events
+        if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert second_pin["data"]["result"]["pinned"] is False
+    assert not any(e["type"] == "workspace_event" for e in second_events)
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    widgets = r.json()
+    assert len(widgets) == 1
+    assert widgets[0]["id"] == first_widget_id
+    assert widgets[0]["data"] == real_data
+
+
 def test_agent_rejects_unsupported_widget_type_without_workspace_event(
     client: TestClient, auth_headers: dict, monkeypatch
 ):

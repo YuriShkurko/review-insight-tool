@@ -1,4 +1,4 @@
-.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check validate frontend-build ci-local backend frontend dev debug stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head pdf aws-bootstrap aws-rds aws-network aws-alb aws-ecs aws-logs-backend aws-logs-frontend aws-status aws-teardown mongo-shell mongo-stats benchmark
+.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check validate frontend-build ci-local backend frontend dev dev-mobile debug stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head pdf aws-bootstrap aws-rds aws-network aws-alb aws-ecs aws-logs-backend aws-logs-frontend aws-status aws-teardown mongo-shell mongo-stats benchmark
 
 # ── Docker Compose ──────────────────────────────────────────────
 
@@ -31,6 +31,16 @@ dev:
 	cmd /C "cd /d $(CURDIR)\backend && start /B python -m uvicorn app.main:app --reload --port 8000"
 	@echo Starting frontend on http://localhost:3000 ...
 	cd frontend && npm run dev
+
+## Start backend + frontend bound to 0.0.0.0 so a phone on the same Wi-Fi can hit the dev box
+## Frontend's getApiBaseUrl() rewrites localhost:8000 → page host automatically, so opening
+## http://<your-LAN-IP>:3000 on a phone routes API calls to <your-LAN-IP>:8000.
+## Find your LAN IP with `ipconfig` (Windows) or `ifconfig` / `ip addr` (macOS/Linux).
+dev-mobile:
+	@echo Starting backend on http://0.0.0.0:8000 (LAN-reachable)...
+	cmd /C "cd /d $(CURDIR)\backend && start /B python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+	@echo Starting frontend on http://0.0.0.0:3000 (LAN-reachable)...
+	cd frontend && npm run dev:mobile
 
 ## Start the full stack in DEBUG mode — enables E2E tracing + UI element selector
 ## Backend: DEBUG_TRACE=true  →  X-Trace-Id headers, trace ring buffer, /api/debug/ui-snapshot

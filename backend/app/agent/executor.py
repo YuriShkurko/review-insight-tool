@@ -164,11 +164,29 @@ async def run_agent(
                     if data_is_empty:
                         # Resolve source_tool first; fall back to most recent result.
                         source_tool = args.get("source_tool")
+                        resolved: dict | None = None
                         if source_tool and source_tool in tool_results:
-                            args["data"] = tool_results[source_tool]
+                            resolved = tool_results[source_tool]
                         elif tool_results:
-                            args["data"] = next(reversed(tool_results.values()))
-                    result = execute_tool(tc.name, args, db, business_id, user_id)
+                            resolved = next(reversed(tool_results.values()))
+                        if not resolved or not isinstance(resolved, dict) or len(resolved) == 0:
+                            # Refuse to persist an empty widget. The model gets a
+                            # tool result it can react to in the next turn instead
+                            # of leaving an empty card on the dashboard.
+                            result = {
+                                "pinned": False,
+                                "error": (
+                                    "No data available to pin. Call a data tool "
+                                    "(e.g. get_dashboard, get_rating_distribution) "
+                                    "first, then call pin_widget with that tool's "
+                                    "name as source_tool."
+                                ),
+                            }
+                        else:
+                            args["data"] = resolved
+                            result = execute_tool(tc.name, args, db, business_id, user_id)
+                    else:
+                        result = execute_tool(tc.name, args, db, business_id, user_id)
                 else:
                     result = execute_tool(tc.name, tc.arguments, db, business_id, user_id)
                     if isinstance(result, dict) and "error" not in result:

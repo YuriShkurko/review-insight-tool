@@ -688,6 +688,172 @@ def test_agent_pin_widget_without_resolvable_data_is_refused(
     assert r.json() == []
 
 
+def test_agent_set_dashboard_order_reverses_and_persists(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    biz_id = _make_biz(client, auth_headers)
+    widget_ids = []
+    for title in ["First", "Second", "Third"]:
+        r = client.post(
+            f"/api/businesses/{biz_id}/agent/workspace",
+            json={"widget_type": "summary_card", "title": title, "data": {"summary": title}},
+            headers=auth_headers,
+        )
+        assert r.status_code == 201
+        widget_ids.append(r.json()["id"])
+
+    call_count = 0
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return ("", [ToolCall(id="t1", name="get_workspace", arguments={})])
+            if call_count == 2:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="t2",
+                            name="set_dashboard_order",
+                            arguments={"widget_ids": list(reversed(widget_ids))},
+                        )
+                    ],
+                )
+            return ("Reordered.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Reverse the dashboard order exactly"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    reorder_result = next(
+        e
+        for e in events
+        if e["type"] == "tool_result" and e["data"].get("name") == "set_dashboard_order"
+    )
+    assert reorder_result["data"]["result"]["reordered"] is True
+    workspace_event = next(e for e in events if e["type"] == "workspace_event")
+    assert workspace_event["data"] == {
+        "action": "widgets_reordered",
+        "widget_ids": list(reversed(widget_ids)),
+    }
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    assert [w["id"] for w in r.json()] == list(reversed(widget_ids))
+
+
+def test_agent_duplicate_then_reorder_includes_copied_widget(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    biz_id = _make_biz(client, auth_headers)
+    original_ids = []
+    for title in ["Original", "Keep"]:
+        r = client.post(
+            f"/api/businesses/{biz_id}/agent/workspace",
+            json={"widget_type": "bar_chart", "title": title, "data": {"bars": []}},
+            headers=auth_headers,
+        )
+        assert r.status_code == 201
+        original_ids.append(r.json()["id"])
+
+    call_count = 0
+
+    def _last_tool_result(messages, tool_name: str) -> dict:
+        import json
+
+        for message in reversed(messages):
+            if message.get("role") != "tool":
+                continue
+            try:
+                data = json.loads(message.get("content") or "{}")
+            except ValueError:
+                continue
+            if tool_name == "duplicate_widget" and data.get("duplicated"):
+                return data
+        return {}
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return ("", [ToolCall(id="t1", name="get_workspace", arguments={})])
+            if call_count == 2:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="t2",
+                            name="duplicate_widget",
+                            arguments={"widget_id": original_ids[0]},
+                        )
+                    ],
+                )
+            if call_count == 3:
+                duplicate = _last_tool_result(messages, "duplicate_widget")
+                copied_id = duplicate["widget_id"]
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="t3",
+                            name="set_dashboard_order",
+                            arguments={"widget_ids": [original_ids[1], copied_id, original_ids[0]]},
+                        )
+                    ],
+                )
+            return ("Copied and reordered.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Duplicate the first chart and put it between Keep and Original"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    duplicate_result = next(
+        e
+        for e in events
+        if e["type"] == "tool_result" and e["data"].get("name") == "duplicate_widget"
+    )
+    copied_id = duplicate_result["data"]["result"]["widget_id"]
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    widgets = r.json()
+    assert [w["id"] for w in widgets] == [original_ids[1], copied_id, original_ids[0]]
+    assert widgets[1]["data"] == widgets[2]["data"]
+
+
 def test_agent_duplicate_chart_pin_does_not_introduce_empty_widget(
     client: TestClient, auth_headers: dict, monkeypatch
 ):

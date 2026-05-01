@@ -8,7 +8,24 @@ import { normalizeWorkspaceWidget } from "@/lib/workspaceWidget";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { SuggestedPrompts } from "./SuggestedPrompts";
-import type { WorkspaceWidget } from "@/lib/agentTypes";
+import type { MessageItem, WorkspaceWidget } from "@/lib/agentTypes";
+
+function recoveredPinFailures(items: MessageItem[]): Set<string> {
+  const recovered = new Set<string>();
+  const failedPins: string[] = [];
+
+  for (const item of items) {
+    if (item.kind !== "tool_result" || item.name !== "pin_widget") continue;
+    if (item.result?.pinned === true) {
+      for (const id of failedPins) recovered.add(id);
+      failedPins.length = 0;
+    } else if (item.result?.pinned === false) {
+      failedPins.push(item.id);
+    }
+  }
+
+  return recovered;
+}
 
 export function ChatPanel({
   businessId,
@@ -56,6 +73,7 @@ export function ChatPanel({
   );
 
   const isEmpty = items.length === 0;
+  const recoveredFailures = recoveredPinFailures(items);
 
   return (
     <div className="flex flex-col h-full bg-surface-card">
@@ -96,6 +114,7 @@ export function ChatPanel({
                 item={item}
                 isStreaming={isStreaming && item.id === streamingId}
                 isGlobalStreaming={isStreaming}
+                isRecovered={recoveredFailures.has(item.id)}
                 onPin={handlePin}
               />
             ))}

@@ -11,6 +11,10 @@ export const TOOL_LABELS: Record<string, string> = {
   get_review_insights: "Summarizing reviews...",
   get_review_change_summary: "Comparing periods...",
   pin_widget: "Pinning to workspace...",
+  get_workspace: "Reading dashboard...",
+  remove_widget: "Removing widget...",
+  duplicate_widget: "Copying widget...",
+  set_dashboard_order: "Reordering dashboard...",
 };
 
 export function ToolCallIndicator({ name, isStreaming }: { name: string; isStreaming: boolean }) {

@@ -122,18 +122,19 @@ export function Workspace({
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-surface">
-      <div className="shrink-0 px-4 pt-4 pb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-widest">
-          Dashboard
-        </h2>
+      <div className="shrink-0 border-b border-border-subtle px-5 py-4 flex items-center justify-between">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-text-primary">Dashboard</h2>
+          <p className="mt-0.5 text-xs text-text-muted">Pinned review intelligence</p>
+        </div>
         {ordered.length > 0 && (
-          <span className="text-xs text-text-muted">
+          <span className="rounded-full border border-border-subtle bg-surface-card px-2.5 py-1 text-xs text-text-muted">
             {ordered.length} widget{ordered.length !== 1 ? "s" : ""}
           </span>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-5 py-5">
         {error && ordered.length > 0 && (
           <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">
             <div className="flex items-center justify-between gap-3">
@@ -183,7 +184,7 @@ export function Workspace({
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={ordered.map((w) => w.id)} strategy={rectSortingStrategy}>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4 xl:grid-cols-3 2xl:grid-cols-4">
                 {ordered.map((widget) => (
                   <SortableWidgetCard key={widget.id} widget={widget} onDelete={onDelete} />
                 ))}

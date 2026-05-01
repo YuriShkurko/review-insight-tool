@@ -47,6 +47,12 @@ export function dispatchWorkspaceEvent(
     });
   } else if (action === "widget_removed" && data.widget_id && workspaceDispatch) {
     workspaceDispatch({ type: "WIDGET_REMOVED", widgetId: String(data.widget_id) });
+  } else if (
+    action === "widgets_reordered" &&
+    Array.isArray(data.widget_ids) &&
+    workspaceDispatch
+  ) {
+    workspaceDispatch({ type: "WIDGET_REORDERED", widgetIds: data.widget_ids.map(String) });
   }
 }
 

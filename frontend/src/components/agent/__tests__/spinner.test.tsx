@@ -105,8 +105,9 @@ describe("ChatMessage pin_widget tool_result branch", () => {
       result: { pinned: false },
     };
     const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
+    expect(html).toContain("Pin failed");
     expect(html).toContain("Failed to pin widget");
-    expect(html).toContain("text-red-500");
+    expect(html).toContain("text-red-600");
     expect(html).not.toContain("Pinned to workspace");
   });
 
@@ -120,7 +121,35 @@ describe("ChatMessage pin_widget tool_result branch", () => {
     };
     const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
     expect(html).toContain("Unknown widget_type");
-    expect(html).toContain("text-red-500");
+    expect(html).toContain("text-red-600");
+  });
+
+  it("collapses recovered pin failures into a muted note", () => {
+    const item: MessageItem = {
+      id: "tr4",
+      kind: "tool_result",
+      name: "pin_widget",
+      widgetType: null,
+      result: { pinned: false, error: "widget_type is not compatible" },
+    };
+    const html = renderToStaticMarkup(
+      <ChatMessage item={item} isStreaming={false} isRecovered onPin={noop} />,
+    );
+    expect(html).toContain("Recovered with a compatible chart type");
+    expect(html).toContain("widget_type is not compatible");
+  });
+
+  it("renders reorder success as a compact confirmation", () => {
+    const item: MessageItem = {
+      id: "tr5",
+      kind: "tool_result",
+      name: "set_dashboard_order",
+      widgetType: null,
+      result: { reordered: true, widget_ids: ["w2", "w1"] },
+    };
+    const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
+    expect(html).toContain("Dashboard order updated");
+    expect(html).not.toContain("&quot;widget_ids&quot;");
   });
 });
 

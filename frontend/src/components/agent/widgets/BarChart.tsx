@@ -25,7 +25,11 @@ export function BarChart({ data }: { data: Record<string, unknown> }) {
     .filter((b) => b.label.length > 0);
 
   if (bars.length === 0) {
-    return <p className="text-xs text-text-muted">No chart data available.</p>;
+    return (
+      <p data-testid="widget-empty-state" className="text-xs text-text-muted">
+        No chart data available.
+      </p>
+    );
   }
 
   const chartW = 100;

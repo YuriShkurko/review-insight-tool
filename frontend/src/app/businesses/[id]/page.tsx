@@ -326,7 +326,7 @@ function BusinessDetailContent({
       </div>
 
       {/* Desktop: resizable panel. Mobile: tab-based */}
-      <div className="flex-1 overflow-hidden hidden lg:flex">
+      <div data-testid="dashboard-desktop" className="flex-1 overflow-hidden hidden lg:flex">
         <ResizablePanel
           left={
             <Workspace
@@ -347,7 +347,10 @@ function BusinessDetailContent({
       </div>
 
       {/* Mobile panels */}
-      <div className="flex-1 overflow-hidden flex flex-col lg:hidden">
+      <div
+        data-testid="dashboard-mobile"
+        className="flex-1 overflow-hidden flex flex-col lg:hidden"
+      >
         <div
           className={`${activeTab === "workspace" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}
         >

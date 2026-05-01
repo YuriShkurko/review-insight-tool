@@ -7,7 +7,11 @@ export function MetricCard({ data }: { data: Record<string, unknown> }) {
   const sublabel = data.sublabel as string | undefined;
 
   if (value === null || value === undefined) {
-    return <p className="text-xs text-text-muted">No data available.</p>;
+    return (
+      <p data-testid="widget-empty-state" className="text-xs text-text-muted">
+        No data available.
+      </p>
+    );
   }
 
   return (

@@ -37,6 +37,7 @@ export default function AuthForm({ title, submitLabel, onSubmit, footer }: AuthF
             <label className="block text-sm font-medium text-text-secondary mb-1">Email</label>
             <input
               type="email"
+              data-testid="auth-email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -47,6 +48,7 @@ export default function AuthForm({ title, submitLabel, onSubmit, footer }: AuthF
             <label className="block text-sm font-medium text-text-secondary mb-1">Password</label>
             <input
               type="password"
+              data-testid="auth-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -60,6 +62,7 @@ export default function AuthForm({ title, submitLabel, onSubmit, footer }: AuthF
           )}
           <button
             type="submit"
+            data-testid="auth-submit"
             disabled={loading}
             className="w-full bg-brand text-white py-2.5 rounded-lg font-medium hover:bg-brand-hover disabled:opacity-50 transition-colors"
           >

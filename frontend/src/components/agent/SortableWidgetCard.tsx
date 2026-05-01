@@ -41,6 +41,9 @@ export function SortableWidgetCard({
     <div
       ref={setNodeRef}
       style={style}
+      data-testid="workspace-widget"
+      data-widget-id={widget.id}
+      data-widget-type={widget.widget_type}
       className={`bg-surface-card border border-border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${
         isFullWidth ? "col-span-2" : "col-span-1"
       } ${isDragging ? "shadow-xl ring-2 ring-brand/20" : ""}`}
@@ -65,7 +68,9 @@ export function SortableWidgetCard({
         </button>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-text-primary truncate">{widget.title}</p>
+          <p data-testid="widget-title" className="text-sm font-medium text-text-primary truncate">
+            {widget.title}
+          </p>
           <p className="text-xs text-text-muted capitalize">
             {widget.widget_type.replace(/_/g, " ")}
           </p>
@@ -73,6 +78,7 @@ export function SortableWidgetCard({
 
         <button
           type="button"
+          data-testid="remove-widget-button"
           onClick={() => onDelete(widget.id)}
           aria-label="Remove widget"
           className="shrink-0 text-text-muted hover:text-red-500 transition-colors text-lg leading-none"
@@ -80,7 +86,7 @@ export function SortableWidgetCard({
           ×
         </button>
       </div>
-      <div className="p-3">
+      <div data-testid="widget-chart" className="p-3">
         <WidgetRenderer widgetType={widget.widget_type} data={widget.data} />
       </div>
     </div>

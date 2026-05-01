@@ -88,12 +88,16 @@ export function Workspace({
           </h2>
         </div>
         <div className="flex-1 flex items-center justify-center px-4">
-          <div className="text-center border-2 border-dashed border-red-300 rounded-xl px-8 py-10 max-w-sm bg-red-50 dark:bg-red-950/20 dark:border-red-900">
+          <div
+            data-testid="workspace-error-banner"
+            className="text-center border-2 border-dashed border-red-300 rounded-xl px-8 py-10 max-w-sm bg-red-50 dark:bg-red-950/20 dark:border-red-900"
+          >
             <p className="text-sm font-medium text-red-700 dark:text-red-300">{error}</p>
             <div className="mt-4 flex items-center justify-center gap-3">
               {onRetry && (
                 <button
                   type="button"
+                  data-testid="retry-workspace-button"
                   onClick={onRetry}
                   className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
                 >
@@ -160,7 +164,10 @@ export function Workspace({
         )}
         {ordered.length === 0 ? (
           <div className="h-full flex items-center justify-center">
-            <div className="text-center border-2 border-dashed border-border rounded-2xl px-8 py-12 max-w-xs">
+            <div
+              data-testid="workspace-empty-state"
+              className="text-center border-2 border-dashed border-border rounded-2xl px-8 py-12 max-w-xs"
+            >
               <div className="text-3xl mb-3">✦</div>
               <p className="text-sm font-medium text-text-secondary">No pinned insights yet</p>
               <p className="mt-1 text-xs text-text-muted leading-relaxed">

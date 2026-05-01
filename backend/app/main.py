@@ -68,6 +68,14 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router)
 
+    # Test-only routes — gated at app construction time. When TESTING is
+    # false (default everywhere except CI/E2E), the path is not mounted at
+    # all, so production cannot have it served even by accident.
+    if settings.TESTING:
+        from app.routes.test_agent import router as test_agent_router
+
+        app.include_router(test_agent_router, prefix="/api")
+
     from app.database import engine
     from app.observability import init_observability
 

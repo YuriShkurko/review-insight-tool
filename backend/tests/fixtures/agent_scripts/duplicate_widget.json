@@ -1,0 +1,12 @@
+[
+  {
+    "text": "",
+    "tool_calls": [
+      {"name": "duplicate_widget", "arguments": {"widget_id": "{WIDGET_ID}"}}
+    ]
+  },
+  {
+    "text": "Duplicated.",
+    "tool_calls": []
+  }
+]

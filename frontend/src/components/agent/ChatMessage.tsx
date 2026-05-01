@@ -32,7 +32,7 @@ export function ChatMessage({
 }) {
   if (item.kind === "user") {
     return (
-      <div className="flex justify-end">
+      <div className="flex justify-end" data-testid="chat-message" data-message-role="user">
         <div className="max-w-[80%] bg-brand text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm leading-relaxed">
           {item.text}
         </div>
@@ -43,7 +43,7 @@ export function ChatMessage({
   if (item.kind === "assistant_text") {
     if (!item.text && !isStreaming) return null;
     return (
-      <div className="flex justify-start">
+      <div className="flex justify-start" data-testid="chat-message" data-message-role="assistant">
         <div className="max-w-[85%] text-text-primary border-l-2 border-accent/30 pl-3 py-1 text-sm leading-relaxed whitespace-pre-wrap">
           {item.text}
           {isStreaming && (
@@ -90,7 +90,7 @@ export function ChatMessage({
     ].includes(widgetType);
 
     return (
-      <div className="flex w-full justify-start">
+      <div className="flex w-full justify-start" data-testid="chat-tool-result">
         <details
           className={`group w-full overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm ${
             isChartWidget ? "max-w-xl" : "max-w-sm"
@@ -112,6 +112,7 @@ export function ChatMessage({
               </span>
               <button
                 type="button"
+                data-testid="pin-widget-button"
                 onClick={() => onPin(widgetType, title, item.result)}
                 className="shrink-0 text-xs text-text-muted hover:text-brand transition-colors font-medium"
               >

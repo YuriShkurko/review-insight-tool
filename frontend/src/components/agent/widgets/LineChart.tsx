@@ -43,7 +43,11 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
     .filter((p) => typeof p.date === "string");
 
   if (points.length === 0) {
-    return <p className="text-xs text-text-muted">No chart data available.</p>;
+    return (
+      <p data-testid="widget-empty-state" className="text-xs text-text-muted">
+        No chart data available.
+      </p>
+    );
   }
 
   const values = points.map((p) => p.value ?? 0);

@@ -415,6 +415,35 @@ For a **remote staging/demo** on Railway (PostgreSQL, `PORT`, `CORS_ORIGINS`, bu
 
 **Debug event trail** (debug-only floating panel for inspecting API calls, state transitions, and user actions): **[docs/DEVELOPMENT.md#debug-event-trail](docs/DEVELOPMENT.md#debug-event-trail)**.
 
+### Before Push
+
+Use these commands from the repo root:
+
+```bash
+# Fast checks while iterating: lint/format + backend unit tests
+make quick
+
+# Full non-browser validation, matching the backend/frontend CI jobs
+make validate
+
+# Optional locally, and required before agent/dashboard changes:
+# Terminal 1
+make test-e2e-servers
+
+# Terminal 2
+make test-e2e-ui
+```
+
+`make ci-local` is an alias for `make validate`. It intentionally does not start
+browser E2E servers; Playwright runs as a separate GitHub Actions job and can be
+run locally with the two E2E commands above.
+
+Local Playwright uses `E2E_DATABASE_URL` and defaults to
+`postgresql://postgres:postgres@localhost:5432/review_insight`, so it will not
+inherit a staging/production `DATABASE_URL` from `backend/.env`. It also sets
+`OPENAI_API_KEY=change-me-e2e`, which the backend config treats as an empty
+placeholder, so a real key in `backend/.env` is not used by the E2E server.
+
 ### Makefile commands
 
 | Command | Description |
@@ -426,11 +455,14 @@ For a **remote staging/demo** on Railway (PostgreSQL, `PORT`, `CORS_ORIGINS`, bu
 | `make frontend` | Start frontend locally (no Docker) |
 | `make dev` | Start both locally (Windows) |
 | `make dev-mobile` | Start both bound to `0.0.0.0` so a phone on the same Wi-Fi can hit the dev box |
-| `make validate` | Same checks as GitHub Actions: `lint` + unit tests + integration tests + `npm run build` (frontend) |
+| `make quick` | Fast local checks: `lint` + backend unit tests |
+| `make validate` | Same non-browser checks as GitHub Actions: `lint` + unit tests + integration tests + `npm run build` (frontend) |
 | `make ci-local` | Alias for `make validate` |
 | `make test` | Run backend unit tests |
 | `make test-integration` | Run backend integration tests (in-memory SQLite) |
 | `make test-e2e` | Run E2E tests (requires `make up` and `make db-upgrade`) |
+| `make test-e2e-servers` | Start backend + frontend in deterministic Playwright mode |
+| `make test-e2e-ui` | Run the Playwright browser E2E suite |
 | `make lint` | Run linters (ruff + eslint + prettier checks) |
 | `make frontend-build` | `npm run build` in `frontend/` only |
 | `make db-upgrade` | Apply Alembic migrations to head (via Docker Compose `exec`) |
@@ -658,9 +690,76 @@ make test-integration    # integration tests (in-memory SQLite, no server requir
 make test-e2e            # end-to-end tests (requires running backend via make up)
 ```
 
+### Frontend Playwright E2E (agent + dashboard)
+
+Deterministic browser-driven coverage for the seven highest-risk agent flows
+(add widget with data, refresh persistence, remove, duplicate, incompatible-chart
+recovery, manual pin from chat, workspace load failure). Lives in `frontend/e2e/`.
+
+**Local run (two terminals):**
+
+```bash
+# Terminal 1 — start backend + frontend in deterministic mode
+make test-e2e-servers
+
+# Terminal 2 — run the Playwright suite
+make test-e2e-ui
+```
+
+`test-e2e-servers` boots the stack with:
+
+| Var               | Value      | Why                                                                          |
+|-------------------|------------|------------------------------------------------------------------------------|
+| `DATABASE_URL`    | `$(E2E_DATABASE_URL)` (defaults to local Docker Postgres) | Avoids accidentally running E2E against staging/production data |
+| `TESTING`         | `true`     | Mounts `/api/test/agent/script` + unlocks `LLM_PROVIDER=scripted`            |
+| `LLM_PROVIDER`    | `scripted` | Routes the agent loop through `ScriptedProvider` instead of OpenAI/OpenRouter |
+| `REVIEW_PROVIDER` | `mock`     | Deterministic in-memory review fixtures                                      |
+| `OPENAI_API_KEY`  | `$(E2E_OPENAI_API_KEY)` (defaults to a cleared placeholder) | Defence in depth — avoids using a real key from `backend/.env` |
+
+**How agent responses stay deterministic.** The backend ships an in-process
+`ScriptedProvider` (`backend/app/llm/scripted.py`) selected when
+`LLM_PROVIDER=scripted` AND `TESTING=true`. Each Playwright spec POSTs a
+per-scenario JSON script to `POST /api/test/agent/script`; the provider
+replays the assistant turns (text + tool calls) in order from
+`complete_with_tools`. No network calls, no SDK, no model variance.
+Fixtures live in `backend/tests/fixtures/agent_scripts/`.
+
+**How the suite is structured.**
+- One spec per scenario (`agent-add-and-refresh.spec.ts`, etc.) with a fresh
+  user + business per test (`seedUser` helper). Auth bypassed via injected
+  `localStorage` token.
+- Stable `data-testid` selectors only (`agent-input`, `agent-send`,
+  `chat-message`, `workspace-widget`, `widget-title`, `widget-chart`,
+  `widget-empty-state`, `workspace-error-banner`, `workspace-empty-state`,
+  `pin-widget-button`, `remove-widget-button`, `retry-workspace-button`,
+  `dashboard-desktop`/`dashboard-mobile`).
+- Serial execution (`workers: 1`, `fullyParallel: false`) because the
+  ScriptedProvider singleton holds per-test scripts.
+
+**Debugging failures.** Playwright is configured with `trace: retain-on-failure`
+and `screenshot: only-on-failure`. After a red run:
+
+```bash
+cd frontend
+npm run test:e2e:report                         # open HTML report
+npx playwright show-trace test-results/<name>/trace.zip   # step-through trace
+```
+
+The `error-context.md` next to each failing test has the rendered DOM snapshot
+and the failing locator. Backend SSE events are visible in the browser network
+tab when running `npm run test:e2e:ui` (Playwright's interactive mode).
+
+**CI status.** GitHub Actions now runs this suite in a dedicated Playwright job
+after the backend and frontend validation jobs pass. The job starts Postgres,
+applies Alembic migrations, boots the backend with `TESTING=true`,
+`LLM_PROVIDER=scripted`, `REVIEW_PROVIDER=mock`, and an empty `OPENAI_API_KEY`,
+boots the frontend against `http://localhost:8000`, runs Chromium with
+`workers: 1`, caches Playwright browsers, and uploads `playwright-report/`,
+`test-results/`, and server logs on failure.
+
 ### Continuous integration
 
-On every push and pull request to `main` / `master`, **GitHub Actions** runs backend lint (`ruff`), backend tests (unit + integration), and frontend lint + production build. E2E tests are not run in CI (they need a live server). Details: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
+On every push and pull request to `main` / `master`, **GitHub Actions** runs backend lint (`ruff`), backend tests (unit + integration), frontend lint + production build, and the deterministic Playwright agent/dashboard E2E suite. Details: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
 
 After every deployment, the **synthetic monitor** (`synthetic.yml`) automatically runs the full user-flow check against the live backend. It also runs on a 30-minute cron schedule. Results are uploaded as workflow artifacts. Configure `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` in GitHub repo secrets to receive phone alerts on failure.
 

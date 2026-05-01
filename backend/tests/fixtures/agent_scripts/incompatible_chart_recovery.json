@@ -1,0 +1,42 @@
+[
+  {
+    "text": "",
+    "tool_calls": [
+      {"name": "get_top_issues", "arguments": {"limit": 3}}
+    ]
+  },
+  {
+    "text": "",
+    "tool_calls": [
+      {
+        "name": "pin_widget",
+        "arguments": {
+          "widget_type": "pie_chart",
+          "title": "Top issues",
+          "source_tool": "get_top_issues"
+        }
+      }
+    ]
+  },
+  {
+    "text": "That widget pair isn't supported. Try a bar chart instead.",
+    "tool_calls": []
+  },
+  {
+    "text": "",
+    "tool_calls": [
+      {
+        "name": "pin_widget",
+        "arguments": {
+          "widget_type": "horizontal_bar_chart",
+          "title": "Top issues",
+          "source_tool": "get_top_issues"
+        }
+      }
+    ]
+  },
+  {
+    "text": "Pinned the bar chart for you.",
+    "tool_calls": []
+  }
+]

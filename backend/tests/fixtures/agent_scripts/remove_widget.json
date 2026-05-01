@@ -1,0 +1,12 @@
+[
+  {
+    "text": "",
+    "tool_calls": [
+      {"name": "remove_widget", "arguments": {"widget_id": "{WIDGET_ID}"}}
+    ]
+  },
+  {
+    "text": "Removed it from your dashboard.",
+    "tool_calls": []
+  }
+]

@@ -45,7 +45,11 @@ export function DonutChart({ data }: { data: Record<string, unknown> }) {
   const total = slices.reduce((sum, slice) => sum + slice.value, 0);
 
   if (!slices.length || total <= 0) {
-    return <p className="text-xs text-text-muted">No chart data available.</p>;
+    return (
+      <p data-testid="widget-empty-state" className="text-xs text-text-muted">
+        No chart data available.
+      </p>
+    );
   }
 
   const segments = slices.reduce<Array<{ slice: Slice; path: string }>>((acc, slice) => {

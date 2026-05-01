@@ -1,0 +1,29 @@
+[
+  {
+    "text": "",
+    "tool_calls": [
+      {"name": "get_dashboard", "arguments": {}}
+    ]
+  },
+  {
+    "text": "Here's a quick summary you can pin if you want.",
+    "tool_calls": []
+  },
+  {
+    "text": "",
+    "tool_calls": [
+      {
+        "name": "pin_widget",
+        "arguments": {
+          "widget_type": "summary_card",
+          "title": "Dashboard summary",
+          "source_tool": "get_dashboard"
+        }
+      }
+    ]
+  },
+  {
+    "text": "Pinned the summary card.",
+    "tool_calls": []
+  }
+]

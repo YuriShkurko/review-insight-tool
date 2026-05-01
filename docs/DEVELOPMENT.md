@@ -9,21 +9,65 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 - Runs on pushes and pull requests to `main` / `master`.
 - **Backend job:** `ruff check`, `ruff format --check`, unit tests, integration tests.
 - **Frontend job:** `eslint`, `prettier --check`, `next build`.
-- **Not included:** E2E tests (they expect a running API at `BASE_URL`), database containers, or deploy steps.
+- **Playwright job:** starts PostgreSQL, applies Alembic migrations, boots the backend and frontend in deterministic test mode, then runs the agent/dashboard browser E2E suite.
+- **Not included:** deploy steps, production external services, live LLM/API calls, soak tests, SSL/Grafana work.
 
 Integration tests use **in-memory SQLite** via `tests/integration/conftest.py`; CI sets `DATABASE_URL=sqlite:///:memory:` so Postgres is not required.
+
+The Playwright job is intentionally separate from the backend/frontend jobs. It uses:
+
+| Setting | Value |
+|---------|-------|
+| `DATABASE_URL` | GitHub Actions PostgreSQL service |
+| `TESTING` | `true` |
+| `LLM_PROVIDER` | `scripted` |
+| `REVIEW_PROVIDER` | `mock` |
+| `OPENAI_API_KEY` | empty |
+| `workers` | `1` in `frontend/playwright.config.ts` |
+
+Playwright browser binaries are cached by `frontend/package-lock.json`. On failure, CI uploads `frontend/playwright-report/`, `frontend/test-results/`, `backend-e2e.log`, and `frontend-e2e.log`.
 
 ## Local validation (mirror CI)
 
 After installing backend (`pip install -r requirements.txt`) and frontend (`npm ci` in `frontend/`) dependencies:
 
 ```bash
+# Fast iteration: lint/format plus backend unit tests.
+make quick
+
+# Full non-browser validation, matching the backend/frontend CI jobs.
 make validate
 ```
 
 This runs `make lint` (Python + TS lint and format checks), `make test`, `make test-integration`, and `npm run build` in `frontend/`. For the build, ensure `frontend/.env.local` exists with `NEXT_PUBLIC_API_URL` if your setup needs it (see `frontend/.env.local.example`).
 
 Alias: `make ci-local` (same as `validate`).
+
+## Local Playwright E2E
+
+Run the browser E2E suite locally when touching agent/dashboard behavior or before merging a risky UI change:
+
+```bash
+# Terminal 1
+make test-e2e-servers
+
+# Terminal 2
+make test-e2e-ui
+```
+
+`make test-e2e-servers` starts the backend with `TESTING=true`, `LLM_PROVIDER=scripted`, `REVIEW_PROVIDER=mock`, and `OPENAI_API_KEY=""`, then starts the frontend with `NEXT_PUBLIC_API_URL=http://localhost:8000`. This mirrors the CI Playwright job's runtime environment; CI uses a PostgreSQL service and local runs use whichever `DATABASE_URL` your backend environment provides.
+
+Local Playwright does not inherit `DATABASE_URL` from `backend/.env`. The
+Makefile sets `DATABASE_URL=$(E2E_DATABASE_URL)` for the E2E backend process,
+defaulting to `postgresql://postgres:postgres@localhost:5432/review_insight`.
+It also sets `OPENAI_API_KEY=$(E2E_OPENAI_API_KEY)`, defaulting to
+`change-me-e2e`, which the backend config clears as a placeholder so local E2E
+does not use a real key from `backend/.env`. Override the database only when
+you intentionally want a different disposable local test database:
+
+```bash
+make test-e2e-servers E2E_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/review_insight_e2e
+```
 
 ## Docker-based vs local DB commands
 

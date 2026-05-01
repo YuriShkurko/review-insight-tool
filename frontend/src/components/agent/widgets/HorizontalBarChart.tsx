@@ -32,7 +32,11 @@ export function HorizontalBarChart({ data }: { data: Record<string, unknown> }) 
     .filter((bar) => bar.label && bar.value > 0);
 
   if (!bars.length) {
-    return <p className="text-xs text-text-muted">No chart data available.</p>;
+    return (
+      <p data-testid="widget-empty-state" className="text-xs text-text-muted">
+        No chart data available.
+      </p>
+    );
   }
 
   return (

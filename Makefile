@@ -1,4 +1,7 @@
-.PHONY: up down logs test test-integration test-e2e lint lint-fix format format-check validate frontend-build ci-local backend frontend dev dev-mobile debug stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head pdf aws-bootstrap aws-rds aws-network aws-alb aws-ecs aws-logs-backend aws-logs-frontend aws-status aws-teardown mongo-shell mongo-stats benchmark
+E2E_DATABASE_URL ?= postgresql://postgres:postgres@localhost:5432/review_insight
+E2E_OPENAI_API_KEY ?= change-me-e2e
+
+.PHONY: up down logs test test-integration test-e2e test-e2e-ui test-e2e-servers quick lint lint-fix format format-check validate frontend-build ci-local backend frontend dev dev-mobile debug stop db-reset db-add-is-competitor seed-offline seed-offline-local clean db-upgrade db-upgrade-local db-downgrade db-current db-revision db-history db-stamp-head pdf aws-bootstrap aws-rds aws-network aws-alb aws-ecs aws-logs-backend aws-logs-frontend aws-status aws-teardown mongo-shell mongo-stats benchmark
 
 # ── Docker Compose ──────────────────────────────────────────────
 
@@ -74,6 +77,26 @@ test-integration:
 test-e2e:
 	cd backend && python -m pytest tests/e2e/ -v
 
+## Start backend + frontend in E2E mode (deterministic ScriptedProvider, mock reviews).
+## Run this in one terminal, then `make test-e2e-ui` in another to drive Playwright.
+## Backend: DATABASE_URL=$(E2E_DATABASE_URL) TESTING=true LLM_PROVIDER=scripted REVIEW_PROVIDER=mock OPENAI_API_KEY=$(E2E_OPENAI_API_KEY)
+## Frontend: NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
+test-e2e-servers:
+	@echo Starting backend (E2E mode, scripted LLM, mock reviews) on http://localhost:8000 ...
+	cmd /C "cd /d $(CURDIR)\backend && set DATABASE_URL=$(E2E_DATABASE_URL)&& set TESTING=true&& set LLM_PROVIDER=scripted&& set REVIEW_PROVIDER=mock&& set OPENAI_API_KEY=$(E2E_OPENAI_API_KEY)&& start /B python -m uvicorn app.main:app --reload --port 8000"
+	@echo Starting frontend on http://localhost:3000 ...
+	cmd /C "cd /d $(CURDIR)\frontend && set NEXT_PUBLIC_API_URL=http://localhost:8000&& npm run dev"
+
+## Run the Playwright agent/dashboard E2E suite. Requires `make test-e2e-servers`
+## to be running in another terminal (or both servers started manually with the
+## env shown above). Generates a Playwright HTML report in frontend/playwright-report.
+test-e2e-ui:
+	cd frontend && npm run test:e2e
+
+## Fast pre-push checks: lint/format plus backend unit tests (no integration, build, or browser E2E)
+quick: lint test
+	@echo ✓ quick complete.
+
 ## Check all linters (ruff + eslint + prettier) — fails on any violation
 lint:
 	@echo ── Python (ruff check) ──────────────────────────────
@@ -110,8 +133,9 @@ format-check:
 	cd frontend && npm run format:check
 	@echo ✓ Formatting OK.
 
-## Run the same validation as GitHub Actions (requires Python + Node deps installed locally)
+## Run the same non-browser validation as GitHub Actions (requires Python + Node deps installed locally)
 ## Order: lint (includes format checks) → unit tests → integration tests → frontend production build
+## Browser E2E is a separate CI job; run locally with `make test-e2e-servers` + `make test-e2e-ui`.
 validate: lint test test-integration frontend-build
 	@echo ✓ validate complete.
 

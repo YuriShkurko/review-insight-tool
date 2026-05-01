@@ -90,6 +90,12 @@ _MIXED_REVIEWS = [
 
 _ALL_REVIEWS = _POSITIVE_REVIEWS + _NEGATIVE_REVIEWS + _MIXED_REVIEWS
 
+# Anchor mock reviews to process-start time so two calls within the same
+# server lifetime produce byte-identical results (the determinism contract
+# the mock provider tests assert), while still ageing with the calendar
+# across restarts so recency-filtered tools always have data.
+_BASE_DATE = datetime.now(UTC)
+
 
 def generate_mock_reviews(place_id: str, count: int = 15) -> list[dict]:
     """Generate deterministic mock reviews seeded by place_id.
@@ -101,11 +107,15 @@ def generate_mock_reviews(place_id: str, count: int = 15) -> list[dict]:
     rng = random.Random(seed)
 
     selected = rng.choices(_ALL_REVIEWS, k=count)
-    base_date = datetime(2025, 6, 1, tzinfo=UTC)
+    base_date = _BASE_DATE
 
     reviews = []
     for i, review in enumerate(selected):
-        days_ago = rng.randint(1, 365)
+        # Bias toward the last ~90 days so recency-filtered tools (top_issues,
+        # rating_distribution, review_series) always have data to surface.
+        # Uniform 1-365 left some seeds with zero reviews in any 30d window
+        # which silently broke E2E flows that depend on those tools.
+        days_ago = rng.randint(1, 90)
         external_id = hashlib.sha256(f"{place_id}:{i}".encode()).hexdigest()[:16]
         reviews.append(
             {

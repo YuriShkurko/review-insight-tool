@@ -66,6 +66,11 @@ class Settings(BaseSettings):
     # Debug tracing — set to "true" to enable E2E request tracing ring buffer.
     DEBUG_TRACE: bool = False
 
+    # Test-only knobs. TESTING gates the /api/test/* routes and any
+    # production-unsafe behavior (e.g. ScriptedProvider). Never enable in prod.
+    TESTING: bool = False
+    AGENT_SCRIPT_PATH: str = ""
+
     model_config = {"env_file": str(_BACKEND_DIR / ".env"), "extra": "ignore"}
 
     @model_validator(mode="after")

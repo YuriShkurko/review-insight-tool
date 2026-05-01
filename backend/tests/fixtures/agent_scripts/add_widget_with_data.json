@@ -1,0 +1,25 @@
+[
+  {
+    "text": "",
+    "tool_calls": [
+      {"name": "get_rating_distribution", "arguments": {"days": 30}}
+    ]
+  },
+  {
+    "text": "",
+    "tool_calls": [
+      {
+        "name": "pin_widget",
+        "arguments": {
+          "widget_type": "bar_chart",
+          "title": "Rating distribution",
+          "source_tool": "get_rating_distribution"
+        }
+      }
+    ]
+  },
+  {
+    "text": "Added rating distribution to the dashboard.",
+    "tool_calls": []
+  }
+]

@@ -822,7 +822,9 @@ def test_agent_duplicate_then_reorder_includes_copied_widget(
                         ToolCall(
                             id="t3",
                             name="set_dashboard_order",
-                            arguments={"widget_ids": [original_ids[1], copied_id, original_ids[0]]},
+                            arguments={
+                                "widget_ids": [original_ids[1], copied_id, original_ids[0]]
+                            },
                         )
                     ],
                 )

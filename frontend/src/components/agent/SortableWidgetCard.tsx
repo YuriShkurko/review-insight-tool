@@ -44,11 +44,11 @@ export function SortableWidgetCard({
       data-testid="workspace-widget"
       data-widget-id={widget.id}
       data-widget-type={widget.widget_type}
-      className={`bg-surface-card border border-border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${
+      className={`bg-surface-card border border-border rounded-lg overflow-hidden shadow-sm hover:border-border hover:shadow-lg transition-all ${
         isFullWidth ? "col-span-2" : "col-span-1"
       } ${isDragging ? "shadow-xl ring-2 ring-brand/20" : ""}`}
     >
-      <div className="px-3 py-2 bg-surface-elevated border-b border-border-subtle flex items-center gap-2">
+      <div className="px-3.5 py-3 bg-surface-card border-b border-border-subtle flex items-center gap-2">
         {/* Drag handle */}
         <button
           type="button"
@@ -68,10 +68,13 @@ export function SortableWidgetCard({
         </button>
 
         <div className="flex-1 min-w-0">
-          <p data-testid="widget-title" className="text-sm font-medium text-text-primary truncate">
+          <p
+            data-testid="widget-title"
+            className="text-sm font-semibold text-text-primary truncate"
+          >
             {widget.title}
           </p>
-          <p className="text-xs text-text-muted capitalize">
+          <p className="mt-0.5 text-[11px] text-text-muted capitalize">
             {widget.widget_type.replace(/_/g, " ")}
           </p>
         </div>
@@ -86,7 +89,7 @@ export function SortableWidgetCard({
           ×
         </button>
       </div>
-      <div data-testid="widget-chart" className="p-3">
+      <div data-testid="widget-chart" className="p-4">
         <WidgetRenderer widgetType={widget.widget_type} data={widget.data} />
       </div>
     </div>

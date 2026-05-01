@@ -9,7 +9,6 @@ import { trailEvent } from "@/lib/debugTrail";
 import Toast from "@/components/Toast";
 import { ChatPanel } from "@/components/agent/ChatPanel";
 import { Workspace } from "@/components/agent/Workspace";
-import { ResizablePanel } from "@/components/ui/ResizablePanel";
 import { WorkspaceBlackboardProvider, useWorkspace } from "@/lib/workspaceBlackboard";
 import type { Dashboard, Review } from "@/lib/types";
 
@@ -325,25 +324,36 @@ function BusinessDetailContent({
         </button>
       </div>
 
-      {/* Desktop: resizable panel. Mobile: tab-based */}
-      <div data-testid="dashboard-desktop" className="flex-1 overflow-hidden hidden lg:flex">
-        <ResizablePanel
-          left={
-            <Workspace
-              widgets={state.widgets}
-              onDelete={handleDeleteWidget}
-              onReorder={handleReorder}
-              isLoading={state.isLoading}
-              error={state.error}
-              onRetry={reload}
-              onDismissError={dismissError}
-            />
-          }
-          right={<ChatPanel key={id} businessId={id} onCollapse={onCollapseChat} />}
-          defaultRatio={0.65}
-          rightCollapsed={chatCollapsed}
-          onRightCollapsedChange={onExpandChat}
+      {/* Desktop: dashboard canvas with floating assistant. Mobile: tab-based. */}
+      <div
+        data-testid="dashboard-desktop"
+        className="relative flex-1 overflow-hidden hidden lg:block"
+      >
+        <Workspace
+          widgets={state.widgets}
+          onDelete={handleDeleteWidget}
+          onReorder={handleReorder}
+          isLoading={state.isLoading}
+          error={state.error}
+          onRetry={reload}
+          onDismissError={dismissError}
         />
+        {!chatCollapsed ? (
+          <aside
+            data-testid="assistant-drawer"
+            className="absolute bottom-5 right-5 top-5 z-20 w-[min(420px,34vw)] overflow-hidden rounded-xl border border-border bg-surface-card shadow-2xl"
+          >
+            <ChatPanel key={id} businessId={id} onCollapse={onCollapseChat} />
+          </aside>
+        ) : (
+          <button
+            type="button"
+            onClick={onExpandChat}
+            className="absolute bottom-6 right-6 z-20 flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white shadow-lg transition-colors hover:bg-brand-hover"
+          >
+            Open Chat
+          </button>
+        )}
       </div>
 
       {/* Mobile panels */}

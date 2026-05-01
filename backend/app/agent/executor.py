@@ -71,7 +71,13 @@ def _rehydrate_tool_results(history: list[dict]) -> dict[str, dict]:
             continue
         # Skip non-data tools — pin_widget/remove_widget/duplicate_widget
         # do not produce reusable payloads.
-        if name in {"pin_widget", "remove_widget", "duplicate_widget"}:
+        if name in {
+            "pin_widget",
+            "get_workspace",
+            "remove_widget",
+            "duplicate_widget",
+            "set_dashboard_order",
+        }:
             continue
         raw = msg.get("content")
         if not isinstance(raw, str):
@@ -309,7 +315,13 @@ async def run_agent(
                     if (
                         isinstance(result, dict)
                         and "error" not in result
-                        and tc.name not in {"remove_widget", "duplicate_widget"}
+                        and tc.name
+                        not in {
+                            "get_workspace",
+                            "remove_widget",
+                            "duplicate_widget",
+                            "set_dashboard_order",
+                        }
                     ):
                         tool_results[tc.name] = result
             except Exception as exc:
@@ -336,6 +348,11 @@ async def run_agent(
                 yield _sse(
                     "workspace_event",
                     {"action": "widget_added", "widget": result["widget"]},
+                )
+            if tc.name == "set_dashboard_order" and result.get("reordered"):
+                yield _sse(
+                    "workspace_event",
+                    {"action": "widgets_reordered", "widget_ids": result.get("widget_ids", [])},
                 )
 
             tool_msg = {

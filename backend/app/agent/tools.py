@@ -421,6 +421,18 @@ TOOL_DEFINITIONS: list[dict] = [
     {
         "type": "function",
         "function": {
+            "name": "get_workspace",
+            "description": (
+                "List the current dashboard widgets with exact widget IDs, titles, types, "
+                "and positions. Use this before remove, duplicate, or set_dashboard_order "
+                "when you need to identify existing dashboard widgets."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "remove_widget",
             "description": (
                 "Remove a dashboard widget by exact widget_id UUID. Never guess or fabricate "
@@ -462,6 +474,30 @@ TOOL_DEFINITIONS: list[dict] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_dashboard_order",
+            "description": (
+                "Set the exact dashboard widget order using the current persisted widget IDs. "
+                "Use this for reverse, reorder, arrange, move, or after duplicating/removing "
+                "widgets when the user requested a final order. Include every widget that "
+                "should appear in the final order. Never guess widget IDs; ask for "
+                "clarification if the requested order is ambiguous."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "widget_ids": {
+                        "type": "array",
+                        "items": {"type": "string", "format": "uuid"},
+                        "description": "Exact widget IDs in the desired dashboard order.",
+                    }
+                },
+                "required": ["widget_ids"],
+            },
+        },
+    },
 ]
 
 # Maps tool name → widget_type hint for tool_result SSE events
@@ -478,8 +514,10 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "get_review_change_summary": "comparison_chart",
     "create_custom_chart_data": None,
     "pin_widget": None,
+    "get_workspace": None,
     "remove_widget": None,
     "duplicate_widget": None,
+    "set_dashboard_order": None,
 }
 
 # Per-tool acceptable widget types. The model occasionally picks a chart
@@ -612,12 +650,18 @@ def execute_tool(
     if name == "pin_widget":
         coerced = _coerce_pin_widget_arguments(args)
         return _pin_widget(db, business_id, user_id, **coerced)
+    if name == "get_workspace":
+        return _get_workspace(db, business_id, user_id)
     if name == "remove_widget":
         return _remove_widget(db, business_id, user_id, widget_id=str(args.get("widget_id", "")))
     if name == "duplicate_widget":
         return _duplicate_widget(
             db, business_id, user_id, widget_id=str(args.get("widget_id", ""))
         )
+    if name == "set_dashboard_order":
+        raw_widget_ids = args.get("widget_ids")
+        widget_ids = raw_widget_ids if isinstance(raw_widget_ids, list) else []
+        return _set_dashboard_order(db, business_id, user_id, widget_ids=widget_ids)
     return {"error": f"Unknown tool: {name}"}
 
 
@@ -1364,6 +1408,30 @@ def _remove_widget(
     return {"removed": True, "widget_id": str(parsed_widget_id)}
 
 
+def _get_workspace(db: Session, business_id: uuid.UUID, user_id: uuid.UUID) -> dict:
+    widgets = (
+        db.query(WorkspaceWidget)
+        .filter(
+            WorkspaceWidget.business_id == business_id,
+            WorkspaceWidget.user_id == user_id,
+        )
+        .order_by(WorkspaceWidget.position)
+        .all()
+    )
+    return {
+        "widgets": [
+            {
+                "id": str(widget.id),
+                "title": widget.title,
+                "widget_type": widget.widget_type,
+                "position": widget.position,
+            }
+            for widget in widgets
+        ],
+        "widget_ids": [str(widget.id) for widget in widgets],
+    }
+
+
 def _duplicate_widget(
     db: Session,
     business_id: uuid.UUID,
@@ -1437,6 +1505,84 @@ def _duplicate_widget(
             "position": new_widget.position,
             "created_at": new_widget.created_at.isoformat() if new_widget.created_at else None,
         },
+    }
+
+
+def _set_dashboard_order(
+    db: Session,
+    business_id: uuid.UUID,
+    user_id: uuid.UUID,
+    *,
+    widget_ids: list,
+) -> dict:
+    parsed_ids: list[uuid.UUID] = []
+    for raw_id in widget_ids:
+        try:
+            parsed_ids.append(uuid.UUID(str(raw_id)))
+        except (TypeError, ValueError):
+            return {"reordered": False, "error": f"Invalid widget_id UUID: {raw_id!r}."}
+
+    if len(parsed_ids) != len(set(parsed_ids)):
+        return {"reordered": False, "error": "widget_ids must not contain duplicates."}
+
+    rows = (
+        db.query(WorkspaceWidget)
+        .filter(
+            WorkspaceWidget.business_id == business_id,
+            WorkspaceWidget.user_id == user_id,
+        )
+        .order_by(WorkspaceWidget.position)
+        .all()
+    )
+    existing_ids = [row.id for row in rows]
+    existing_set = set(existing_ids)
+    requested_set = set(parsed_ids)
+
+    missing = [str(widget_id) for widget_id in parsed_ids if widget_id not in existing_set]
+    omitted = [str(widget_id) for widget_id in existing_ids if widget_id not in requested_set]
+    if missing or omitted:
+        return {
+            "reordered": False,
+            "error": (
+                "widget_ids must include exactly the current dashboard widgets. "
+                "Call get_workspace or ask the user to clarify if you do not know the full order."
+            ),
+            "missing_widget_ids": missing,
+            "omitted_widget_ids": omitted,
+            "current_widget_ids": [str(widget_id) for widget_id in existing_ids],
+        }
+
+    for position, widget_id in enumerate(parsed_ids):
+        db.query(WorkspaceWidget).filter(
+            WorkspaceWidget.id == widget_id,
+            WorkspaceWidget.business_id == business_id,
+            WorkspaceWidget.user_id == user_id,
+        ).update({"position": position})
+    db.commit()
+
+    ordered_widgets = (
+        db.query(WorkspaceWidget)
+        .filter(
+            WorkspaceWidget.business_id == business_id,
+            WorkspaceWidget.user_id == user_id,
+        )
+        .order_by(WorkspaceWidget.position)
+        .all()
+    )
+    return {
+        "reordered": True,
+        "widget_ids": [str(widget.id) for widget in ordered_widgets],
+        "widgets": [
+            {
+                "id": str(widget.id),
+                "widget_type": widget.widget_type,
+                "title": widget.title,
+                "data": widget.data,
+                "position": widget.position,
+                "created_at": widget.created_at.isoformat() if widget.created_at else None,
+            }
+            for widget in ordered_widgets
+        ],
     }
 
 

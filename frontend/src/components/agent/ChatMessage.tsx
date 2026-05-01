@@ -13,6 +13,10 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   get_top_issues: "Top Issues",
   get_review_insights: "Review Insights",
   get_review_change_summary: "Period Comparison",
+  get_workspace: "Dashboard Widgets",
+  remove_widget: "Remove Widget",
+  duplicate_widget: "Copy Widget",
+  set_dashboard_order: "Reorder Dashboard",
 };
 
 function formatToolName(name: string): string {
@@ -23,11 +27,13 @@ export function ChatMessage({
   item,
   isStreaming,
   isGlobalStreaming = false,
+  isRecovered = false,
   onPin,
 }: {
   item: MessageItem;
   isStreaming: boolean;
   isGlobalStreaming?: boolean;
+  isRecovered?: boolean;
   onPin: (widgetType: string, title: string, data: Record<string, unknown>) => void;
 }) {
   if (item.kind === "user") {
@@ -67,13 +73,76 @@ export function ChatMessage({
   if (item.kind === "tool_result") {
     if (item.name === "pin_widget") {
       const succeeded = item.result?.pinned === true;
+      const error = (item.result?.error as string) || "Failed to pin widget";
+      if (!succeeded && isRecovered) {
+        return (
+          <div className="flex justify-start">
+            <details className="group max-w-[85%] rounded-full border border-border-subtle bg-surface px-2.5 py-1 text-xs text-text-muted">
+              <summary className="cursor-pointer list-none">
+                Recovered with a compatible chart type
+              </summary>
+              <p className="mt-1 max-w-xs whitespace-pre-wrap pl-1 text-[11px] leading-relaxed text-text-muted">
+                {error}
+              </p>
+            </details>
+          </div>
+        );
+      }
       return (
         <div className="flex justify-start">
-          <p className={`text-xs py-1 pl-1 ${succeeded ? "text-text-muted" : "text-red-500"}`}>
-            {succeeded
-              ? "Pinned to workspace"
-              : (item.result?.error as string) || "Failed to pin widget"}
-          </p>
+          <details
+            className={`max-w-[85%] rounded-full border px-2.5 py-1 text-xs ${
+              succeeded
+                ? "border-border-subtle bg-surface text-text-muted"
+                : "border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/20"
+            }`}
+          >
+            <summary className="cursor-pointer list-none">
+              {succeeded ? "Pinned to workspace" : "Pin failed"}
+            </summary>
+            {!succeeded && (
+              <p className="mt-1 max-w-xs whitespace-pre-wrap pl-1 text-[11px] leading-relaxed">
+                {error}
+              </p>
+            )}
+          </details>
+        </div>
+      );
+    }
+
+    if (
+      item.name === "remove_widget" ||
+      item.name === "duplicate_widget" ||
+      item.name === "set_dashboard_order"
+    ) {
+      const ok =
+        item.result?.removed === true ||
+        item.result?.duplicated === true ||
+        item.result?.reordered === true;
+      const label =
+        item.name === "remove_widget"
+          ? "Removed from dashboard"
+          : item.name === "duplicate_widget"
+            ? "Copied on dashboard"
+            : "Dashboard order updated";
+      return (
+        <div className="flex justify-start">
+          <details
+            className={`max-w-[85%] rounded-full border px-2.5 py-1 text-xs ${
+              ok
+                ? "border-border-subtle bg-surface text-text-muted"
+                : "border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/20"
+            }`}
+          >
+            <summary className="cursor-pointer list-none">
+              {ok ? label : `${formatToolName(item.name)} failed`}
+            </summary>
+            {!ok && (
+              <p className="mt-1 max-w-xs whitespace-pre-wrap pl-1 text-[11px] leading-relaxed">
+                {(item.result?.error as string) || "The dashboard action did not complete."}
+              </p>
+            )}
+          </details>
         </div>
       );
     }

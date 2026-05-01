@@ -200,6 +200,16 @@ describe("workspaceReducer", () => {
     expect(actions).toEqual([{ type: "WIDGET_REMOVED", widgetId: "w1" }]);
   });
 
+  it("dispatches widgets_reordered workspace events to the reducer action", () => {
+    const actions: unknown[] = [];
+
+    dispatchWorkspaceEvent({ action: "widgets_reordered", widget_ids: ["w3", "w1"] }, (action) =>
+      actions.push(action),
+    );
+
+    expect(actions).toEqual([{ type: "WIDGET_REORDERED", widgetIds: ["w3", "w1"] }]);
+  });
+
   it("reorders requested widgets and preserves unspecified widgets after them", () => {
     const state = workspaceReducer(
       { ...INITIAL, widgets: [widget("w1", 0), widget("w2", 1), widget("w3", 2)] },

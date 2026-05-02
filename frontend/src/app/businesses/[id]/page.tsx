@@ -406,9 +406,7 @@ function BusinessDetailContent({
         {/* Keep workspace chrome clear of the fixed assistant panel (same width as aside: right-5 + w). */}
         <div
           className={`flex min-h-0 flex-1 flex-col overflow-hidden ${
-            !presentationMode && !chatCollapsed
-              ? "pr-[calc(1.25rem+min(430px,34vw))]"
-              : ""
+            !presentationMode && !chatCollapsed ? "pr-[calc(1.25rem+min(430px,34vw))]" : ""
           }`}
         >
           <Workspace

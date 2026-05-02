@@ -1,5 +1,6 @@
 "use client";
 
+import { NarrativeCallouts } from "./NarrativeCallouts";
 import type { Dashboard } from "@/lib/types";
 
 function formatFreshness(isoDate: string | null): string {
@@ -85,6 +86,7 @@ export function ExecutiveSummary({ dashboard }: { dashboard: Dashboard | null })
           ))}
         </div>
       </div>
+      <NarrativeCallouts dashboard={dashboard} />
     </div>
   );
 }

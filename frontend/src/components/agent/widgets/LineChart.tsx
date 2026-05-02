@@ -22,7 +22,6 @@ export function formatLabel(dateIso: string): string {
   const parts = dateIso.split("-").map(Number);
   if (parts.length !== 3 || parts.some(Number.isNaN)) return dateIso;
   const [y, m, d] = parts;
-  // Construct as a local date to avoid UTC-midnight shifting to the previous day.
   const date = new Date(y, m - 1, d);
   if (Number.isNaN(date.getTime())) return dateIso;
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -51,20 +50,44 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
   }
 
   const values = points.map((p) => p.value ?? 0);
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const range = Math.max(max - min, 1);
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
 
-  const chartWidth = 100;
-  const chartHeight = 36;
-  const xStep = points.length > 1 ? chartWidth / (points.length - 1) : chartWidth;
+  // Smarter domain: anchor count series at zero with headroom; clamp rating to a
+  // padded sub-range of [0, 5] so small movements actually read as movement.
+  let yMin: number;
+  let yMax: number;
+  if (metric === "avg_rating") {
+    yMin = Math.max(0, rawMin - 0.25);
+    yMax = Math.min(5, rawMax + 0.25);
+    if (yMax - yMin < 0.5) {
+      const mid = (yMin + yMax) / 2;
+      yMin = Math.max(0, mid - 0.25);
+      yMax = Math.min(5, mid + 0.25);
+    }
+  } else {
+    yMin = 0;
+    yMax = Math.max(rawMax, 1) * 1.15;
+  }
+  const range = Math.max(yMax - yMin, 1e-6);
 
-  const path = points
-    .map((point, index) => {
-      const x = index * xStep;
-      const y = chartHeight - (((point.value ?? 0) - min) / range) * chartHeight;
-      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
+  const chartWidth = 320;
+  const chartHeight = 100;
+  const padX = 6;
+  const padTop = 6;
+  const padBottom = 6;
+  const innerW = chartWidth - padX * 2;
+  const innerH = chartHeight - padTop - padBottom;
+  const xStep = points.length > 1 ? innerW / (points.length - 1) : innerW;
+
+  const xy = points.map((point, index) => {
+    const x = padX + index * xStep;
+    const y = padTop + innerH - (((point.value ?? yMin) - yMin) / range) * innerH;
+    return { x, y };
+  });
+
+  const path = xy
+    .map((p, index) => `${index === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
     .join(" ");
 
   const lastPoint = points.at(-1);
@@ -74,34 +97,89 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
       ? Number((lastPoint.value - firstPoint.value).toFixed(2))
       : null;
 
+  // Horizontal grid: 3 lines (top, mid, bottom).
+  const gridLines = [0, 0.5, 1].map((t) => padTop + innerH * t);
+
+  // Hit zones: one transparent rect per index, snapping to the nearest point.
+  const hitW = points.length > 1 ? innerW / (points.length - 1) : innerW;
+
   return (
     <div className="space-y-3">
       <div className="h-32 w-full rounded-lg border border-slate-200 bg-slate-50 p-3">
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           className="h-full w-full"
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
         >
-          <path d={path} fill="none" stroke="currentColor" strokeWidth="2" className="text-brand" />
+          {gridLines.map((y, i) => (
+            <line
+              key={`grid-${i}`}
+              x1={padX}
+              x2={chartWidth - padX}
+              y1={y}
+              y2={y}
+              className="stroke-slate-200"
+              strokeWidth="0.5"
+            />
+          ))}
+          <path
+            d={path}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="chart-path-reveal text-brand"
+          />
+          {/* Anchor first/last so a single-point or short series still reads. */}
+          {xy.length > 0 && (
+            <circle
+              cx={xy[0].x}
+              cy={xy[0].y}
+              r={1.6}
+              className="fill-brand/70"
+            />
+          )}
+          {xy.length > 1 && (
+            <circle
+              cx={xy[xy.length - 1].x}
+              cy={xy[xy.length - 1].y}
+              r={1.6}
+              className="fill-brand/70"
+            />
+          )}
+          {/* Highlighted dot for the selected index only. */}
+          {selectedIdx !== null && xy[selectedIdx] && (
+            <circle
+              cx={xy[selectedIdx].x}
+              cy={xy[selectedIdx].y}
+              r={3}
+              className="fill-brand"
+            />
+          )}
+          {/* Invisible hit zones drive hover/click without cluttering the line. */}
           {points.map((point, index) => {
-            const x = index * xStep;
-            const y = chartHeight - (((point.value ?? 0) - min) / range) * chartHeight;
-            const isSelected = selectedIdx === index;
+            const cx = padX + index * xStep;
+            const x = Math.max(padX, cx - hitW / 2);
+            const w = Math.min(hitW, chartWidth - padX - x);
             return (
-              <circle
-                key={`${point.date}-${index}`}
-                cx={x}
-                cy={y}
-                r={isSelected ? 3 : 1.8}
-                className={isSelected ? "fill-brand" : "fill-accent"}
+              <rect
+                key={`hit-${point.date}-${index}`}
+                x={x}
+                y={0}
+                width={w}
+                height={chartHeight}
+                fill="transparent"
                 style={{ cursor: "pointer" }}
-                onClick={() => setSelectedIdx(isSelected ? null : index)}
+                onMouseEnter={() => setSelectedIdx(index)}
+                onMouseLeave={() => setSelectedIdx((prev) => (prev === index ? null : prev))}
+                onClick={() => setSelectedIdx(selectedIdx === index ? null : index)}
               >
                 <title>
                   {formatLabel(point.date)}: {point.value ?? 0}{" "}
                   {metric === "avg_rating" ? "rating" : "reviews"}
                 </title>
-              </circle>
+              </rect>
             );
           })}
         </svg>

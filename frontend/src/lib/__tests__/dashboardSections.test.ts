@@ -3,6 +3,8 @@ import {
   classifyWidget,
   groupBySection,
   flattenForReorder,
+  pickHeroSection,
+  splitHeroWidgets,
   SECTIONS,
 } from "../dashboardSections";
 import type { WorkspaceWidget } from "../agentTypes";
@@ -32,15 +34,15 @@ describe("classifyWidget", () => {
   });
 
   it("puts summary_card with action_items in actions", () => {
-    expect(
-      classifyWidget(w("1", "summary_card", "Actions", { action_items: ["do this"] })),
-    ).toBe("actions");
+    expect(classifyWidget(w("1", "summary_card", "Actions", { action_items: ["do this"] }))).toBe(
+      "actions",
+    );
   });
 
   it("puts summary_card with recommended_focus in actions", () => {
-    expect(
-      classifyWidget(w("1", "summary_card", "Focus", { recommended_focus: "service" })),
-    ).toBe("actions");
+    expect(classifyWidget(w("1", "summary_card", "Focus", { recommended_focus: "service" }))).toBe(
+      "actions",
+    );
   });
 
   it("puts line_chart in trends", () => {
@@ -155,5 +157,29 @@ describe("flattenForReorder", () => {
   it("empty grouped produces empty array", () => {
     const grouped = groupBySection([]);
     expect(flattenForReorder(grouped)).toEqual([]);
+  });
+});
+
+describe("dashboard composition", () => {
+  it("prefers trends as the hero section when chart widgets exist", () => {
+    const grouped = groupBySection([w("metric1", "metric_card"), w("chart1", "line_chart")]);
+    expect(pickHeroSection(grouped)).toBe("trends");
+  });
+
+  it("falls back to overview and then issues for hero section", () => {
+    expect(pickHeroSection(groupBySection([w("metric1", "metric_card")]))).toBe("overview");
+    expect(pickHeroSection(groupBySection([w("issue1", "insight_list")]))).toBe("issues");
+  });
+
+  it("splits only the selected hero section into hero and supporting widgets", () => {
+    const widgets = [w("chart1", "line_chart"), w("chart2", "bar_chart")];
+    expect(splitHeroWidgets("trends", "trends", widgets)).toEqual({
+      hero: widgets[0],
+      supporting: [widgets[1]],
+    });
+    expect(splitHeroWidgets("overview", "trends", widgets)).toEqual({
+      hero: null,
+      supporting: widgets,
+    });
   });
 });

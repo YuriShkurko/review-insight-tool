@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { useAgentChat } from "@/lib/useAgentChat";
 import { useWorkspace } from "@/lib/workspaceBlackboard";
 import { normalizeWorkspaceWidget } from "@/lib/workspaceWidget";
 import { ChatInput } from "./ChatInput";
@@ -27,25 +26,101 @@ function recoveredPinFailures(items: MessageItem[]): Set<string> {
   return recovered;
 }
 
+function humanizeToolName(name: string): string {
+  return name.replace(/_/g, " ");
+}
+
+export function getAssistantStatus(
+  items: MessageItem[],
+  isStreaming: boolean,
+  hasError: boolean,
+): { label: string; detail: string; tone: "idle" | "working" | "done" | "error" } {
+  if (hasError) {
+    return {
+      label: "Needs attention",
+      detail: "Review the message below and try again.",
+      tone: "error",
+    };
+  }
+
+  if (isStreaming) {
+    const lastTool = [...items].reverse().find((item) => item.kind === "tool_call");
+    if (lastTool?.kind === "tool_call") {
+      return {
+        label: "Working with tools",
+        detail: `Running ${humanizeToolName(lastTool.name)}.`,
+        tone: "working",
+      };
+    }
+    return {
+      label: "Thinking",
+      detail: "Reading the workspace and preparing a response.",
+      tone: "working",
+    };
+  }
+
+  if (items.length === 0) {
+    return {
+      label: "Ready",
+      detail: "Ask for a demo dashboard, issue summary, or comparison.",
+      tone: "idle",
+    };
+  }
+
+  return {
+    label: "Done",
+    detail: "Last action completed. You can keep refining the dashboard.",
+    tone: "done",
+  };
+}
+
+export function getLastActionSummary(items: MessageItem[]): string | null {
+  const lastResult = [...items].reverse().find((item) => item.kind === "tool_result");
+  if (lastResult?.kind !== "tool_result") return null;
+
+  if (lastResult.name === "pin_widget") {
+    return lastResult.result?.pinned === true
+      ? "Pinned a widget to the dashboard."
+      : "A widget pin did not complete.";
+  }
+  if (lastResult.name === "clear_dashboard" && lastResult.result?.cleared === true) {
+    return "Cleared the dashboard.";
+  }
+  if (lastResult.name === "remove_widget" && lastResult.result?.removed === true) {
+    return "Removed a widget.";
+  }
+  if (lastResult.name === "duplicate_widget" && lastResult.result?.duplicated === true) {
+    return "Copied a widget.";
+  }
+  if (lastResult.name === "set_dashboard_order" && lastResult.result?.reordered === true) {
+    return "Updated dashboard order.";
+  }
+  if (lastResult.widgetType) {
+    return `${humanizeToolName(lastResult.name)} preview is ready.`;
+  }
+  return null;
+}
+
+export interface ChatController {
+  items: MessageItem[];
+  isStreaming: boolean;
+  streamingId: string | null;
+  error: string | null;
+  sendMessage: (message: string) => void | Promise<void>;
+  clearError: () => void;
+}
+
 export function ChatPanel({
   businessId,
+  chat,
   onCollapse,
 }: {
   businessId: string;
+  chat: ChatController;
   onCollapse?: () => void;
 }) {
-  const { dispatch, reload } = useWorkspace();
-
-  const onAgentStreamDone = useCallback(async () => {
-    await reload();
-  }, [reload]);
-
-  const { items, isStreaming, streamingId, error, sendMessage, clearError } = useAgentChat(
-    businessId,
-    undefined,
-    onAgentStreamDone,
-    dispatch,
-  );
+  const { dispatch } = useWorkspace();
+  const { items, isStreaming, streamingId, error, sendMessage, clearError } = chat;
   const [pinError, setPinError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -74,15 +149,36 @@ export function ChatPanel({
 
   const isEmpty = items.length === 0;
   const recoveredFailures = recoveredPinFailures(items);
+  const assistantStatus = getAssistantStatus(items, isStreaming, Boolean(error || pinError));
+  const lastActionSummary = getLastActionSummary(items);
 
   return (
     <div className="flex h-full flex-col bg-white">
       <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-[#111827] px-4 py-3 text-white">
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-white/45">
             Copilot
           </p>
           <span className="text-sm font-semibold tracking-wide">Review assistant</span>
+          <div
+            data-testid="assistant-status"
+            data-status={assistantStatus.tone}
+            className="mt-1 flex min-w-0 items-center gap-2 text-xs text-white/55"
+          >
+            <span
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                assistantStatus.tone === "error"
+                  ? "bg-red-300"
+                  : assistantStatus.tone === "working"
+                    ? "animate-pulse bg-amber-300"
+                    : assistantStatus.tone === "done"
+                      ? "bg-emerald-300"
+                      : "bg-white/35"
+              }`}
+            />
+            <span className="font-medium text-white/75">{assistantStatus.label}</span>
+            <span className="truncate">{assistantStatus.detail}</span>
+          </div>
         </div>
         {onCollapse && (
           <button
@@ -112,6 +208,14 @@ export function ChatPanel({
           <SuggestedPrompts onSelect={sendMessage} />
         ) : (
           <div className="max-w-2xl space-y-3">
+            {lastActionSummary && (
+              <div
+                data-testid="assistant-last-action"
+                className="rounded-lg border border-brand/15 bg-brand-light/40 px-3 py-2 text-xs text-brand"
+              >
+                {lastActionSummary}
+              </div>
+            )}
             {items.map((item) => (
               <ChatMessage
                 key={item.id}

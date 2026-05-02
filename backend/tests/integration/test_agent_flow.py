@@ -1961,3 +1961,65 @@ def test_full_dashboard_build_can_exceed_old_iteration_cap(
         "review_list",
     ]
     assert all(w["data"] for w in widgets)
+
+
+def test_agent_aborts_after_repeated_failed_pin_attempts(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """A bad live-model recovery loop should stop before burning all iterations."""
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _provider():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            return (
+                "",
+                [
+                    ToolCall(
+                        id=f"bad-pin-{call_count}",
+                        name="pin_widget",
+                        arguments={
+                            "widget_type": "positive_insights",
+                            "title": "Positive insights",
+                            "source_tool": "get_review_insights",
+                        },
+                    )
+                ],
+            )
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider)
+    biz_id = _make_biz(client, auth_headers)
+    client.post(f"/api/businesses/{biz_id}/fetch-reviews", headers=auth_headers)
+
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Show positives and add them to the dashboard"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    failed_pins = [
+        e
+        for e in events
+        if e["type"] == "tool_result"
+        and e["data"].get("name") == "pin_widget"
+        and e["data"]["result"].get("pinned") is False
+    ]
+    assert len(failed_pins) == executor_mod.MAX_FAILED_PIN_ATTEMPTS
+    assert call_count == executor_mod.MAX_FAILED_PIN_ATTEMPTS
+    assert "couldn't add that widget" in r.text
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json() == []

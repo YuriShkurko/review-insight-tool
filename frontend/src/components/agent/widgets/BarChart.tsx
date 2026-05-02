@@ -64,7 +64,7 @@ export function BarChart({ data }: { data: Record<string, unknown> }) {
                 width={w}
                 height={Math.max(h, 0)}
                 rx={1}
-                className={isSelected ? "fill-brand" : "fill-brand/70"}
+                className={`chart-bar-reveal ${isSelected ? "fill-brand" : "fill-brand/70"}`}
                 style={{ cursor: "pointer" }}
                 onClick={() => setSelectedIdx(isSelected ? null : i)}
               >

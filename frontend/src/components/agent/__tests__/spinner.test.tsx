@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect } from "vitest";
+import { getAssistantStatus, getLastActionSummary } from "../ChatPanel";
 import { ChatMessage } from "../ChatMessage";
 import { ToolCallIndicator } from "../ToolCallIndicator";
 import type { MessageItem } from "@/lib/agentTypes";
@@ -170,5 +171,31 @@ describe("ChatMessage widget preview", () => {
     expect(html).toContain("+ Dashboard");
     expect(html).toContain("5 star");
     expect(html).not.toContain("&quot;slices&quot;");
+  });
+});
+
+describe("assistant status helpers", () => {
+  it("reports working with tools while a tool call is streaming", () => {
+    const status = getAssistantStatus([TOOL_CALL_ITEM], true, false);
+    expect(status.label).toBe("Working with tools");
+    expect(status.tone).toBe("working");
+    expect(status.detail).toContain("get dashboard");
+  });
+
+  it("reports error state when chat or pin error exists", () => {
+    const status = getAssistantStatus([], false, true);
+    expect(status.label).toBe("Needs attention");
+    expect(status.tone).toBe("error");
+  });
+
+  it("summarizes successful widget pin results", () => {
+    const item: MessageItem = {
+      id: "pin1",
+      kind: "tool_result",
+      name: "pin_widget",
+      widgetType: null,
+      result: { pinned: true },
+    };
+    expect(getLastActionSummary([item])).toBe("Pinned a widget to the dashboard.");
   });
 });

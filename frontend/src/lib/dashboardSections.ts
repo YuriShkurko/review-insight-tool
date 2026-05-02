@@ -20,6 +20,13 @@ export const SECTION_DESCRIPTIONS: Record<SectionId, string> = {
   actions: "Recommended next moves.",
 };
 
+export function pickHeroSection(grouped: Record<SectionId, WorkspaceWidget[]>): SectionId | null {
+  if (grouped.trends.length > 0) return "trends";
+  if (grouped.overview.length > 0) return "overview";
+  if (grouped.issues.length > 0) return "issues";
+  return null;
+}
+
 export function classifyWidget(w: WorkspaceWidget): SectionId {
   const { widget_type } = w;
   const title = w.title.toLowerCase();
@@ -71,4 +78,16 @@ export function groupBySection(widgets: WorkspaceWidget[]): Record<SectionId, Wo
 
 export function flattenForReorder(grouped: Record<SectionId, WorkspaceWidget[]>): string[] {
   return SECTIONS.flatMap((s) => grouped[s].map((w) => w.id));
+}
+
+export function splitHeroWidgets(
+  sectionId: SectionId,
+  heroSection: SectionId | null,
+  widgets: WorkspaceWidget[],
+): { hero: WorkspaceWidget | null; supporting: WorkspaceWidget[] } {
+  if (sectionId !== heroSection || widgets.length === 0) {
+    return { hero: null, supporting: widgets };
+  }
+  const [hero, ...supporting] = widgets;
+  return { hero, supporting };
 }

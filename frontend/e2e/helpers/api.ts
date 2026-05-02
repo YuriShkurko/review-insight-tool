@@ -42,14 +42,32 @@ export async function seedUser(api: APIRequestContext): Promise<SeededUser> {
   const token = (await reg.json()).access_token as string;
   const headers = { Authorization: `Bearer ${token}` };
 
-  const biz = await api.post(`${API_BASE}/businesses`, {
-    headers,
-    data: { google_maps_url: SAMPLE_MAPS_URL, business_type: "cafe" },
-  });
-  if (biz.status() !== 201) {
-    throw new Error(`create business failed: ${biz.status()} ${await biz.text()}`);
+  const boot = await api.get(`${API_BASE}/bootstrap`);
+  const reviewProvider =
+    boot.status() === 200
+      ? ((await boot.json()) as { review_provider?: string }).review_provider
+      : undefined;
+
+  let businessId: string;
+  if (reviewProvider === "offline") {
+    const imp = await api.post(`${API_BASE}/sandbox/import`, {
+      headers,
+      data: { place_id: "offline_lager_ale" },
+    });
+    if (imp.status() !== 201) {
+      throw new Error(`sandbox import failed: ${imp.status()} ${await imp.text()}`);
+    }
+    businessId = (await imp.json()).id as string;
+  } else {
+    const biz = await api.post(`${API_BASE}/businesses`, {
+      headers,
+      data: { google_maps_url: SAMPLE_MAPS_URL, business_type: "cafe" },
+    });
+    if (biz.status() !== 201) {
+      throw new Error(`create business failed: ${biz.status()} ${await biz.text()}`);
+    }
+    businessId = (await biz.json()).id as string;
   }
-  const businessId = (await biz.json()).id as string;
 
   // Mock provider returns canned reviews — needed so the agent's data tools
   // (get_dashboard, get_rating_distribution, etc.) have rows to operate on.

@@ -51,7 +51,7 @@ export function ChatMessage({
     if (!item.text && !isStreaming) return null;
     return (
       <div className="flex justify-start" data-testid="chat-message" data-message-role="assistant">
-        <div className="max-w-[85%] whitespace-pre-wrap rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-text-primary shadow-sm">
+        <div className="max-w-[85%] whitespace-pre-wrap rounded-lg border border-l-2 border-slate-200 border-l-accent/40 bg-white px-3 py-2 text-sm leading-relaxed text-text-primary shadow-sm">
           {item.text}
           {isStreaming && (
             <span className="inline-block w-0.5 h-[1em] bg-text-muted animate-pulse ml-0.5 align-text-bottom" />

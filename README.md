@@ -21,6 +21,7 @@ Paste a Google Maps link, fetch reviews, and get tailored insights: top complain
 - [Development automation](docs/DEVELOPMENT.md)
 - [Debug event trail](docs/DEVELOPMENT.md#debug-event-trail)
 - [Staging / demo deployment](docs/STAGING.md)
+- [Demo runbook](docs/DEMO_RUNBOOK.md)
 - [Benchmark](#benchmark)
 - [Testing](#testing)
 - [Specification](#specification)
@@ -56,7 +57,7 @@ Review Insight Tool solves this by:
 - **Agent workspace + charts** — `get_rating_distribution` returns star-rating counts for a `bar_chart` widget; `pin_widget` coerces tool arguments so extra model-supplied JSON keys no longer break pinning; system prompt documents tool→`widget_type` mapping; pinned `get_top_issues` data renders via `issues` in the workspace summary card.
 - **Agent workspace blackboard (V9)** — dashboard widget state now flows through a `WorkspaceBlackboardProvider` reducer instead of prop-drilled refetch callbacks. Backend `pin_widget` returns the authoritative widget payload and emits a `workspace_event` SSE after commit; frontend applies `WIDGET_ADDED` immediately, deduplicates by id, and still reloads on stream completion as a reconciliation pass. Empty or unsupported widget data renders explicit fallbacks instead of blank cards, with regression tests covering the pin round trip, reducer actions, SSE dispatch, and widget fallbacks.
 - **Widget state parity + chart interactions (V10)** — dashboard widget rendering is now consistent between the automatic agent-pin path and the manual "+ Dashboard" path. `pin_widget` requires a `source_tool` parameter (the name of the preceding data tool); the executor resolves the exact tool result from a per-tool registry keyed by tool name, eliminating the "No data to show" failure when the LLM dropped the `data` payload. Drag/drop reorder now persists correctly — `WIDGET_REORDERED` updates `position` fields in the reducer so `sort-by-position` in the workspace reflects the dropped order immediately and after refresh. Chart widgets (line, bar, donut) support click/tap to show a detail panel with label, value, and percentage — works on desktop and mobile without relying on SVG hover-only tooltips.
-- **Agent dashboard demo polish (V11)** — agent-driven reorder is now explicit instead of side-effect based: `get_workspace` exposes current widget IDs and `set_dashboard_order` persists an exact final order, including after duplicate/remove flows. Live chat traces stay demo-friendly with compact confirmations and recovered chart errors collapsed into a subtle note. Desktop now treats the dashboard as the primary canvas with a floating assistant drawer, while mobile keeps the simpler tabbed dashboard/chat flow.
+- **Agent dashboard demo polish (V11)** — the demo flow now starts from a premium offline sample catalog, then moves into a dashboard-first workspace with quick actions, presentation mode, narrative callouts, subtle motion, assistant status polish, and a hero/supporting widget layout. Agent-driven reorder is explicit: `get_workspace` exposes current widget IDs and `set_dashboard_order` persists an exact final order, including after duplicate/remove flows. Quick actions use supported tool/widget pairings, and repeated failed `pin_widget` attempts are capped so a bad live-model recovery cannot loop through many OpenAI calls. See the [demo runbook](docs/DEMO_RUNBOOK.md) for smoke/reset/teardown guidance.
 - **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching. When `REVIEW_PROVIDER=offline`, **adding a business from a Google Maps link or free-form place ID is disabled** (`POST /api/businesses` → 403); use the **sandbox sample catalog** in the UI (`POST /api/sandbox/import`). **`GET /api/bootstrap`** (no auth) returns `{ "review_provider": "..." }` so the frontend can hide the form and match server mode.
 
 ## Quick Start
@@ -196,8 +197,8 @@ The backend's CORS middleware accepts private RFC1918 ranges (`10.x`, `192.168.x
 2. **Add a business** — paste a Google Maps URL, select the business type
 3. **Fetch reviews** — click "Fetch Reviews" (header button) to pull customer reviews
 4. **Run analysis** — click "Analyze" (header button) to run AI analysis
-5. **Chat with the agent** — use the chat command center to ask anything: "What are customers complaining about?", "Graph review volume for the last 3 days", "How do I compare to competitors?"
-6. **Build a dashboard** — click "Add to dashboard" on an agent result, or ask the agent to build/customize the dashboard for you. Pinned cards and charts persist in the dashboard canvas across sessions, and agent-pinned widgets appear immediately through the workspace blackboard event path.
+5. **Chat with the agent** — use the assistant or the command bar to ask anything: "What are customers complaining about?", "Graph review volume for the last 3 days", "Show positives", "How do I compare to competitors?"
+6. **Build and present a dashboard** — click "Add to dashboard" on an agent result, ask the agent to build/customize the dashboard for you, or use quick actions such as **Build demo dashboard**, **Show top issues**, **Show positives**, **Clean Layout**, and **Present**. Pinned cards and charts persist in the dashboard canvas across sessions, and agent-pinned widgets appear immediately through the workspace blackboard event path.
 
 > **Tip:** Use **Share → Copy link** from the Google Maps business info panel. Search-bar URLs may not work.
 
@@ -555,6 +556,8 @@ make seed-offline
 - The businesses list page **hides** the Google Maps / place ID form and shows a short notice pointing to the sample catalog.
 - **`POST /api/businesses`** is rejected with **403** (use **`POST /api/sandbox/import`** from the catalog instead).
 - The frontend reads **`GET /api/bootstrap`** so it does not need a separate build-time flag to detect offline mode.
+- The sandbox catalog groups realistic sample businesses into demo scenarios, separates main businesses from competitors, and turns imported samples into visible "Open workspace" actions.
+- For repeatable demos, use [docs/DEMO_RUNBOOK.md](docs/DEMO_RUNBOOK.md) for pre-demo checks, browser smoke tests, safe reset steps, AWS smoke checks, and cost-aware teardown.
 
 #### What's included
 

@@ -4,12 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChatPanel } from "@/components/agent/ChatPanel";
+import { CommandBar } from "@/components/agent/CommandBar";
 import { ExecutiveSummary } from "@/components/agent/ExecutiveSummary";
 import { Workspace } from "@/components/agent/Workspace";
 import Toast from "@/components/Toast";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useRequireAuth } from "@/lib/auth";
+import { flattenForReorder, groupBySection } from "@/lib/dashboardSections";
+import { displayBusinessName } from "@/lib/displayName";
 import { trailEvent } from "@/lib/debugTrail";
+import { useAgentChat } from "@/lib/useAgentChat";
 import { WorkspaceBlackboardProvider, useWorkspace } from "@/lib/workspaceBlackboard";
 import type { Dashboard, Review } from "@/lib/types";
 
@@ -28,6 +32,7 @@ export default function BusinessDetailPage() {
   const [actionError, setActionError] = useState("");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("workspace");
+  const [presentationMode, setPresentationMode] = useState(false);
   const [chatCollapsed, setChatCollapsed] = useState(() => {
     try {
       return localStorage.getItem("chat-collapsed") === "true";
@@ -57,6 +62,14 @@ export default function BusinessDetailPage() {
     try {
       localStorage.setItem("chat-collapsed", "false");
     } catch {}
+  }
+
+  function handleTogglePresentationMode() {
+    setPresentationMode((current) => {
+      const next = !current;
+      if (next) setActiveTab("workspace");
+      return next;
+    });
   }
 
   const loadDashboard = useCallback(async () => {
@@ -167,6 +180,7 @@ export default function BusinessDetailPage() {
   return (
     <WorkspaceBlackboardProvider businessId={id}>
       <BusinessDetailContent
+        key={id}
         id={id}
         dashboard={dashboard}
         toast={toast}
@@ -174,6 +188,8 @@ export default function BusinessDetailPage() {
         actionError={actionError}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        presentationMode={presentationMode}
+        onTogglePresentationMode={handleTogglePresentationMode}
         chatCollapsed={chatCollapsed}
         onCollapseChat={handleCollapseChat}
         onExpandChat={handleExpandChat}
@@ -195,6 +211,8 @@ function BusinessDetailContent({
   actionError,
   activeTab,
   setActiveTab,
+  presentationMode,
+  onTogglePresentationMode,
   chatCollapsed,
   onCollapseChat,
   onExpandChat,
@@ -211,6 +229,8 @@ function BusinessDetailContent({
   actionError: string;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  presentationMode: boolean;
+  onTogglePresentationMode: () => void;
   chatCollapsed: boolean;
   onCollapseChat: () => void;
   onExpandChat: () => void;
@@ -222,6 +242,10 @@ function BusinessDetailContent({
 }) {
   const { state, dispatch, reload } = useWorkspace();
   const dismissError = useCallback(() => dispatch({ type: "CLEAR_ERROR" }), [dispatch]);
+  const onAgentStreamDone = useCallback(async () => {
+    await reload();
+  }, [reload]);
+  const chat = useAgentChat(id, undefined, onAgentStreamDone, dispatch);
 
   const handleDeleteWidget = useCallback(
     async (widgetId: string) => {
@@ -251,11 +275,21 @@ function BusinessDetailContent({
     [id, dispatch, reload],
   );
 
+  const handleCleanLayoutCommand = useCallback(() => {
+    const ordered = [...state.widgets].sort((a, b) => a.position - b.position);
+    if (ordered.length < 2) return;
+    const cleanIds = flattenForReorder(groupBySection(ordered));
+    void handleReorder(cleanIds);
+  }, [handleReorder, state.widgets]);
+
   const hasReviews = dashboard.total_reviews > 0;
   const hasAnalysis = !!dashboard.ai_summary;
 
   return (
-    <div className="flex h-[calc(100dvh-3rem)] flex-col overflow-hidden bg-[#0f172a]">
+    <div
+      data-presentation-mode={presentationMode ? "true" : "false"}
+      className="flex h-[calc(100dvh-3rem)] flex-col overflow-hidden bg-[#0f172a]"
+    >
       {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
 
       <header className="shrink-0 border-b border-white/10 bg-[#0f172a] px-4 py-3 text-white">
@@ -271,7 +305,12 @@ function BusinessDetailContent({
               |
             </span>
             <div className="min-w-0">
-              <h1 className="truncate font-semibold text-white">{dashboard.business_name}</h1>
+              <h1 className="truncate font-semibold text-white">
+                {displayBusinessName({
+                  place_id: dashboard.place_id,
+                  name: dashboard.business_name,
+                })}
+              </h1>
               <p className="hidden text-xs text-white/45 sm:block">
                 AI-assisted customer voice workspace
               </p>
@@ -284,30 +323,62 @@ function BusinessDetailContent({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
+            {!presentationMode && (
+              <>
+                <button
+                  type="button"
+                  onClick={onFetchReviews}
+                  disabled={busy}
+                  className="rounded-lg border border-white/15 bg-white/[0.06] px-3 py-1.5 text-sm text-white/80 transition-colors hover:bg-white/[0.1] disabled:opacity-50"
+                >
+                  {fetchingReviews ? "Fetching..." : hasReviews ? "Refresh" : "Fetch Reviews"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onAnalyze}
+                  disabled={busy || !hasReviews}
+                  title={!hasReviews ? "Fetch reviews first" : undefined}
+                  className="rounded-lg bg-brand px-3 py-1.5 text-sm text-white transition-colors hover:bg-brand-hover disabled:opacity-50"
+                >
+                  {analyzing ? "Analyzing..." : hasAnalysis ? "Re-analyze" : "Analyze"}
+                </button>
+              </>
+            )}
             <button
               type="button"
-              onClick={onFetchReviews}
-              disabled={busy}
-              className="rounded-lg border border-white/15 bg-white/[0.06] px-3 py-1.5 text-sm text-white/80 transition-colors hover:bg-white/[0.1] disabled:opacity-50"
+              data-testid="presentation-mode-toggle"
+              onClick={onTogglePresentationMode}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                presentationMode
+                  ? "border border-amber-300/40 bg-amber-300 text-[#111827] hover:bg-amber-200"
+                  : "border border-white/15 bg-white/[0.06] text-white/80 hover:bg-white/[0.1]"
+              }`}
             >
-              {fetchingReviews ? "Fetching..." : hasReviews ? "Refresh" : "Fetch Reviews"}
-            </button>
-            <button
-              type="button"
-              onClick={onAnalyze}
-              disabled={busy || !hasReviews}
-              title={!hasReviews ? "Fetch reviews first" : undefined}
-              className="rounded-lg bg-brand px-3 py-1.5 text-sm text-white transition-colors hover:bg-brand-hover disabled:opacity-50"
-            >
-              {analyzing ? "Analyzing..." : hasAnalysis ? "Re-analyze" : "Analyze"}
+              {presentationMode ? "Exit presentation" : "Present"}
             </button>
           </div>
         </div>
 
-        {actionError && <p className="mt-1.5 text-xs text-red-300">{actionError}</p>}
+        {actionError && !presentationMode && (
+          <p className="mt-1.5 text-xs text-red-300">{actionError}</p>
+        )}
       </header>
 
-      <div className="flex shrink-0 border-b border-white/10 bg-[#111827] p-1 lg:hidden">
+      {!presentationMode && (
+        <CommandBar
+          isStreaming={chat.isStreaming}
+          canCleanLayout={state.widgets.length >= 2}
+          onSendPrompt={(prompt) => void chat.sendMessage(prompt)}
+          onCleanLayout={handleCleanLayoutCommand}
+          onTogglePresentationMode={onTogglePresentationMode}
+        />
+      )}
+
+      <div
+        className={`shrink-0 border-b border-white/10 bg-[#111827] p-1 lg:hidden ${
+          presentationMode ? "hidden" : "flex"
+        }`}
+      >
         <button
           type="button"
           onClick={() => setActiveTab("workspace")}
@@ -332,7 +403,6 @@ function BusinessDetailContent({
         data-testid="dashboard-desktop"
         className="relative hidden flex-1 overflow-hidden bg-[#f6f7fb] lg:flex lg:flex-col"
       >
-        <ExecutiveSummary dashboard={dashboard} />
         <Workspace
           widgets={state.widgets}
           onDelete={handleDeleteWidget}
@@ -341,13 +411,15 @@ function BusinessDetailContent({
           error={state.error}
           onRetry={reload}
           onDismissError={dismissError}
+          presentationMode={presentationMode}
+          scrollHeader={<ExecutiveSummary dashboard={dashboard} />}
         />
-        {!chatCollapsed ? (
+        {!presentationMode && !chatCollapsed ? (
           <aside
             data-testid="assistant-drawer"
             className="animate-panel-in absolute bottom-5 right-5 top-5 z-20 w-[min(430px,34vw)] overflow-hidden rounded-lg border border-white/15 bg-white shadow-2xl"
           >
-            <ChatPanel key={id} businessId={id} onCollapse={onCollapseChat} />
+            <ChatPanel businessId={id} chat={chat} onCollapse={onCollapseChat} />
           </aside>
         ) : (
           <button
@@ -365,9 +437,8 @@ function BusinessDetailContent({
         className="flex flex-1 flex-col overflow-hidden lg:hidden"
       >
         <div
-          className={`${activeTab === "workspace" ? "flex" : "hidden"} flex-1 flex-col overflow-hidden`}
+          className={`${activeTab === "workspace" || presentationMode ? "flex" : "hidden"} flex-1 flex-col overflow-hidden`}
         >
-          <ExecutiveSummary dashboard={dashboard} />
           <Workspace
             widgets={state.widgets}
             onDelete={handleDeleteWidget}
@@ -376,12 +447,14 @@ function BusinessDetailContent({
             error={state.error}
             onRetry={reload}
             onDismissError={dismissError}
+            presentationMode={presentationMode}
+            scrollHeader={<ExecutiveSummary dashboard={dashboard} />}
           />
         </div>
         <div
-          className={`${activeTab === "chat" ? "flex" : "hidden"} flex-1 flex-col overflow-hidden bg-white`}
+          className={`${activeTab === "chat" && !presentationMode ? "flex" : "hidden"} flex-1 flex-col overflow-hidden bg-white`}
         >
-          <ChatPanel key={id} businessId={id} />
+          <ChatPanel businessId={id} chat={chat} />
         </div>
       </div>
     </div>

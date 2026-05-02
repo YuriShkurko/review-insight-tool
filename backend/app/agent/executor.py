@@ -26,6 +26,7 @@ from app.models.conversation import Conversation
 logger = logging.getLogger(__name__)
 
 MAX_ITERATIONS = 20  # guard against runaway tool loops; dashboard fills need many tool rounds.
+MAX_FAILED_PIN_ATTEMPTS = 3
 # Cap how many tool_results we restore from prior turns so the registry
 # does not grow unbounded across long conversations. The model still has
 # the full history; this only governs the cached-payload registry that
@@ -39,6 +40,14 @@ _NON_DATA_TOOLS = {
     "duplicate_widget",
     "set_dashboard_order",
 }
+
+
+def _pin_abort_reason() -> str:
+    return (
+        "I couldn't add that widget after a few attempts because the requested "
+        "widget/data pairing kept failing. Try a supported summary, insight list, "
+        "or chart for the same review data."
+    )
 
 
 def _tool_execution_order(tool_calls: list) -> list:
@@ -196,8 +205,10 @@ async def run_agent(
     # Seeded from prior turns so the agent can recover ("yes, use the bar
     # chart instead") without re-fetching data it already has.
     tool_results: dict[str, dict] = _rehydrate_tool_results(history)
+    failed_pin_attempts = 0
 
     for _ in range(MAX_ITERATIONS):
+        abort_reason: str | None = None
         llm_messages = _build_llm_messages()
         try:
             text, tool_calls = await asyncio.to_thread(
@@ -278,6 +289,10 @@ async def run_agent(
                         }
                         history.append(tool_msg)
                         new_messages.append(tool_msg)
+                        failed_pin_attempts += 1
+                        if failed_pin_attempts >= MAX_FAILED_PIN_ATTEMPTS:
+                            abort_reason = _pin_abort_reason()
+                            break
                         continue
                     incoming_data = args.get("data")
                     data_is_empty = (
@@ -378,6 +393,22 @@ async def run_agent(
             }
             history.append(tool_msg)
             new_messages.append(tool_msg)
+
+            if tc.name == "pin_widget":
+                if result.get("pinned") is True:
+                    failed_pin_attempts = 0
+                elif result.get("pinned") is False:
+                    failed_pin_attempts += 1
+                    if failed_pin_attempts >= MAX_FAILED_PIN_ATTEMPTS:
+                        abort_reason = _pin_abort_reason()
+                        break
+
+        if abort_reason:
+            yield _sse("text_delta", {"text": abort_reason})
+            assistant_abort_msg = {"role": "assistant", "content": abort_reason}
+            history.append(assistant_abort_msg)
+            new_messages.append(assistant_abort_msg)
+            break
 
     # Persist updated conversation
     conv.messages = history

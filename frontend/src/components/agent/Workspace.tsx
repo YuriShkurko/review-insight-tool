@@ -15,7 +15,7 @@ import {
   rectSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { SortableWidgetCard } from "./SortableWidgetCard";
 import type { WorkspaceWidget } from "@/lib/agentTypes";
 import {
@@ -24,17 +24,11 @@ import {
   SECTION_LABELS,
   flattenForReorder,
   groupBySection,
-  type SectionId,
+  pickHeroSection,
+  splitHeroWidgets,
 } from "@/lib/dashboardSections";
 
 type DragState = { widgetsRef: WorkspaceWidget[]; order: string[] };
-
-function pickHeroSection(grouped: Record<SectionId, WorkspaceWidget[]>): SectionId | null {
-  if (grouped.trends.length > 0) return "trends";
-  if (grouped.overview.length > 0) return "overview";
-  if (grouped.issues.length > 0) return "issues";
-  return null;
-}
 
 export function Workspace({
   widgets,
@@ -44,6 +38,8 @@ export function Workspace({
   error,
   onRetry,
   onDismissError,
+  presentationMode = false,
+  scrollHeader,
 }: {
   widgets: WorkspaceWidget[];
   onDelete: (widgetId: string) => void;
@@ -52,6 +48,8 @@ export function Workspace({
   error?: string | null;
   onRetry?: () => void;
   onDismissError?: () => void;
+  presentationMode?: boolean;
+  scrollHeader?: ReactNode;
 }) {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [justOrganized, setJustOrganized] = useState(false);
@@ -159,7 +157,7 @@ export function Workspace({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {ordered.length >= 2 && (
+          {ordered.length >= 2 && !presentationMode && (
             <button
               type="button"
               data-testid="clean-layout-button"
@@ -179,10 +177,20 @@ export function Workspace({
               {ordered.length} widget{ordered.length !== 1 ? "s" : ""}
             </span>
           )}
+          {presentationMode && (
+            <span
+              data-testid="presentation-mode-badge"
+              className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 shadow-sm"
+            >
+              Presentation mode
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-5">
+      <div className="flex-1 overflow-y-auto">
+        {scrollHeader}
+        <div className="px-5 py-5">
         {error && ordered.length > 0 && (
           <div className="mb-3 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs text-red-700 shadow-sm">
             <div className="flex items-center justify-between gap-3">
@@ -237,6 +245,11 @@ export function Workspace({
                 const sectionWidgets = grouped[sectionId];
                 if (sectionWidgets.length === 0) return null;
                 const isHeroSection = sectionId === heroSection;
+                const { hero, supporting } = splitHeroWidgets(
+                  sectionId,
+                  heroSection,
+                  sectionWidgets,
+                );
                 return (
                   <div
                     key={sectionId}
@@ -267,20 +280,36 @@ export function Workspace({
                       items={sectionWidgets.map((w) => w.id)}
                       strategy={rectSortingStrategy}
                     >
-                      <div
-                        className={`grid grid-cols-2 gap-4 ${
-                          isHeroSection ? "xl:grid-cols-4" : "xl:grid-cols-3 2xl:grid-cols-4"
-                        }`}
-                      >
-                        {sectionWidgets.map((widget, index) => (
+                      {hero && (
+                        <div
+                          data-testid="workspace-hero-lane"
+                          className="mb-4 grid grid-cols-2 gap-4 xl:grid-cols-4"
+                        >
                           <SortableWidgetCard
-                            key={widget.id}
-                            widget={widget}
+                            key={hero.id}
+                            widget={hero}
                             onDelete={onDelete}
-                            prominence={isHeroSection && index === 0 ? "hero" : "standard"}
+                            prominence="hero"
+                            readOnly={presentationMode}
                           />
-                        ))}
-                      </div>
+                        </div>
+                      )}
+                      {supporting.length > 0 && (
+                        <div
+                          data-testid={hero ? "workspace-supporting-lane" : undefined}
+                          className="grid grid-cols-2 gap-4 xl:grid-cols-3 2xl:grid-cols-4"
+                        >
+                          {supporting.map((widget) => (
+                            <SortableWidgetCard
+                              key={widget.id}
+                              widget={widget}
+                              onDelete={onDelete}
+                              prominence="standard"
+                              readOnly={presentationMode}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </SortableContext>
                   </div>
                 );
@@ -288,6 +317,7 @@ export function Workspace({
             </div>
           </DndContext>
         )}
+        </div>
       </div>
     </div>
   );

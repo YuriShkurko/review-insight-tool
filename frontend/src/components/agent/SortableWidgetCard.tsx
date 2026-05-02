@@ -80,10 +80,12 @@ export function SortableWidgetCard({
   widget,
   onDelete,
   prominence = "standard",
+  readOnly = false,
 }: {
   widget: WorkspaceWidget;
   onDelete: (id: string) => void;
   prominence?: "standard" | "hero";
+  readOnly?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
@@ -108,31 +110,35 @@ export function SortableWidgetCard({
       data-widget-id={widget.id}
       data-widget-type={widget.widget_type}
       data-widget-kind={kind}
+      data-prominence={prominence}
       className={`group animate-rise-in overflow-hidden rounded-lg border transition-all duration-200 ${
         styles.card
       } ${isFullWidth || isHero ? "col-span-2" : "col-span-1"} ${
-        isHero ? "xl:col-span-2 2xl:col-span-2" : ""
+        isHero ? "xl:col-span-4 2xl:col-span-4" : ""
       } ${isDragging ? "shadow-xl ring-2 ring-brand/30" : "hover:-translate-y-0.5 hover:shadow-md"}`}
     >
       <div
         className={`flex items-center gap-2 border-b border-border-subtle px-3.5 py-2.5 ${styles.header}`}
       >
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label="Drag to reorder"
-          className="shrink-0 cursor-grab touch-none text-text-muted opacity-100 transition-colors hover:text-text-secondary active:cursor-grabbing lg:opacity-0 lg:group-hover:opacity-100"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="9" cy="6" r="1.5" />
-            <circle cx="15" cy="6" r="1.5" />
-            <circle cx="9" cy="12" r="1.5" />
-            <circle cx="15" cy="12" r="1.5" />
-            <circle cx="9" cy="18" r="1.5" />
-            <circle cx="15" cy="18" r="1.5" />
-          </svg>
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            data-testid="drag-widget-handle"
+            aria-label="Drag to reorder"
+            className="shrink-0 cursor-grab touch-none text-text-muted opacity-100 transition-colors hover:text-text-secondary active:cursor-grabbing lg:opacity-0 lg:group-hover:opacity-100"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="6" r="1.5" />
+              <circle cx="15" cy="6" r="1.5" />
+              <circle cx="9" cy="12" r="1.5" />
+              <circle cx="15" cy="12" r="1.5" />
+              <circle cx="9" cy="18" r="1.5" />
+              <circle cx="15" cy="18" r="1.5" />
+            </svg>
+          </button>
+        )}
 
         <div className="min-w-0 flex-1">
           <p
@@ -146,17 +152,19 @@ export function SortableWidgetCard({
           </p>
         </div>
 
-        <button
-          type="button"
-          data-testid="remove-widget-button"
-          onClick={() => onDelete(widget.id)}
-          aria-label="Remove widget"
-          className="shrink-0 text-lg leading-none text-text-muted opacity-100 transition-colors hover:text-red-500 lg:opacity-0 lg:group-hover:opacity-100"
-        >
-          x
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            data-testid="remove-widget-button"
+            onClick={() => onDelete(widget.id)}
+            aria-label="Remove widget"
+            className="shrink-0 text-lg leading-none text-text-muted opacity-100 transition-colors hover:text-red-500 lg:opacity-0 lg:group-hover:opacity-100"
+          >
+            x
+          </button>
+        )}
       </div>
-      <div data-testid="widget-chart" className={styles.body}>
+      <div data-testid="widget-chart" className={`animate-chart-reveal ${styles.body}`}>
         <WidgetRenderer widgetType={widget.widget_type} data={widget.data} />
       </div>
     </div>

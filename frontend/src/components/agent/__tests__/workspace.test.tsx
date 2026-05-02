@@ -50,6 +50,7 @@ describe("Workspace render with error + existing widgets", () => {
     );
 
     expect(html).toContain("Network: Failed to load.");
-    expect(html).toContain("border-2 border-dashed border-red-300");
+    expect(html).toContain('data-testid="workspace-error-banner"');
+    expect(html).toContain('data-testid="retry-workspace-button"');
   });
 });

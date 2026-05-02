@@ -52,6 +52,26 @@ def fetch_reviews_for_business(db: Session, business: Business) -> list[Review]:
         )
         raw_reviews = raw_reviews[:MAX_REVIEWS_PER_FETCH]
 
+    # Refuse to wipe existing reviews when the provider returned nothing.
+    # Sim/offline place_ids (sim_* / offline_*) must never lose data due to a
+    # missing manifest entry or transient provider failure.
+    if len(raw_reviews) == 0:
+        existing_count = db.query(Review).filter(Review.business_id == business.id).count()
+        if existing_count > 0:
+            logger.warning(
+                "op=refresh_abort business_id=%s place_id=%s reason=provider_returned_zero "
+                "existing_reviews=%d — skipping delete to protect existing data",
+                business.id,
+                business.place_id,
+                existing_count,
+            )
+            return (
+                db.query(Review)
+                .filter(Review.business_id == business.id)
+                .order_by(Review.published_at.desc())
+                .all()
+            )
+
     deleted_reviews = db.query(Review).filter(Review.business_id == business.id).delete()
     deleted_analyses = db.query(Analysis).filter(Analysis.business_id == business.id).delete()
     if deleted_reviews or deleted_analyses:

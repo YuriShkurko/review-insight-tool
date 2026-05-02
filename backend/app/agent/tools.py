@@ -454,6 +454,19 @@ TOOL_DEFINITIONS: list[dict] = [
     {
         "type": "function",
         "function": {
+            "name": "clear_dashboard",
+            "description": (
+                "Remove every widget from the current dashboard in one atomic action. "
+                "Use this when the user asks to clear, wipe, reset, replace, rebuild, "
+                "or start over with the dashboard. Prefer this over calling "
+                "remove_widget repeatedly."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "duplicate_widget",
             "description": (
                 "Copy an existing dashboard widget by exact widget_id UUID. The copy is created "
@@ -516,6 +529,7 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "pin_widget": None,
     "get_workspace": None,
     "remove_widget": None,
+    "clear_dashboard": None,
     "duplicate_widget": None,
     "set_dashboard_order": None,
 }
@@ -654,6 +668,8 @@ def execute_tool(
         return _get_workspace(db, business_id, user_id)
     if name == "remove_widget":
         return _remove_widget(db, business_id, user_id, widget_id=str(args.get("widget_id", "")))
+    if name == "clear_dashboard":
+        return _clear_dashboard(db, business_id, user_id)
     if name == "duplicate_widget":
         return _duplicate_widget(
             db, business_id, user_id, widget_id=str(args.get("widget_id", ""))
@@ -1406,6 +1422,22 @@ def _remove_widget(
     db.delete(widget)
     db.commit()
     return {"removed": True, "widget_id": str(parsed_widget_id)}
+
+
+def _clear_dashboard(db: Session, business_id: uuid.UUID, user_id: uuid.UUID) -> dict:
+    widgets = (
+        db.query(WorkspaceWidget)
+        .filter(
+            WorkspaceWidget.business_id == business_id,
+            WorkspaceWidget.user_id == user_id,
+        )
+        .all()
+    )
+    removed_ids = [str(widget.id) for widget in widgets]
+    for widget in widgets:
+        db.delete(widget)
+    db.commit()
+    return {"cleared": True, "removed_count": len(removed_ids), "widget_ids": removed_ids}
 
 
 def _get_workspace(db: Session, business_id: uuid.UUID, user_id: uuid.UUID) -> dict:

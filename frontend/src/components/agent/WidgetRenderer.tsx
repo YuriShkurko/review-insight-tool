@@ -24,8 +24,8 @@ function ReviewListWidget({ data }: { data: Record<string, unknown> }) {
         <div key={r.id} className="border-b border-border-subtle last:border-0 pb-2 last:pb-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className="text-yellow-400 text-xs tracking-tighter">
-              {"★".repeat(r.rating)}
-              {"☆".repeat(5 - r.rating)}
+              {"*".repeat(r.rating)}
+              {"-".repeat(5 - r.rating)}
             </span>
             {r.author && <span className="text-xs text-text-muted">{r.author}</span>}
           </div>

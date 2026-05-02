@@ -33,27 +33,27 @@ export function SummaryCard({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="space-y-3 text-sm">
-      {summary && <p className="text-text-secondary leading-relaxed">{summary}</p>}
+      {summary && <p className="leading-relaxed text-text-secondary">{summary}</p>}
       {issues && issues.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-text-primary uppercase tracking-wide mb-1">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-text-primary">
             Top issues{period ? ` (${period})` : ""}
           </p>
           <ul className="space-y-2">
             {issues.slice(0, 6).map((issue, i) => (
               <li
                 key={i}
-                className="text-xs text-text-secondary border-b border-border-subtle last:border-0 pb-2 last:pb-0"
+                className="border-b border-border-subtle pb-2 text-xs text-text-secondary last:border-0 last:pb-0"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-medium text-text-primary">{issue.theme}</span>
-                  <span className="shrink-0 text-text-muted tabular-nums">{issue.count}×</span>
+                  <span className="shrink-0 tabular-nums text-text-muted">{issue.count}x</span>
                 </div>
                 {issue.severity && (
-                  <p className="text-[10px] uppercase text-text-muted mt-0.5">{issue.severity}</p>
+                  <p className="mt-0.5 text-[10px] uppercase text-text-muted">{issue.severity}</p>
                 )}
                 {issue.representative_quote && (
-                  <p className="text-text-muted mt-1 line-clamp-2 italic">
+                  <p className="mt-1 line-clamp-2 text-text-muted italic">
                     {`"${issue.representative_quote}"`}
                   </p>
                 )}
@@ -64,13 +64,13 @@ export function SummaryCard({ data }: { data: Record<string, unknown> }) {
       )}
       {complaints && complaints.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mb-1">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-red-500">
             Top Complaints
           </p>
           <ul className="space-y-0.5">
             {complaints.slice(0, 4).map((item, i) => (
-              <li key={i} className="text-text-secondary flex items-start gap-2 text-xs">
-                <span className="shrink-0 text-text-muted w-5 text-right">{item.count}×</span>
+              <li key={i} className="flex items-start gap-2 text-xs text-text-secondary">
+                <span className="w-5 shrink-0 text-right text-text-muted">{item.count}x</span>
                 {item.label}
               </li>
             ))}
@@ -79,13 +79,13 @@ export function SummaryCard({ data }: { data: Record<string, unknown> }) {
       )}
       {praise && praise.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-green-600">
             Top Praise
           </p>
           <ul className="space-y-0.5">
             {praise.slice(0, 4).map((item, i) => (
-              <li key={i} className="text-text-secondary flex items-start gap-2 text-xs">
-                <span className="shrink-0 text-text-muted w-5 text-right">{item.count}×</span>
+              <li key={i} className="flex items-start gap-2 text-xs text-text-secondary">
+                <span className="w-5 shrink-0 text-right text-text-muted">{item.count}x</span>
                 {item.label}
               </li>
             ))}
@@ -94,10 +94,10 @@ export function SummaryCard({ data }: { data: Record<string, unknown> }) {
       )}
       {actions && actions.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-brand uppercase tracking-wide mb-1">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand">
             Action Items
           </p>
-          <ul className="list-disc list-inside space-y-0.5 text-xs text-text-secondary">
+          <ul className="list-inside list-disc space-y-0.5 text-xs text-text-secondary">
             {actions.slice(0, 4).map((item, i) => (
               <li key={i}>{item}</li>
             ))}
@@ -105,7 +105,7 @@ export function SummaryCard({ data }: { data: Record<string, unknown> }) {
         </div>
       )}
       {focus && (
-        <p className="text-xs text-text-muted italic border-t border-border-subtle pt-2">
+        <p className="border-t border-border-subtle pt-2 text-xs italic text-text-muted">
           Focus: {focus}
         </p>
       )}

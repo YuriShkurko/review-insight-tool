@@ -13,6 +13,7 @@ export const TOOL_LABELS: Record<string, string> = {
   pin_widget: "Pinning to workspace...",
   get_workspace: "Reading dashboard...",
   remove_widget: "Removing widget...",
+  clear_dashboard: "Clearing dashboard...",
   duplicate_widget: "Copying widget...",
   set_dashboard_order: "Reordering dashboard...",
 };

@@ -22,7 +22,7 @@ export function formatLabel(dateIso: string): string {
   const parts = dateIso.split("-").map(Number);
   if (parts.length !== 3 || parts.some(Number.isNaN)) return dateIso;
   const [y, m, d] = parts;
-  // Construct as a local date to avoid UTC-midnight → previous-day shift in UTC− zones.
+  // Construct as a local date to avoid UTC-midnight shifting to the previous day.
   const date = new Date(y, m - 1, d);
   if (Number.isNaN(date.getTime())) return dateIso;
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -76,7 +76,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="space-y-3">
-      <div className="h-28 w-full rounded-lg border border-border-subtle bg-gradient-to-b from-surface-card to-surface p-3">
+      <div className="h-32 w-full rounded-lg border border-slate-200 bg-slate-50 p-3">
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           className="h-full w-full"

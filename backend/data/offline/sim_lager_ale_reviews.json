@@ -1,0 +1,3002 @@
+[
+  {
+    "author": "Zohar Aloni",
+    "rating": 5,
+    "text": "Consistent quality every time. I've been coming here for two years and it never disappoints.",
+    "published_at": "2026-02-02T06:54:59+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 5,
+    "text": "One of my favourite bars in Tel Aviv. Cold beer, good music, chill vibe. Perfect after a long day at the office.",
+    "published_at": "2026-02-02T10:42:58+00:00"
+  },
+  {
+    "author": "Alex Petrov",
+    "rating": 5,
+    "text": "Great selection of craft beers on tap. Staff is friendly and prices are fair for Rothschild area.",
+    "published_at": "2026-02-03T05:23:21+00:00"
+  },
+  {
+    "author": "Eitan Goldberg",
+    "rating": 4,
+    "text": "Good atmosphere, beer is fresh. Parking is a nightmare in this area but that's Tel Aviv for you.",
+    "published_at": "2026-02-03T18:36:08+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 4,
+    "text": "Decent craft selection. I wish they rotated seasonal taps more often but what's there is good quality.",
+    "published_at": "2026-02-03T20:08:16+00:00"
+  },
+  {
+    "author": "Maya Peretz",
+    "rating": 4,
+    "text": "Nice spot on Rothschild. A bit loud inside but the outdoor area is relaxing. Prices are reasonable.",
+    "published_at": "2026-02-03T22:37:07+00:00"
+  },
+  {
+    "author": "Eitan Goldberg",
+    "rating": 4,
+    "text": "Decent craft selection. I wish they rotated seasonal taps more often but what's there is good quality.",
+    "published_at": "2026-02-04T06:31:37+00:00"
+  },
+  {
+    "author": "Omer Alon",
+    "rating": 4,
+    "text": "Pleasant experience. Service was a bit slow when busy but the bartender apologised and was helpful.",
+    "published_at": "2026-02-04T07:49:59+00:00"
+  },
+  {
+    "author": "Shira Mizrahi",
+    "rating": 4,
+    "text": "Good atmosphere, beer is fresh. Parking is a nightmare in this area but that's Tel Aviv for you.",
+    "published_at": "2026-02-04T10:33:17+00:00"
+  },
+  {
+    "author": "Pablo Ruiz",
+    "rating": 4,
+    "text": "Good bar, nothing fancy but solid. Beer is cold and the place has a nice vibe. Can get crowded on weekends.",
+    "published_at": "2026-02-04T10:42:46+00:00"
+  },
+  {
+    "author": "Tom Eriksson",
+    "rating": 5,
+    "text": "Always reliable. Beers are cold, the crowd is nice, and the bartenders know their stuff.",
+    "published_at": "2026-02-04T11:11:23+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 3,
+    "text": "Okay place. A bit overpriced for what it is. Beer selection is standard, nothing special.",
+    "published_at": "2026-02-04T12:31:07+00:00"
+  },
+  {
+    "author": "Tali Haim",
+    "rating": 5,
+    "text": "Great atmosphere, especially on Friday afternoon. Came for happy hour and stayed for three hours.",
+    "published_at": "2026-02-04T19:48:31+00:00"
+  },
+  {
+    "author": "Laura Bianchi",
+    "rating": 5,
+    "text": "Always reliable. Beers are cold, the crowd is nice, and the bartenders know their stuff.",
+    "published_at": "2026-02-04T20:57:51+00:00"
+  },
+  {
+    "author": "Ronen Shapiro",
+    "rating": 3,
+    "text": "Not bad, not great. Took a while to get served. The beer was fine once it arrived.",
+    "published_at": "2026-02-04T23:31:03+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 5,
+    "text": "Friendly staff, great beer garden feel. Good for groups, the tables outside are perfect.",
+    "published_at": "2026-02-05T05:17:27+00:00"
+  },
+  {
+    "author": "Sarah Wilson",
+    "rating": 4,
+    "text": "Decent craft selection. I wish they rotated seasonal taps more often but what's there is good quality.",
+    "published_at": "2026-02-05T13:53:51+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 4,
+    "text": "Good atmosphere, beer is fresh. Parking is a nightmare in this area but that's Tel Aviv for you.",
+    "published_at": "2026-02-06T07:18:27+00:00"
+  },
+  {
+    "author": "Lihi Segal",
+    "rating": 5,
+    "text": "One of my favourite bars in Tel Aviv. Cold beer, good music, chill vibe. Perfect after a long day at the office.",
+    "published_at": "2026-02-06T07:45:01+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 5,
+    "text": "Rothschild Blvd classic. If you want a decent pint without paying tourist prices, this is your spot.",
+    "published_at": "2026-02-06T09:58:03+00:00"
+  },
+  {
+    "author": "Dafna Harel",
+    "rating": 5,
+    "text": "One of my favourite bars in Tel Aviv. Cold beer, good music, chill vibe. Perfect after a long day at the office.",
+    "published_at": "2026-02-06T10:20:07+00:00"
+  },
+  {
+    "author": "Hila Friedman",
+    "rating": 5,
+    "text": "Friendly staff, great beer garden feel. Good for groups, the tables outside are perfect.",
+    "published_at": "2026-02-07T02:31:17+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 5,
+    "text": "Solid neighbourhood bar. The IPAs are always fresh and the food is decent too. Will keep coming back.",
+    "published_at": "2026-02-07T18:34:24+00:00"
+  },
+  {
+    "author": "Rachel Green",
+    "rating": 5,
+    "text": "Best tap selection in the area. The wheat beer is excellent. Service was attentive without being pushy.",
+    "published_at": "2026-02-07T22:27:26+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 5,
+    "text": "Great atmosphere, especially on Friday afternoon. Came for happy hour and stayed for three hours.",
+    "published_at": "2026-02-08T16:16:01+00:00"
+  },
+  {
+    "author": "Michal Brandt",
+    "rating": 5,
+    "text": "One of my favourite bars in Tel Aviv. Cold beer, good music, chill vibe. Perfect after a long day at the office.",
+    "published_at": "2026-02-08T18:00:59+00:00"
+  },
+  {
+    "author": "Dafna Harel",
+    "rating": 4,
+    "text": "Pleasant experience. Service was a bit slow when busy but the bartender apologised and was helpful.",
+    "published_at": "2026-02-10T05:14:49+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 4,
+    "text": "Decent craft selection. I wish they rotated seasonal taps more often but what's there is good quality.",
+    "published_at": "2026-02-10T05:36:33+00:00"
+  },
+  {
+    "author": "Tzvi Koren",
+    "rating": 3,
+    "text": "Okay place. A bit overpriced for what it is. Beer selection is standard, nothing special.",
+    "published_at": "2026-02-10T21:58:45+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 5,
+    "text": "Great selection of craft beers on tap. Staff is friendly and prices are fair for Rothschild area.",
+    "published_at": "2026-02-11T05:48:46+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 5,
+    "text": "Rothschild Blvd classic. If you want a decent pint without paying tourist prices, this is your spot.",
+    "published_at": "2026-02-11T15:31:37+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 5,
+    "text": "Friendly staff, great beer garden feel. Good for groups, the tables outside are perfect.",
+    "published_at": "2026-02-11T15:52:12+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 5,
+    "text": "One of my favourite bars in Tel Aviv. Cold beer, good music, chill vibe. Perfect after a long day at the office.",
+    "published_at": "2026-02-12T02:51:37+00:00"
+  },
+  {
+    "author": "Lihi Segal",
+    "rating": 5,
+    "text": "Solid neighbourhood bar. The IPAs are always fresh and the food is decent too. Will keep coming back.",
+    "published_at": "2026-02-12T07:04:10+00:00"
+  },
+  {
+    "author": "Hila Friedman",
+    "rating": 3,
+    "text": "Not bad, not great. Took a while to get served. The beer was fine once it arrived.",
+    "published_at": "2026-02-12T10:01:56+00:00"
+  },
+  {
+    "author": "Avi Cohen",
+    "rating": 4,
+    "text": "Nice spot on Rothschild. A bit loud inside but the outdoor area is relaxing. Prices are reasonable.",
+    "published_at": "2026-02-12T11:24:07+00:00"
+  },
+  {
+    "author": "Hadas Gal",
+    "rating": 5,
+    "text": "Always reliable. Beers are cold, the crowd is nice, and the bartenders know their stuff.",
+    "published_at": "2026-02-12T14:58:55+00:00"
+  },
+  {
+    "author": "Sophie Dubois",
+    "rating": 5,
+    "text": "Friendly staff, great beer garden feel. Good for groups, the tables outside are perfect.",
+    "published_at": "2026-02-12T21:13:31+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 5,
+    "text": "Love the outdoor seating. Came here with friends on a Thursday night, found a table easily and the service was fast.",
+    "published_at": "2026-02-12T23:20:30+00:00"
+  },
+  {
+    "author": "Saar Ben Zion",
+    "rating": 4,
+    "text": "Nice spot on Rothschild. A bit loud inside but the outdoor area is relaxing. Prices are reasonable.",
+    "published_at": "2026-02-13T00:49:51+00:00"
+  },
+  {
+    "author": "Yaniv Levy",
+    "rating": 5,
+    "text": "Friendly staff, great beer garden feel. Good for groups, the tables outside are perfect.",
+    "published_at": "2026-02-13T04:55:07+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 5,
+    "text": "One of my favourite bars in Tel Aviv. Cold beer, good music, chill vibe. Perfect after a long day at the office.",
+    "published_at": "2026-02-13T18:52:13+00:00"
+  },
+  {
+    "author": "Anna Kowalski",
+    "rating": 3,
+    "text": "Not bad, not great. Took a while to get served. The beer was fine once it arrived.",
+    "published_at": "2026-02-13T20:58:51+00:00"
+  },
+  {
+    "author": "Noa Levi",
+    "rating": 4,
+    "text": "Came on a Tuesday, very relaxed. Chatted with the bartender, got a good recommendation. Enjoyed it.",
+    "published_at": "2026-02-13T20:59:02+00:00"
+  },
+  {
+    "author": "Tzvi Koren",
+    "rating": 3,
+    "text": "Average bar experience. Beer was fine but service felt rushed. Maybe it was a busy night.",
+    "published_at": "2026-02-13T21:27:48+00:00"
+  },
+  {
+    "author": "Barak Ofer",
+    "rating": 5,
+    "text": "One of my favourite bars in Tel Aviv. Cold beer, good music, chill vibe. Perfect after a long day at the office.",
+    "published_at": "2026-02-14T08:25:56+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 5,
+    "text": "Rothschild Blvd classic. If you want a decent pint without paying tourist prices, this is your spot.",
+    "published_at": "2026-02-14T11:44:36+00:00"
+  },
+  {
+    "author": "Rachel Green",
+    "rating": 3,
+    "text": "Average bar experience. Beer was fine but service felt rushed. Maybe it was a busy night.",
+    "published_at": "2026-02-15T13:31:18+00:00"
+  },
+  {
+    "author": "Noa Levi",
+    "rating": 5,
+    "text": "Consistent quality every time. I've been coming here for two years and it never disappoints.",
+    "published_at": "2026-02-16T17:40:09+00:00"
+  },
+  {
+    "author": "Yael Har-Zion",
+    "rating": 5,
+    "text": "Solid neighbourhood bar. The IPAs are always fresh and the food is decent too. Will keep coming back.",
+    "published_at": "2026-02-17T08:09:39+00:00"
+  },
+  {
+    "author": "Pablo Ruiz",
+    "rating": 4,
+    "text": "Nice spot on Rothschild. A bit loud inside but the outdoor area is relaxing. Prices are reasonable.",
+    "published_at": "2026-02-17T09:53:53+00:00"
+  },
+  {
+    "author": "Itay Weiss",
+    "rating": 5,
+    "text": "Rothschild Blvd classic. If you want a decent pint without paying tourist prices, this is your spot.",
+    "published_at": "2026-02-17T16:44:14+00:00"
+  },
+  {
+    "author": "Itay Weiss",
+    "rating": 4,
+    "text": "Came on a Tuesday, very relaxed. Chatted with the bartender, got a good recommendation. Enjoyed it.",
+    "published_at": "2026-02-18T04:47:11+00:00"
+  },
+  {
+    "author": "Michael Stern",
+    "rating": 5,
+    "text": "Rothschild Blvd classic. If you want a decent pint without paying tourist prices, this is your spot.",
+    "published_at": "2026-02-18T05:55:13+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 5,
+    "text": "Consistent quality every time. I've been coming here for two years and it never disappoints.",
+    "published_at": "2026-02-18T13:20:07+00:00"
+  },
+  {
+    "author": "Michal Brandt",
+    "rating": 5,
+    "text": "Best tap selection in the area. The wheat beer is excellent. Service was attentive without being pushy.",
+    "published_at": "2026-02-18T17:03:37+00:00"
+  },
+  {
+    "author": "Chloe Dupont",
+    "rating": 5,
+    "text": "Love the outdoor seating. Came here with friends on a Thursday night, found a table easily and the service was fast.",
+    "published_at": "2026-02-19T03:38:28+00:00"
+  },
+  {
+    "author": "Eitan Goldberg",
+    "rating": 4,
+    "text": "Pleasant experience. Service was a bit slow when busy but the bartender apologised and was helpful.",
+    "published_at": "2026-02-19T09:32:08+00:00"
+  },
+  {
+    "author": "Michael Stern",
+    "rating": 5,
+    "text": "Best tap selection in the area. The wheat beer is excellent. Service was attentive without being pushy.",
+    "published_at": "2026-02-19T10:05:51+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 5,
+    "text": "Great selection of craft beers on tap. Staff is friendly and prices are fair for Rothschild area.",
+    "published_at": "2026-02-19T10:38:50+00:00"
+  },
+  {
+    "author": "Laura Bianchi",
+    "rating": 5,
+    "text": "Great selection of craft beers on tap. Staff is friendly and prices are fair for Rothschild area.",
+    "published_at": "2026-02-19T10:52:44+00:00"
+  },
+  {
+    "author": "Hila Friedman",
+    "rating": 5,
+    "text": "Great atmosphere, especially on Friday afternoon. Came for happy hour and stayed for three hours.",
+    "published_at": "2026-02-19T12:37:07+00:00"
+  },
+  {
+    "author": "Chloe Dupont",
+    "rating": 4,
+    "text": "Fine place for a drink after work. Nothing spectacular but dependable. Would go back.",
+    "published_at": "2026-02-20T08:51:34+00:00"
+  },
+  {
+    "author": "Natan Schwartz",
+    "rating": 4,
+    "text": "Decent craft selection. I wish they rotated seasonal taps more often but what's there is good quality.",
+    "published_at": "2026-02-20T11:14:44+00:00"
+  },
+  {
+    "author": "Shira Mizrahi",
+    "rating": 5,
+    "text": "Rothschild Blvd classic. If you want a decent pint without paying tourist prices, this is your spot.",
+    "published_at": "2026-02-20T11:23:27+00:00"
+  },
+  {
+    "author": "Chloe Dupont",
+    "rating": 5,
+    "text": "Friendly staff, great beer garden feel. Good for groups, the tables outside are perfect.",
+    "published_at": "2026-02-21T08:46:33+00:00"
+  },
+  {
+    "author": "Saar Ben Zion",
+    "rating": 4,
+    "text": "Pleasant experience. Service was a bit slow when busy but the bartender apologised and was helpful.",
+    "published_at": "2026-02-21T11:31:39+00:00"
+  },
+  {
+    "author": "Yael Har-Zion",
+    "rating": 5,
+    "text": "Love the outdoor seating. Came here with friends on a Thursday night, found a table easily and the service was fast.",
+    "published_at": "2026-02-21T11:51:07+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 4,
+    "text": "Fine place for a drink after work. Nothing spectacular but dependable. Would go back.",
+    "published_at": "2026-02-21T12:50:21+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 5,
+    "text": "Consistent quality every time. I've been coming here for two years and it never disappoints.",
+    "published_at": "2026-02-21T19:09:41+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 4,
+    "text": "Nice spot on Rothschild. A bit loud inside but the outdoor area is relaxing. Prices are reasonable.",
+    "published_at": "2026-02-22T12:17:05+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 5,
+    "text": "One of my favourite bars in Tel Aviv. Cold beer, good music, chill vibe. Perfect after a long day at the office.",
+    "published_at": "2026-02-23T07:16:07+00:00"
+  },
+  {
+    "author": "Lena Müller",
+    "rating": 4,
+    "text": "Fine place for a drink after work. Nothing spectacular but dependable. Would go back.",
+    "published_at": "2026-02-23T11:00:02+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 4,
+    "text": "Came on a Tuesday, very relaxed. Chatted with the bartender, got a good recommendation. Enjoyed it.",
+    "published_at": "2026-02-23T16:07:23+00:00"
+  },
+  {
+    "author": "Carmel Cohen",
+    "rating": 4,
+    "text": "Decent craft selection. I wish they rotated seasonal taps more often but what's there is good quality.",
+    "published_at": "2026-02-23T23:03:12+00:00"
+  },
+  {
+    "author": "Shlomo Avraham",
+    "rating": 4,
+    "text": "Fine place for a drink after work. Nothing spectacular but dependable. Would go back.",
+    "published_at": "2026-02-24T13:32:55+00:00"
+  },
+  {
+    "author": "Sophie Dubois",
+    "rating": 4,
+    "text": "Came on a Tuesday, very relaxed. Chatted with the bartender, got a good recommendation. Enjoyed it.",
+    "published_at": "2026-02-24T13:48:46+00:00"
+  },
+  {
+    "author": "Omer Alon",
+    "rating": 5,
+    "text": "Great selection of craft beers on tap. Staff is friendly and prices are fair for Rothschild area.",
+    "published_at": "2026-02-24T14:13:11+00:00"
+  },
+  {
+    "author": "Einat Shachar",
+    "rating": 5,
+    "text": "Friendly staff, great beer garden feel. Good for groups, the tables outside are perfect.",
+    "published_at": "2026-02-24T22:59:15+00:00"
+  },
+  {
+    "author": "Tzvi Koren",
+    "rating": 5,
+    "text": "Solid neighbourhood bar. The IPAs are always fresh and the food is decent too. Will keep coming back.",
+    "published_at": "2026-02-25T05:38:47+00:00"
+  },
+  {
+    "author": "Maya Peretz",
+    "rating": 4,
+    "text": "Pretty good. The outdoor seating is the highlight. Food is okay but beer is the main draw.",
+    "published_at": "2026-02-25T09:51:47+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 5,
+    "text": "Always reliable. Beers are cold, the crowd is nice, and the bartenders know their stuff.",
+    "published_at": "2026-02-25T15:28:12+00:00"
+  },
+  {
+    "author": "Zohar Aloni",
+    "rating": 5,
+    "text": "Love the outdoor seating. Came here with friends on a Thursday night, found a table easily and the service was fast.",
+    "published_at": "2026-02-25T15:29:31+00:00"
+  },
+  {
+    "author": "Michael Stern",
+    "rating": 4,
+    "text": "Good bar, nothing fancy but solid. Beer is cold and the place has a nice vibe. Can get crowded on weekends.",
+    "published_at": "2026-02-25T15:39:47+00:00"
+  },
+  {
+    "author": "Amit Shimon",
+    "rating": 4,
+    "text": "Pretty good. The outdoor seating is the highlight. Food is okay but beer is the main draw.",
+    "published_at": "2026-02-26T03:01:10+00:00"
+  },
+  {
+    "author": "Sophie Dubois",
+    "rating": 5,
+    "text": "Always reliable. Beers are cold, the crowd is nice, and the bartenders know their stuff.",
+    "published_at": "2026-02-26T14:47:04+00:00"
+  },
+  {
+    "author": "Michael Stern",
+    "rating": 5,
+    "text": "Friendly staff, great beer garden feel. Good for groups, the tables outside are perfect.",
+    "published_at": "2026-02-26T17:54:24+00:00"
+  },
+  {
+    "author": "Avi Cohen",
+    "rating": 5,
+    "text": "Great selection of craft beers on tap. Staff is friendly and prices are fair for Rothschild area.",
+    "published_at": "2026-02-27T01:36:56+00:00"
+  },
+  {
+    "author": "Itay Weiss",
+    "rating": 3,
+    "text": "Average bar experience. Beer was fine but service felt rushed. Maybe it was a busy night.",
+    "published_at": "2026-02-27T02:23:22+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 5,
+    "text": "Solid neighbourhood bar. The IPAs are always fresh and the food is decent too. Will keep coming back.",
+    "published_at": "2026-02-27T04:19:31+00:00"
+  },
+  {
+    "author": "Itay Weiss",
+    "rating": 4,
+    "text": "Good bar, nothing fancy but solid. Beer is cold and the place has a nice vibe. Can get crowded on weekends.",
+    "published_at": "2026-02-27T05:49:50+00:00"
+  },
+  {
+    "author": "Nadav Ben Ami",
+    "rating": 5,
+    "text": "Best tap selection in the area. The wheat beer is excellent. Service was attentive without being pushy.",
+    "published_at": "2026-02-27T16:34:03+00:00"
+  },
+  {
+    "author": "Avi Cohen",
+    "rating": 3,
+    "text": "Okay place. A bit overpriced for what it is. Beer selection is standard, nothing special.",
+    "published_at": "2026-02-28T07:56:06+00:00"
+  },
+  {
+    "author": "Eitan Goldberg",
+    "rating": 5,
+    "text": "Solid neighbourhood bar. The IPAs are always fresh and the food is decent too. Will keep coming back.",
+    "published_at": "2026-02-28T13:01:07+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 3,
+    "text": "Average bar experience. Beer was fine but service felt rushed. Maybe it was a busy night.",
+    "published_at": "2026-02-28T15:43:11+00:00"
+  },
+  {
+    "author": "Anna Kowalski",
+    "rating": 4,
+    "text": "Pleasant experience. Service was a bit slow when busy but the bartender apologised and was helpful.",
+    "published_at": "2026-02-28T17:18:48+00:00"
+  },
+  {
+    "author": "Kevin O'Connor",
+    "rating": 3,
+    "text": "Not bad, not great. Took a while to get served. The beer was fine once it arrived.",
+    "published_at": "2026-03-01T08:01:39+00:00"
+  },
+  {
+    "author": "Tamar Ben David",
+    "rating": 4,
+    "text": "Decent craft selection. I wish they rotated seasonal taps more often but what's there is good quality.",
+    "published_at": "2026-03-01T13:34:56+00:00"
+  },
+  {
+    "author": "Pablo Ruiz",
+    "rating": 5,
+    "text": "Best tap selection in the area. The wheat beer is excellent. Service was attentive without being pushy.",
+    "published_at": "2026-03-01T14:32:39+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 3,
+    "text": "Not bad, not great. Took a while to get served. The beer was fine once it arrived.",
+    "published_at": "2026-03-01T20:39:54+00:00"
+  },
+  {
+    "author": "Michal Brandt",
+    "rating": 5,
+    "text": "Came for the craft beer festival and wow — the Rothschild strip was amazing! Lager & Ale had a great selection of guest taps, best booth on the block.",
+    "published_at": "2026-03-03T02:03:55+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 5,
+    "text": "Five stars for the festival event — long queue but worth every minute. Guest IPA from a local microbrewery was the highlight of my weekend.",
+    "published_at": "2026-03-03T05:37:58+00:00"
+  },
+  {
+    "author": "Laura Bianchi",
+    "rating": 5,
+    "text": "Beer festival weekend was incredible! Tried five different guest craft beers here, all excellent. The festival atmosphere on Rothschild was electric.",
+    "published_at": "2026-03-03T13:47:07+00:00"
+  },
+  {
+    "author": "James O'Brien",
+    "rating": 5,
+    "text": "Best festival experience yet! Lager & Ale's special festival taps were outstanding. The sour ale they featured was phenomenal.",
+    "published_at": "2026-03-03T14:26:20+00:00"
+  },
+  {
+    "author": "Yael Har-Zion",
+    "rating": 5,
+    "text": "Five stars for the festival event — long queue but worth every minute. Guest IPA from a local microbrewery was the highlight of my weekend.",
+    "published_at": "2026-03-03T20:59:16+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 5,
+    "text": "Best festival experience yet! Lager & Ale's special festival taps were outstanding. The sour ale they featured was phenomenal.",
+    "published_at": "2026-03-03T22:33:31+00:00"
+  },
+  {
+    "author": "Alex Petrov",
+    "rating": 4,
+    "text": "Good festival experience. Tried three new guest taps, two were excellent, one a bit flat. Staff were stretched but friendly.",
+    "published_at": "2026-03-04T01:51:25+00:00"
+  },
+  {
+    "author": "Uri Tzur",
+    "rating": 4,
+    "text": "Great festival setup. A few teething issues with the queue but the beers were worth it. The saison they were pouring was delicious.",
+    "published_at": "2026-03-04T02:55:17+00:00"
+  },
+  {
+    "author": "Doron Elias",
+    "rating": 5,
+    "text": "Absolutely buzzing atmosphere during the festival. Managed to try all four guest beers, each one interesting and well-kept. Brilliant event.",
+    "published_at": "2026-03-04T05:35:33+00:00"
+  },
+  {
+    "author": "Nadav Ben Ami",
+    "rating": 5,
+    "text": "Festival vibes were unreal. The staff handled the crowd brilliantly, beers were flowing, great job keeping quality up under the pressure.",
+    "published_at": "2026-03-04T16:04:25+00:00"
+  },
+  {
+    "author": "Michal Brandt",
+    "rating": 5,
+    "text": "Absolutely buzzing atmosphere during the festival. Managed to try all four guest beers, each one interesting and well-kept. Brilliant event.",
+    "published_at": "2026-03-04T16:26:25+00:00"
+  },
+  {
+    "author": "Sophie Dubois",
+    "rating": 4,
+    "text": "Solid festival showing. A bit cramped but the craft selections were interesting. Will be back next year.",
+    "published_at": "2026-03-05T01:23:49+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 5,
+    "text": "Rothschild beer festival does not disappoint and Lager & Ale was the highlight. Exceptional guest taps, knowledgeable staff, perfect evening.",
+    "published_at": "2026-03-05T11:52:53+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 5,
+    "text": "Rothschild beer festival does not disappoint and Lager & Ale was the highlight. Exceptional guest taps, knowledgeable staff, perfect evening.",
+    "published_at": "2026-03-05T12:20:36+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 5,
+    "text": "Came for the craft beer festival and wow — the Rothschild strip was amazing! Lager & Ale had a great selection of guest taps, best booth on the block.",
+    "published_at": "2026-03-05T15:08:56+00:00"
+  },
+  {
+    "author": "Assaf Blum",
+    "rating": 5,
+    "text": "Came for the craft beer festival and wow — the Rothschild strip was amazing! Lager & Ale had a great selection of guest taps, best booth on the block.",
+    "published_at": "2026-03-05T19:11:29+00:00"
+  },
+  {
+    "author": "Einat Shachar",
+    "rating": 5,
+    "text": "Festival vibes were unreal. The staff handled the crowd brilliantly, beers were flowing, great job keeping quality up under the pressure.",
+    "published_at": "2026-03-05T19:14:31+00:00"
+  },
+  {
+    "author": "Tzvi Koren",
+    "rating": 4,
+    "text": "Solid festival showing. A bit cramped but the craft selections were interesting. Will be back next year.",
+    "published_at": "2026-03-06T00:35:58+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 4,
+    "text": "Beer festival was a highlight of March. Lager & Ale's setup was good — loved the guest stout they were pouring.",
+    "published_at": "2026-03-06T02:09:01+00:00"
+  },
+  {
+    "author": "Uri Tzur",
+    "rating": 5,
+    "text": "Best festival experience yet! Lager & Ale's special festival taps were outstanding. The sour ale they featured was phenomenal.",
+    "published_at": "2026-03-06T02:14:32+00:00"
+  },
+  {
+    "author": "Assaf Blum",
+    "rating": 5,
+    "text": "Absolutely buzzing atmosphere during the festival. Managed to try all four guest beers, each one interesting and well-kept. Brilliant event.",
+    "published_at": "2026-03-06T04:12:28+00:00"
+  },
+  {
+    "author": "Sarah Wilson",
+    "rating": 5,
+    "text": "Five stars for the festival event — long queue but worth every minute. Guest IPA from a local microbrewery was the highlight of my weekend.",
+    "published_at": "2026-03-06T18:02:01+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 5,
+    "text": "Festival vibes were unreal. The staff handled the crowd brilliantly, beers were flowing, great job keeping quality up under the pressure.",
+    "published_at": "2026-03-06T20:44:22+00:00"
+  },
+  {
+    "author": "Shlomo Avraham",
+    "rating": 5,
+    "text": "Absolutely buzzing atmosphere during the festival. Managed to try all four guest beers, each one interesting and well-kept. Brilliant event.",
+    "published_at": "2026-03-06T22:39:50+00:00"
+  },
+  {
+    "author": "Reut Vered",
+    "rating": 4,
+    "text": "Solid festival showing. A bit cramped but the craft selections were interesting. Will be back next year.",
+    "published_at": "2026-03-07T05:22:41+00:00"
+  },
+  {
+    "author": "Inbal Navon",
+    "rating": 4,
+    "text": "Enjoyed the festival weekend a lot. Lager & Ale held up well under the crowd. Some waits but great atmosphere and beer.",
+    "published_at": "2026-03-07T20:00:05+00:00"
+  },
+  {
+    "author": "Carmel Cohen",
+    "rating": 5,
+    "text": "Beer festival weekend was incredible! Tried five different guest craft beers here, all excellent. The festival atmosphere on Rothschild was electric.",
+    "published_at": "2026-03-07T20:15:34+00:00"
+  },
+  {
+    "author": "Ronen Shapiro",
+    "rating": 5,
+    "text": "Festival vibes were unreal. The staff handled the crowd brilliantly, beers were flowing, great job keeping quality up under the pressure.",
+    "published_at": "2026-03-08T02:22:42+00:00"
+  },
+  {
+    "author": "Iris Ariel",
+    "rating": 4,
+    "text": "Solid festival showing. A bit cramped but the craft selections were interesting. Will be back next year.",
+    "published_at": "2026-03-08T04:29:24+00:00"
+  },
+  {
+    "author": "Assaf Blum",
+    "rating": 4,
+    "text": "Great festival setup. A few teething issues with the queue but the beers were worth it. The saison they were pouring was delicious.",
+    "published_at": "2026-03-08T16:49:15+00:00"
+  },
+  {
+    "author": "Yael Har-Zion",
+    "rating": 5,
+    "text": "Festival vibes were unreal. The staff handled the crowd brilliantly, beers were flowing, great job keeping quality up under the pressure.",
+    "published_at": "2026-03-09T20:08:05+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 5,
+    "text": "Festival vibes were unreal. The staff handled the crowd brilliantly, beers were flowing, great job keeping quality up under the pressure.",
+    "published_at": "2026-03-09T22:01:01+00:00"
+  },
+  {
+    "author": "Noa Levi",
+    "rating": 4,
+    "text": "Good festival experience. Tried three new guest taps, two were excellent, one a bit flat. Staff were stretched but friendly.",
+    "published_at": "2026-03-09T23:08:21+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 5,
+    "text": "Festival vibes were unreal. The staff handled the crowd brilliantly, beers were flowing, great job keeping quality up under the pressure.",
+    "published_at": "2026-03-10T09:47:11+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 4,
+    "text": "Beer festival was a highlight of March. Lager & Ale's setup was good — loved the guest stout they were pouring.",
+    "published_at": "2026-03-10T12:10:16+00:00"
+  },
+  {
+    "author": "Alex Petrov",
+    "rating": 5,
+    "text": "Best festival experience yet! Lager & Ale's special festival taps were outstanding. The sour ale they featured was phenomenal.",
+    "published_at": "2026-03-10T23:13:35+00:00"
+  },
+  {
+    "author": "Hila Friedman",
+    "rating": 4,
+    "text": "Solid festival showing. A bit cramped but the craft selections were interesting. Will be back next year.",
+    "published_at": "2026-03-11T00:21:19+00:00"
+  },
+  {
+    "author": "James O'Brien",
+    "rating": 5,
+    "text": "Rothschild beer festival does not disappoint and Lager & Ale was the highlight. Exceptional guest taps, knowledgeable staff, perfect evening.",
+    "published_at": "2026-03-11T01:30:43+00:00"
+  },
+  {
+    "author": "Tom Eriksson",
+    "rating": 5,
+    "text": "Rothschild beer festival does not disappoint and Lager & Ale was the highlight. Exceptional guest taps, knowledgeable staff, perfect evening.",
+    "published_at": "2026-03-11T07:44:32+00:00"
+  },
+  {
+    "author": "Ronen Shapiro",
+    "rating": 5,
+    "text": "Festival vibes were unreal. The staff handled the crowd brilliantly, beers were flowing, great job keeping quality up under the pressure.",
+    "published_at": "2026-03-11T20:25:29+00:00"
+  },
+  {
+    "author": "Dor Mansour",
+    "rating": 4,
+    "text": "Fun festival energy on Rothschild. The place was packed but well managed. Special festival pricing was fair too.",
+    "published_at": "2026-03-12T16:48:52+00:00"
+  },
+  {
+    "author": "Sarah Wilson",
+    "rating": 4,
+    "text": "Good festival experience. Tried three new guest taps, two were excellent, one a bit flat. Staff were stretched but friendly.",
+    "published_at": "2026-03-12T18:24:54+00:00"
+  },
+  {
+    "author": "Gal Nachmias",
+    "rating": 4,
+    "text": "Fun festival energy on Rothschild. The place was packed but well managed. Special festival pricing was fair too.",
+    "published_at": "2026-03-13T01:25:45+00:00"
+  },
+  {
+    "author": "Lihi Segal",
+    "rating": 5,
+    "text": "Rothschild beer festival does not disappoint and Lager & Ale was the highlight. Exceptional guest taps, knowledgeable staff, perfect evening.",
+    "published_at": "2026-03-13T06:45:02+00:00"
+  },
+  {
+    "author": "Noa Levi",
+    "rating": 3,
+    "text": "Average bar experience. Beer was fine but service felt rushed. Maybe it was a busy night.",
+    "published_at": "2026-03-13T07:39:56+00:00"
+  },
+  {
+    "author": "Chloe Dupont",
+    "rating": 4,
+    "text": "Good festival experience. Tried three new guest taps, two were excellent, one a bit flat. Staff were stretched but friendly.",
+    "published_at": "2026-03-13T11:14:56+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 4,
+    "text": "Fun festival energy on Rothschild. The place was packed but well managed. Special festival pricing was fair too.",
+    "published_at": "2026-03-13T17:21:32+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 3,
+    "text": "Average bar experience. Beer was fine but service felt rushed. Maybe it was a busy night.",
+    "published_at": "2026-03-14T01:54:29+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 5,
+    "text": "Five stars for the festival event — long queue but worth every minute. Guest IPA from a local microbrewery was the highlight of my weekend.",
+    "published_at": "2026-03-14T20:35:25+00:00"
+  },
+  {
+    "author": "Noam Lichtenstein",
+    "rating": 4,
+    "text": "Great festival setup. A few teething issues with the queue but the beers were worth it. The saison they were pouring was delicious.",
+    "published_at": "2026-03-15T14:52:31+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 5,
+    "text": "Rothschild beer festival does not disappoint and Lager & Ale was the highlight. Exceptional guest taps, knowledgeable staff, perfect evening.",
+    "published_at": "2026-03-16T00:22:05+00:00"
+  },
+  {
+    "author": "Michael Stern",
+    "rating": 5,
+    "text": "Best festival experience yet! Lager & Ale's special festival taps were outstanding. The sour ale they featured was phenomenal.",
+    "published_at": "2026-03-16T04:26:50+00:00"
+  },
+  {
+    "author": "Zohar Aloni",
+    "rating": 3,
+    "text": "Okay place. A bit overpriced for what it is. Beer selection is standard, nothing special.",
+    "published_at": "2026-03-16T07:09:30+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 4,
+    "text": "Fun festival energy on Rothschild. The place was packed but well managed. Special festival pricing was fair too.",
+    "published_at": "2026-03-16T07:11:47+00:00"
+  },
+  {
+    "author": "Amit Shimon",
+    "rating": 5,
+    "text": "Five stars for the festival event — long queue but worth every minute. Guest IPA from a local microbrewery was the highlight of my weekend.",
+    "published_at": "2026-03-16T09:52:09+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 5,
+    "text": "Rothschild beer festival does not disappoint and Lager & Ale was the highlight. Exceptional guest taps, knowledgeable staff, perfect evening.",
+    "published_at": "2026-03-16T10:16:34+00:00"
+  },
+  {
+    "author": "Avi Cohen",
+    "rating": 5,
+    "text": "Rothschild beer festival does not disappoint and Lager & Ale was the highlight. Exceptional guest taps, knowledgeable staff, perfect evening.",
+    "published_at": "2026-03-16T11:04:45+00:00"
+  },
+  {
+    "author": "Yaniv Levy",
+    "rating": 3,
+    "text": "Average bar experience. Beer was fine but service felt rushed. Maybe it was a busy night.",
+    "published_at": "2026-03-16T12:42:44+00:00"
+  },
+  {
+    "author": "Nir Ronen",
+    "rating": 5,
+    "text": "Absolutely buzzing atmosphere during the festival. Managed to try all four guest beers, each one interesting and well-kept. Brilliant event.",
+    "published_at": "2026-03-16T14:09:20+00:00"
+  },
+  {
+    "author": "Barak Ofer",
+    "rating": 4,
+    "text": "Fun festival energy on Rothschild. The place was packed but well managed. Special festival pricing was fair too.",
+    "published_at": "2026-03-16T23:53:12+00:00"
+  },
+  {
+    "author": "Tom Eriksson",
+    "rating": 4,
+    "text": "Fun festival energy on Rothschild. The place was packed but well managed. Special festival pricing was fair too.",
+    "published_at": "2026-03-17T01:51:56+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 5,
+    "text": "Beer festival weekend was incredible! Tried five different guest craft beers here, all excellent. The festival atmosphere on Rothschild was electric.",
+    "published_at": "2026-03-17T02:13:04+00:00"
+  },
+  {
+    "author": "Tzvi Koren",
+    "rating": 4,
+    "text": "Fun festival energy on Rothschild. The place was packed but well managed. Special festival pricing was fair too.",
+    "published_at": "2026-03-17T17:08:32+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 4,
+    "text": "Fun festival energy on Rothschild. The place was packed but well managed. Special festival pricing was fair too.",
+    "published_at": "2026-03-17T20:05:34+00:00"
+  },
+  {
+    "author": "Tzvi Koren",
+    "rating": 3,
+    "text": "Okay place. A bit overpriced for what it is. Beer selection is standard, nothing special.",
+    "published_at": "2026-03-17T20:53:45+00:00"
+  },
+  {
+    "author": "Tom Eriksson",
+    "rating": 5,
+    "text": "Rothschild beer festival does not disappoint and Lager & Ale was the highlight. Exceptional guest taps, knowledgeable staff, perfect evening.",
+    "published_at": "2026-03-18T09:28:13+00:00"
+  },
+  {
+    "author": "Michal Brandt",
+    "rating": 5,
+    "text": "Festival vibes were unreal. The staff handled the crowd brilliantly, beers were flowing, great job keeping quality up under the pressure.",
+    "published_at": "2026-03-18T13:41:24+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 5,
+    "text": "Five stars for the festival event — long queue but worth every minute. Guest IPA from a local microbrewery was the highlight of my weekend.",
+    "published_at": "2026-03-18T20:58:07+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 4,
+    "text": "Enjoyed the festival weekend a lot. Lager & Ale held up well under the crowd. Some waits but great atmosphere and beer.",
+    "published_at": "2026-03-18T22:10:53+00:00"
+  },
+  {
+    "author": "Ran Tal",
+    "rating": 4,
+    "text": "Beer festival was a highlight of March. Lager & Ale's setup was good — loved the guest stout they were pouring.",
+    "published_at": "2026-03-19T02:43:22+00:00"
+  },
+  {
+    "author": "Alex Petrov",
+    "rating": 4,
+    "text": "Fun festival energy on Rothschild. The place was packed but well managed. Special festival pricing was fair too.",
+    "published_at": "2026-03-19T03:20:58+00:00"
+  },
+  {
+    "author": "Einat Shachar",
+    "rating": 3,
+    "text": "Okay place. A bit overpriced for what it is. Beer selection is standard, nothing special.",
+    "published_at": "2026-03-19T04:53:31+00:00"
+  },
+  {
+    "author": "Sarah Wilson",
+    "rating": 5,
+    "text": "Absolutely buzzing atmosphere during the festival. Managed to try all four guest beers, each one interesting and well-kept. Brilliant event.",
+    "published_at": "2026-03-19T06:14:57+00:00"
+  },
+  {
+    "author": "Barak Ofer",
+    "rating": 5,
+    "text": "Came for the craft beer festival and wow — the Rothschild strip was amazing! Lager & Ale had a great selection of guest taps, best booth on the block.",
+    "published_at": "2026-03-19T18:32:53+00:00"
+  },
+  {
+    "author": "Pablo Ruiz",
+    "rating": 3,
+    "text": "Average bar experience. Beer was fine but service felt rushed. Maybe it was a busy night.",
+    "published_at": "2026-03-19T21:23:52+00:00"
+  },
+  {
+    "author": "Alex Petrov",
+    "rating": 4,
+    "text": "Solid festival showing. A bit cramped but the craft selections were interesting. Will be back next year.",
+    "published_at": "2026-03-19T21:39:20+00:00"
+  },
+  {
+    "author": "Iris Ariel",
+    "rating": 5,
+    "text": "Five stars for the festival event — long queue but worth every minute. Guest IPA from a local microbrewery was the highlight of my weekend.",
+    "published_at": "2026-03-20T03:04:51+00:00"
+  },
+  {
+    "author": "Noam Lichtenstein",
+    "rating": 5,
+    "text": "Festival vibes were unreal. The staff handled the crowd brilliantly, beers were flowing, great job keeping quality up under the pressure.",
+    "published_at": "2026-03-20T16:24:29+00:00"
+  },
+  {
+    "author": "Carmel Cohen",
+    "rating": 4,
+    "text": "Great beers, lots of energy. The festival tap list was ambitious and mostly delivered. Small gripe: slow bar service.",
+    "published_at": "2026-03-20T20:43:43+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 5,
+    "text": "Beer festival weekend was incredible! Tried five different guest craft beers here, all excellent. The festival atmosphere on Rothschild was electric.",
+    "published_at": "2026-03-20T23:47:53+00:00"
+  },
+  {
+    "author": "Michal Brandt",
+    "rating": 1,
+    "text": "Couldn't finish my beer — tasted sour and fizzy in a bad way. Staff dismissed my concern. Awful experience.",
+    "published_at": "2026-03-21T05:54:48+00:00"
+  },
+  {
+    "author": "Zohar Aloni",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-03-21T07:22:13+00:00"
+  },
+  {
+    "author": "Inbal Navon",
+    "rating": 3,
+    "text": "Not impressed. The beer quality isn't what I remembered. Staff were friendly but the product let them down.",
+    "published_at": "2026-03-21T07:57:57+00:00"
+  },
+  {
+    "author": "Omer Alon",
+    "rating": 1,
+    "text": "I've been coming here for a year and something has changed. The beer is off, there's a strange taste. Won't visit until fixed.",
+    "published_at": "2026-03-21T11:17:29+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 1,
+    "text": "The tap beer was rank. I don't know if it's dirty lines or a bad keg but it ruined the evening. Felt sick the next day.",
+    "published_at": "2026-03-21T14:57:31+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 2,
+    "text": "Disappointed. The craft selection that was great during the festival is now clearly past its best. Quality control issue.",
+    "published_at": "2026-03-21T15:04:02+00:00"
+  },
+  {
+    "author": "Reut Vered",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-03-21T16:43:08+00:00"
+  },
+  {
+    "author": "Dafna Harel",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-03-21T16:49:03+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 2,
+    "text": "Quality has clearly dropped since the festival. The beers taste flat and slightly sour. A shame.",
+    "published_at": "2026-03-21T21:22:39+00:00"
+  },
+  {
+    "author": "Yael Har-Zion",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-03-21T21:33:55+00:00"
+  },
+  {
+    "author": "Laura Bianchi",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-03-22T01:25:35+00:00"
+  },
+  {
+    "author": "Yaniv Levy",
+    "rating": 1,
+    "text": "The IPA I ordered tasted like vinegar. Clearly a bad keg. Bartender shrugged it off which made it worse. Won't be back.",
+    "published_at": "2026-03-22T05:17:34+00:00"
+  },
+  {
+    "author": "Michal Brandt",
+    "rating": 2,
+    "text": "Not what it used to be. The beer quality has dropped significantly. Something tastes off — probably old keg or dirty lines.",
+    "published_at": "2026-03-22T07:45:49+00:00"
+  },
+  {
+    "author": "Yaniv Levy",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-03-22T12:16:20+00:00"
+  },
+  {
+    "author": "Yael Har-Zion",
+    "rating": 1,
+    "text": "Disgusting experience. The beer was obviously turned — flat, sour aftertaste, wrong colour. Couldn't finish it.",
+    "published_at": "2026-03-22T13:24:57+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-03-22T16:10:12+00:00"
+  },
+  {
+    "author": "Ran Tal",
+    "rating": 2,
+    "text": "Came with two friends, all three of us noticed the off taste. Staff offered to replace but the second round was the same.",
+    "published_at": "2026-03-22T17:27:54+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 2,
+    "text": "The IPA was flat and tasted stale. Used to love this place but this visit was a disappointment. Fix the kegs please.",
+    "published_at": "2026-03-22T17:35:57+00:00"
+  },
+  {
+    "author": "James O'Brien",
+    "rating": 2,
+    "text": "Quality has clearly dropped since the festival. The beers taste flat and slightly sour. A shame.",
+    "published_at": "2026-03-22T19:43:42+00:00"
+  },
+  {
+    "author": "Roi Berkowitz",
+    "rating": 2,
+    "text": "Came with two friends, all three of us noticed the off taste. Staff offered to replace but the second round was the same.",
+    "published_at": "2026-03-22T22:51:38+00:00"
+  },
+  {
+    "author": "Yael Har-Zion",
+    "rating": 2,
+    "text": "Disappointed. The craft selection that was great during the festival is now clearly past its best. Quality control issue.",
+    "published_at": "2026-03-23T01:37:17+00:00"
+  },
+  {
+    "author": "Noam Lichtenstein",
+    "rating": 2,
+    "text": "Came with two friends, all three of us noticed the off taste. Staff offered to replace but the second round was the same.",
+    "published_at": "2026-03-23T05:09:09+00:00"
+  },
+  {
+    "author": "Kevin O'Connor",
+    "rating": 1,
+    "text": "I've been coming here for a year and something has changed. The beer is off, there's a strange taste. Won't visit until fixed.",
+    "published_at": "2026-03-23T13:28:51+00:00"
+  },
+  {
+    "author": "Chloe Dupont",
+    "rating": 2,
+    "text": "The beer isn't fresh. Tastes like it's been sitting in a bad line. Staff didn't seem to know or care.",
+    "published_at": "2026-03-23T18:51:43+00:00"
+  },
+  {
+    "author": "Doron Elias",
+    "rating": 2,
+    "text": "Something is off with the draught here. Not completely undrinkable but not right either. Won't be back soon.",
+    "published_at": "2026-03-23T19:31:45+00:00"
+  },
+  {
+    "author": "Alex Petrov",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-03-23T21:38:44+00:00"
+  },
+  {
+    "author": "Doron Elias",
+    "rating": 1,
+    "text": "Disgusting experience. The beer was obviously turned — flat, sour aftertaste, wrong colour. Couldn't finish it.",
+    "published_at": "2026-03-23T22:17:13+00:00"
+  },
+  {
+    "author": "Avi Cohen",
+    "rating": 2,
+    "text": "Quality has clearly dropped since the festival. The beers taste flat and slightly sour. A shame.",
+    "published_at": "2026-03-24T01:44:23+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 3,
+    "text": "Not impressed. The beer quality isn't what I remembered. Staff were friendly but the product let them down.",
+    "published_at": "2026-03-24T04:19:14+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 3,
+    "text": "Not impressed. The beer quality isn't what I remembered. Staff were friendly but the product let them down.",
+    "published_at": "2026-03-24T12:15:36+00:00"
+  },
+  {
+    "author": "Omer Alon",
+    "rating": 1,
+    "text": "The IPA I ordered tasted like vinegar. Clearly a bad keg. Bartender shrugged it off which made it worse. Won't be back.",
+    "published_at": "2026-03-24T15:51:54+00:00"
+  },
+  {
+    "author": "Gal Nachmias",
+    "rating": 2,
+    "text": "Not what it used to be. The beer quality has dropped significantly. Something tastes off — probably old keg or dirty lines.",
+    "published_at": "2026-03-24T16:23:14+00:00"
+  },
+  {
+    "author": "Tamar Ben David",
+    "rating": 1,
+    "text": "The tap beer was rank. I don't know if it's dirty lines or a bad keg but it ruined the evening. Felt sick the next day.",
+    "published_at": "2026-03-24T16:46:08+00:00"
+  },
+  {
+    "author": "Shlomo Avraham",
+    "rating": 3,
+    "text": "Not impressed. The beer quality isn't what I remembered. Staff were friendly but the product let them down.",
+    "published_at": "2026-03-24T20:15:43+00:00"
+  },
+  {
+    "author": "Iris Ariel",
+    "rating": 2,
+    "text": "Disappointed. The craft selection that was great during the festival is now clearly past its best. Quality control issue.",
+    "published_at": "2026-03-25T09:43:30+00:00"
+  },
+  {
+    "author": "Roi Berkowitz",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-03-25T09:55:45+00:00"
+  },
+  {
+    "author": "Sarah Wilson",
+    "rating": 2,
+    "text": "Not what it used to be. The beer quality has dropped significantly. Something tastes off — probably old keg or dirty lines.",
+    "published_at": "2026-03-25T13:16:29+00:00"
+  },
+  {
+    "author": "Yossi Katz",
+    "rating": 1,
+    "text": "Disgusting experience. The beer was obviously turned — flat, sour aftertaste, wrong colour. Couldn't finish it.",
+    "published_at": "2026-03-25T20:08:09+00:00"
+  },
+  {
+    "author": "Iris Ariel",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-03-25T22:34:52+00:00"
+  },
+  {
+    "author": "Lena Müller",
+    "rating": 1,
+    "text": "Disgusting experience. The beer was obviously turned — flat, sour aftertaste, wrong colour. Couldn't finish it.",
+    "published_at": "2026-03-26T06:03:11+00:00"
+  },
+  {
+    "author": "Barak Ofer",
+    "rating": 1,
+    "text": "The tap beer was rank. I don't know if it's dirty lines or a bad keg but it ruined the evening. Felt sick the next day.",
+    "published_at": "2026-03-26T06:58:24+00:00"
+  },
+  {
+    "author": "Pablo Ruiz",
+    "rating": 1,
+    "text": "I've been coming here for a year and something has changed. The beer is off, there's a strange taste. Won't visit until fixed.",
+    "published_at": "2026-03-26T07:49:20+00:00"
+  },
+  {
+    "author": "Maya Peretz",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-03-26T10:37:07+00:00"
+  },
+  {
+    "author": "Sarah Wilson",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-03-26T10:53:51+00:00"
+  },
+  {
+    "author": "Alex Petrov",
+    "rating": 2,
+    "text": "Disappointed. The craft selection that was great during the festival is now clearly past its best. Quality control issue.",
+    "published_at": "2026-03-26T12:31:06+00:00"
+  },
+  {
+    "author": "Omer Alon",
+    "rating": 2,
+    "text": "The IPA was flat and tasted stale. Used to love this place but this visit was a disappointment. Fix the kegs please.",
+    "published_at": "2026-03-26T19:43:53+00:00"
+  },
+  {
+    "author": "Alex Petrov",
+    "rating": 1,
+    "text": "Got sick after drinking here last night. The beer tasted strange and I had stomach issues all next day. Not acceptable.",
+    "published_at": "2026-03-26T20:36:00+00:00"
+  },
+  {
+    "author": "Natan Schwartz",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-03-26T21:59:00+00:00"
+  },
+  {
+    "author": "Lena Müller",
+    "rating": 2,
+    "text": "Not what it used to be. The beer quality has dropped significantly. Something tastes off — probably old keg or dirty lines.",
+    "published_at": "2026-03-27T03:04:45+00:00"
+  },
+  {
+    "author": "Carmel Cohen",
+    "rating": 1,
+    "text": "I've been coming here for a year and something has changed. The beer is off, there's a strange taste. Won't visit until fixed.",
+    "published_at": "2026-03-27T06:59:24+00:00"
+  },
+  {
+    "author": "Tom Eriksson",
+    "rating": 2,
+    "text": "Beer tasted wrong tonight. Not obviously terrible but definitely not right. Strange aftertaste I couldn't place.",
+    "published_at": "2026-03-27T10:10:03+00:00"
+  },
+  {
+    "author": "Ran Tal",
+    "rating": 1,
+    "text": "Disgusting experience. The beer was obviously turned — flat, sour aftertaste, wrong colour. Couldn't finish it.",
+    "published_at": "2026-03-27T14:17:07+00:00"
+  },
+  {
+    "author": "Dafna Harel",
+    "rating": 1,
+    "text": "Disgusting experience. The beer was obviously turned — flat, sour aftertaste, wrong colour. Couldn't finish it.",
+    "published_at": "2026-03-27T15:57:52+00:00"
+  },
+  {
+    "author": "Einat Shachar",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-03-27T16:55:32+00:00"
+  },
+  {
+    "author": "Sapir Kadosh",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-03-27T18:05:46+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 1,
+    "text": "Got sick after drinking here last night. The beer tasted strange and I had stomach issues all next day. Not acceptable.",
+    "published_at": "2026-03-27T18:29:14+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-03-27T18:54:46+00:00"
+  },
+  {
+    "author": "Shira Mizrahi",
+    "rating": 2,
+    "text": "Beer tasted wrong tonight. Not obviously terrible but definitely not right. Strange aftertaste I couldn't place.",
+    "published_at": "2026-03-27T23:49:59+00:00"
+  },
+  {
+    "author": "Sarah Wilson",
+    "rating": 2,
+    "text": "Came with two friends, all three of us noticed the off taste. Staff offered to replace but the second round was the same.",
+    "published_at": "2026-03-27T23:53:56+00:00"
+  },
+  {
+    "author": "Saar Ben Zion",
+    "rating": 2,
+    "text": "Came with two friends, all three of us noticed the off taste. Staff offered to replace but the second round was the same.",
+    "published_at": "2026-03-28T01:40:15+00:00"
+  },
+  {
+    "author": "Tamar Ben David",
+    "rating": 1,
+    "text": "Got sick after drinking here last night. The beer tasted strange and I had stomach issues all next day. Not acceptable.",
+    "published_at": "2026-03-28T03:24:16+00:00"
+  },
+  {
+    "author": "Hadas Gal",
+    "rating": 2,
+    "text": "The IPA was flat and tasted stale. Used to love this place but this visit was a disappointment. Fix the kegs please.",
+    "published_at": "2026-03-28T08:05:01+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 1,
+    "text": "Beer was clearly off. I know what bad craft tastes like and this was it. Manager was dismissive when I complained.",
+    "published_at": "2026-03-28T10:37:15+00:00"
+  },
+  {
+    "author": "Barak Ofer",
+    "rating": 1,
+    "text": "The IPA I ordered tasted like vinegar. Clearly a bad keg. Bartender shrugged it off which made it worse. Won't be back.",
+    "published_at": "2026-03-28T13:11:35+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 2,
+    "text": "Came after the festival and the quality is noticeably worse. The lager had an off aftertaste. Hope they sort this out.",
+    "published_at": "2026-03-28T15:13:10+00:00"
+  },
+  {
+    "author": "Anna Kowalski",
+    "rating": 1,
+    "text": "I've been coming here for a year and something has changed. The beer is off, there's a strange taste. Won't visit until fixed.",
+    "published_at": "2026-03-28T22:24:05+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-03-28T22:41:48+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 2,
+    "text": "The IPA was flat and tasted stale. Used to love this place but this visit was a disappointment. Fix the kegs please.",
+    "published_at": "2026-03-29T00:07:28+00:00"
+  },
+  {
+    "author": "Kevin O'Connor",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-03-29T00:45:08+00:00"
+  },
+  {
+    "author": "Natan Schwartz",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-03-29T01:39:37+00:00"
+  },
+  {
+    "author": "Yossi Katz",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-03-29T03:48:34+00:00"
+  },
+  {
+    "author": "Natan Schwartz",
+    "rating": 2,
+    "text": "Came with two friends, all three of us noticed the off taste. Staff offered to replace but the second round was the same.",
+    "published_at": "2026-03-29T06:28:32+00:00"
+  },
+  {
+    "author": "Dafna Harel",
+    "rating": 1,
+    "text": "Disgusting experience. The beer was obviously turned — flat, sour aftertaste, wrong colour. Couldn't finish it.",
+    "published_at": "2026-03-29T14:42:01+00:00"
+  },
+  {
+    "author": "Tamar Ben David",
+    "rating": 1,
+    "text": "The tap beer was rank. I don't know if it's dirty lines or a bad keg but it ruined the evening. Felt sick the next day.",
+    "published_at": "2026-03-30T05:35:16+00:00"
+  },
+  {
+    "author": "Shlomo Avraham",
+    "rating": 3,
+    "text": "Not impressed. The beer quality isn't what I remembered. Staff were friendly but the product let them down.",
+    "published_at": "2026-03-30T07:05:48+00:00"
+  },
+  {
+    "author": "Tom Eriksson",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-03-30T10:53:12+00:00"
+  },
+  {
+    "author": "Carmel Cohen",
+    "rating": 2,
+    "text": "Something is off with the draught here. Not completely undrinkable but not right either. Won't be back soon.",
+    "published_at": "2026-03-30T21:52:48+00:00"
+  },
+  {
+    "author": "Michael Stern",
+    "rating": 2,
+    "text": "Not what it used to be. The beer quality has dropped significantly. Something tastes off — probably old keg or dirty lines.",
+    "published_at": "2026-03-30T21:58:43+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 1,
+    "text": "The IPA I ordered tasted like vinegar. Clearly a bad keg. Bartender shrugged it off which made it worse. Won't be back.",
+    "published_at": "2026-03-31T13:41:22+00:00"
+  },
+  {
+    "author": "Natan Schwartz",
+    "rating": 1,
+    "text": "I've been coming here for a year and something has changed. The beer is off, there's a strange taste. Won't visit until fixed.",
+    "published_at": "2026-03-31T13:44:25+00:00"
+  },
+  {
+    "author": "Inbal Navon",
+    "rating": 2,
+    "text": "Disappointed. The craft selection that was great during the festival is now clearly past its best. Quality control issue.",
+    "published_at": "2026-03-31T15:49:31+00:00"
+  },
+  {
+    "author": "Dafna Harel",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-03-31T20:07:57+00:00"
+  },
+  {
+    "author": "Noa Levi",
+    "rating": 2,
+    "text": "Quality has clearly dropped since the festival. The beers taste flat and slightly sour. A shame.",
+    "published_at": "2026-04-01T05:07:14+00:00"
+  },
+  {
+    "author": "Avi Cohen",
+    "rating": 2,
+    "text": "Disappointed. The craft selection that was great during the festival is now clearly past its best. Quality control issue.",
+    "published_at": "2026-04-01T09:26:36+00:00"
+  },
+  {
+    "author": "Yael Har-Zion",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-04-01T09:29:53+00:00"
+  },
+  {
+    "author": "Ronen Shapiro",
+    "rating": 2,
+    "text": "The IPA was flat and tasted stale. Used to love this place but this visit was a disappointment. Fix the kegs please.",
+    "published_at": "2026-04-01T10:05:11+00:00"
+  },
+  {
+    "author": "Tzvi Koren",
+    "rating": 3,
+    "text": "Not impressed. The beer quality isn't what I remembered. Staff were friendly but the product let them down.",
+    "published_at": "2026-04-01T11:31:43+00:00"
+  },
+  {
+    "author": "Shlomo Avraham",
+    "rating": 1,
+    "text": "The IPA I ordered tasted like vinegar. Clearly a bad keg. Bartender shrugged it off which made it worse. Won't be back.",
+    "published_at": "2026-04-01T11:52:09+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-04-01T18:54:25+00:00"
+  },
+  {
+    "author": "Hila Friedman",
+    "rating": 2,
+    "text": "The beer isn't fresh. Tastes like it's been sitting in a bad line. Staff didn't seem to know or care.",
+    "published_at": "2026-04-01T22:27:47+00:00"
+  },
+  {
+    "author": "Iris Ariel",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-04-02T18:23:19+00:00"
+  },
+  {
+    "author": "Ronen Shapiro",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-04-02T22:20:47+00:00"
+  },
+  {
+    "author": "Dor Mansour",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-04-03T01:32:10+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 2,
+    "text": "Quality has clearly dropped since the festival. The beers taste flat and slightly sour. A shame.",
+    "published_at": "2026-04-03T02:33:43+00:00"
+  },
+  {
+    "author": "Amit Shimon",
+    "rating": 1,
+    "text": "I've been coming here for a year and something has changed. The beer is off, there's a strange taste. Won't visit until fixed.",
+    "published_at": "2026-04-03T10:25:16+00:00"
+  },
+  {
+    "author": "Sarah Wilson",
+    "rating": 1,
+    "text": "I've been coming here for a year and something has changed. The beer is off, there's a strange taste. Won't visit until fixed.",
+    "published_at": "2026-04-03T11:24:48+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 2,
+    "text": "Came after the festival and the quality is noticeably worse. The lager had an off aftertaste. Hope they sort this out.",
+    "published_at": "2026-04-03T13:06:03+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 2,
+    "text": "Disappointed. The craft selection that was great during the festival is now clearly past its best. Quality control issue.",
+    "published_at": "2026-04-03T19:15:02+00:00"
+  },
+  {
+    "author": "Tamar Ben David",
+    "rating": 2,
+    "text": "Disappointed. The craft selection that was great during the festival is now clearly past its best. Quality control issue.",
+    "published_at": "2026-04-03T23:41:17+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 3,
+    "text": "Not impressed. The beer quality isn't what I remembered. Staff were friendly but the product let them down.",
+    "published_at": "2026-04-04T01:49:47+00:00"
+  },
+  {
+    "author": "Nadav Ben Ami",
+    "rating": 3,
+    "text": "Not impressed. The beer quality isn't what I remembered. Staff were friendly but the product let them down.",
+    "published_at": "2026-04-04T07:48:18+00:00"
+  },
+  {
+    "author": "Yossi Katz",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-04-04T08:48:09+00:00"
+  },
+  {
+    "author": "Chloe Dupont",
+    "rating": 1,
+    "text": "Got sick after drinking here last night. The beer tasted strange and I had stomach issues all next day. Not acceptable.",
+    "published_at": "2026-04-04T08:55:19+00:00"
+  },
+  {
+    "author": "Amit Shimon",
+    "rating": 1,
+    "text": "The IPA I ordered tasted like vinegar. Clearly a bad keg. Bartender shrugged it off which made it worse. Won't be back.",
+    "published_at": "2026-04-04T16:57:29+00:00"
+  },
+  {
+    "author": "Yaniv Levy",
+    "rating": 1,
+    "text": "The tap beer was rank. I don't know if it's dirty lines or a bad keg but it ruined the evening. Felt sick the next day.",
+    "published_at": "2026-04-04T19:32:38+00:00"
+  },
+  {
+    "author": "Yaniv Levy",
+    "rating": 1,
+    "text": "The IPA I ordered tasted like vinegar. Clearly a bad keg. Bartender shrugged it off which made it worse. Won't be back.",
+    "published_at": "2026-04-05T02:29:27+00:00"
+  },
+  {
+    "author": "Hadas Gal",
+    "rating": 2,
+    "text": "Came with two friends, all three of us noticed the off taste. Staff offered to replace but the second round was the same.",
+    "published_at": "2026-04-05T04:19:37+00:00"
+  },
+  {
+    "author": "Noam Lichtenstein",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-04-05T10:15:18+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 2,
+    "text": "The IPA was flat and tasted stale. Used to love this place but this visit was a disappointment. Fix the kegs please.",
+    "published_at": "2026-04-05T11:35:09+00:00"
+  },
+  {
+    "author": "Yossi Katz",
+    "rating": 1,
+    "text": "Got sick after drinking here last night. The beer tasted strange and I had stomach issues all next day. Not acceptable.",
+    "published_at": "2026-04-05T14:25:43+00:00"
+  },
+  {
+    "author": "Shlomo Avraham",
+    "rating": 1,
+    "text": "I've been coming here for a year and something has changed. The beer is off, there's a strange taste. Won't visit until fixed.",
+    "published_at": "2026-04-05T16:15:56+00:00"
+  },
+  {
+    "author": "James O'Brien",
+    "rating": 1,
+    "text": "Couldn't finish my beer — tasted sour and fizzy in a bad way. Staff dismissed my concern. Awful experience.",
+    "published_at": "2026-04-05T18:55:08+00:00"
+  },
+  {
+    "author": "Reut Vered",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-04-06T02:37:36+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 1,
+    "text": "Beer was clearly off. I know what bad craft tastes like and this was it. Manager was dismissive when I complained.",
+    "published_at": "2026-04-06T02:47:05+00:00"
+  },
+  {
+    "author": "Assaf Blum",
+    "rating": 2,
+    "text": "Something is off with the draught here. Not completely undrinkable but not right either. Won't be back soon.",
+    "published_at": "2026-04-06T06:22:51+00:00"
+  },
+  {
+    "author": "Lihi Segal",
+    "rating": 2,
+    "text": "Beer tasted wrong tonight. Not obviously terrible but definitely not right. Strange aftertaste I couldn't place.",
+    "published_at": "2026-04-06T08:48:26+00:00"
+  },
+  {
+    "author": "Inbal Navon",
+    "rating": 1,
+    "text": "The tap beer was rank. I don't know if it's dirty lines or a bad keg but it ruined the evening. Felt sick the next day.",
+    "published_at": "2026-04-06T10:35:00+00:00"
+  },
+  {
+    "author": "Tali Haim",
+    "rating": 2,
+    "text": "Came with two friends, all three of us noticed the off taste. Staff offered to replace but the second round was the same.",
+    "published_at": "2026-04-06T17:11:02+00:00"
+  },
+  {
+    "author": "Pablo Ruiz",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-04-06T18:59:42+00:00"
+  },
+  {
+    "author": "Laura Bianchi",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-04-06T20:15:18+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 1,
+    "text": "Got sick after drinking here last night. The beer tasted strange and I had stomach issues all next day. Not acceptable.",
+    "published_at": "2026-04-06T22:08:39+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-04-06T22:19:20+00:00"
+  },
+  {
+    "author": "Assaf Blum",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-04-07T01:26:33+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 3,
+    "text": "Not impressed. The beer quality isn't what I remembered. Staff were friendly but the product let them down.",
+    "published_at": "2026-04-07T02:55:55+00:00"
+  },
+  {
+    "author": "Iris Ariel",
+    "rating": 1,
+    "text": "Got sick after drinking here last night. The beer tasted strange and I had stomach issues all next day. Not acceptable.",
+    "published_at": "2026-04-07T07:40:12+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-04-07T12:51:14+00:00"
+  },
+  {
+    "author": "Natan Schwartz",
+    "rating": 1,
+    "text": "Beer was clearly off. I know what bad craft tastes like and this was it. Manager was dismissive when I complained.",
+    "published_at": "2026-04-07T14:06:04+00:00"
+  },
+  {
+    "author": "Noa Levi",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-04-07T14:57:19+00:00"
+  },
+  {
+    "author": "Ronen Shapiro",
+    "rating": 2,
+    "text": "The beer isn't fresh. Tastes like it's been sitting in a bad line. Staff didn't seem to know or care.",
+    "published_at": "2026-04-07T19:53:49+00:00"
+  },
+  {
+    "author": "Saar Ben Zion",
+    "rating": 1,
+    "text": "The IPA I ordered tasted like vinegar. Clearly a bad keg. Bartender shrugged it off which made it worse. Won't be back.",
+    "published_at": "2026-04-08T01:12:38+00:00"
+  },
+  {
+    "author": "Liron Erez",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-04-08T02:32:19+00:00"
+  },
+  {
+    "author": "Saar Ben Zion",
+    "rating": 1,
+    "text": "Disgusting experience. The beer was obviously turned — flat, sour aftertaste, wrong colour. Couldn't finish it.",
+    "published_at": "2026-04-08T05:11:02+00:00"
+  },
+  {
+    "author": "Nir Ronen",
+    "rating": 1,
+    "text": "Beer was clearly off. I know what bad craft tastes like and this was it. Manager was dismissive when I complained.",
+    "published_at": "2026-04-08T06:55:51+00:00"
+  },
+  {
+    "author": "Hila Friedman",
+    "rating": 1,
+    "text": "Something is very wrong with the beer here. Ordered a lager and it tasted sour and metallic — definitely off. Had to send it back.",
+    "published_at": "2026-04-08T07:22:21+00:00"
+  },
+  {
+    "author": "Eitan Goldberg",
+    "rating": 2,
+    "text": "Came after the festival and the quality is noticeably worse. The lager had an off aftertaste. Hope they sort this out.",
+    "published_at": "2026-04-08T12:19:35+00:00"
+  },
+  {
+    "author": "Rivka Moreno",
+    "rating": 1,
+    "text": "Beer was clearly off. I know what bad craft tastes like and this was it. Manager was dismissive when I complained.",
+    "published_at": "2026-04-08T14:07:07+00:00"
+  },
+  {
+    "author": "Yaniv Levy",
+    "rating": 1,
+    "text": "Beer was clearly off. I know what bad craft tastes like and this was it. Manager was dismissive when I complained.",
+    "published_at": "2026-04-08T14:45:01+00:00"
+  },
+  {
+    "author": "Kevin O'Connor",
+    "rating": 2,
+    "text": "Beer tasted wrong tonight. Not obviously terrible but definitely not right. Strange aftertaste I couldn't place.",
+    "published_at": "2026-04-08T19:52:27+00:00"
+  },
+  {
+    "author": "Tali Haim",
+    "rating": 1,
+    "text": "The tap beer was rank. I don't know if it's dirty lines or a bad keg but it ruined the evening. Felt sick the next day.",
+    "published_at": "2026-04-08T23:55:05+00:00"
+  },
+  {
+    "author": "Laura Bianchi",
+    "rating": 2,
+    "text": "Disappointed. The craft selection that was great during the festival is now clearly past its best. Quality control issue.",
+    "published_at": "2026-04-09T02:56:35+00:00"
+  },
+  {
+    "author": "Eitan Goldberg",
+    "rating": 2,
+    "text": "The IPA was flat and tasted stale. Used to love this place but this visit was a disappointment. Fix the kegs please.",
+    "published_at": "2026-04-09T05:44:22+00:00"
+  },
+  {
+    "author": "Dafna Harel",
+    "rating": 1,
+    "text": "I've been coming here for a year and something has changed. The beer is off, there's a strange taste. Won't visit until fixed.",
+    "published_at": "2026-04-09T05:55:00+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 1,
+    "text": "The tap beer was rank. I don't know if it's dirty lines or a bad keg but it ruined the evening. Felt sick the next day.",
+    "published_at": "2026-04-09T13:15:14+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 1,
+    "text": "The tap beer was rank. I don't know if it's dirty lines or a bad keg but it ruined the evening. Felt sick the next day.",
+    "published_at": "2026-04-09T14:48:36+00:00"
+  },
+  {
+    "author": "Zohar Aloni",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-04-09T22:00:16+00:00"
+  },
+  {
+    "author": "Natan Schwartz",
+    "rating": 2,
+    "text": "Came after the festival and the quality is noticeably worse. The lager had an off aftertaste. Hope they sort this out.",
+    "published_at": "2026-04-09T22:55:01+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 2,
+    "text": "Quality has clearly dropped since the festival. The beers taste flat and slightly sour. A shame.",
+    "published_at": "2026-04-10T00:33:17+00:00"
+  },
+  {
+    "author": "Tali Haim",
+    "rating": 3,
+    "text": "Not impressed. The beer quality isn't what I remembered. Staff were friendly but the product let them down.",
+    "published_at": "2026-04-10T04:45:30+00:00"
+  },
+  {
+    "author": "Ran Tal",
+    "rating": 2,
+    "text": "Came after the festival and the quality is noticeably worse. The lager had an off aftertaste. Hope they sort this out.",
+    "published_at": "2026-04-10T05:02:28+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-04-10T06:15:42+00:00"
+  },
+  {
+    "author": "Kevin O'Connor",
+    "rating": 1,
+    "text": "Beer was clearly off. I know what bad craft tastes like and this was it. Manager was dismissive when I complained.",
+    "published_at": "2026-04-10T06:22:15+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 1,
+    "text": "The IPA I ordered tasted like vinegar. Clearly a bad keg. Bartender shrugged it off which made it worse. Won't be back.",
+    "published_at": "2026-04-10T09:37:48+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-04-10T16:09:31+00:00"
+  },
+  {
+    "author": "Iris Ariel",
+    "rating": 2,
+    "text": "Disappointed. The craft selection that was great during the festival is now clearly past its best. Quality control issue.",
+    "published_at": "2026-04-10T21:05:00+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 1,
+    "text": "The IPA I ordered tasted like vinegar. Clearly a bad keg. Bartender shrugged it off which made it worse. Won't be back.",
+    "published_at": "2026-04-11T00:58:39+00:00"
+  },
+  {
+    "author": "Uri Tzur",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-04-11T03:21:18+00:00"
+  },
+  {
+    "author": "Dafna Harel",
+    "rating": 2,
+    "text": "Came after the festival and the quality is noticeably worse. The lager had an off aftertaste. Hope they sort this out.",
+    "published_at": "2026-04-11T04:23:45+00:00"
+  },
+  {
+    "author": "Assaf Blum",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-04-11T05:15:10+00:00"
+  },
+  {
+    "author": "Ran Tal",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-04-11T09:07:49+00:00"
+  },
+  {
+    "author": "Assaf Blum",
+    "rating": 1,
+    "text": "Terrible. Ordered two beers, both tasted wrong. My friend and I both felt unwell the next morning. Something is definitely wrong.",
+    "published_at": "2026-04-11T16:13:33+00:00"
+  },
+  {
+    "author": "Pablo Ruiz",
+    "rating": 2,
+    "text": "The IPA was flat and tasted stale. Used to love this place but this visit was a disappointment. Fix the kegs please.",
+    "published_at": "2026-04-12T01:11:16+00:00"
+  },
+  {
+    "author": "Reut Vered",
+    "rating": 2,
+    "text": "Came with two friends, all three of us noticed the off taste. Staff offered to replace but the second round was the same.",
+    "published_at": "2026-04-12T01:14:31+00:00"
+  },
+  {
+    "author": "Dor Mansour",
+    "rating": 3,
+    "text": "Average visit, beer was okay but not great. Something slightly off but not terrible. Maybe a new keg that wasn't purged properly.",
+    "published_at": "2026-04-12T09:01:37+00:00"
+  },
+  {
+    "author": "Yael Har-Zion",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-04-12T15:18:35+00:00"
+  },
+  {
+    "author": "Reut Vered",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-04-12T15:25:32+00:00"
+  },
+  {
+    "author": "Kevin O'Connor",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-04-12T16:14:20+00:00"
+  },
+  {
+    "author": "Reut Vered",
+    "rating": 1,
+    "text": "The wheat beer was noticeably sour — not the good kind. I suspect a dirty line or bad keg. Really disappointed.",
+    "published_at": "2026-04-12T20:26:46+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 2,
+    "text": "The beer isn't fresh. Tastes like it's been sitting in a bad line. Staff didn't seem to know or care.",
+    "published_at": "2026-04-12T21:08:55+00:00"
+  },
+  {
+    "author": "Natan Schwartz",
+    "rating": 1,
+    "text": "Something is very wrong with the beer here. Ordered a lager and it tasted sour and metallic — definitely off. Had to send it back.",
+    "published_at": "2026-04-12T21:11:12+00:00"
+  },
+  {
+    "author": "Barak Ofer",
+    "rating": 3,
+    "text": "Beer was a bit flat. Not worth the price. Noticed other tables complaining too. Place needs to sort its draught lines.",
+    "published_at": "2026-04-12T23:42:10+00:00"
+  },
+  {
+    "author": "Rachel Green",
+    "rating": 5,
+    "text": "Great recovery! Heard about the issues but decided to give them another chance and I'm so glad I did. Beer was perfect.",
+    "published_at": "2026-04-13T04:43:02+00:00"
+  },
+  {
+    "author": "Ronen Shapiro",
+    "rating": 3,
+    "text": "Better than the disaster a month ago. Still not the quality I remember from before the festival. Cautiously optimistic.",
+    "published_at": "2026-04-13T10:55:03+00:00"
+  },
+  {
+    "author": "Laura Bianchi",
+    "rating": 5,
+    "text": "Back on form! Had heard the quality had dipped but last night everything was excellent. Lager was crisp and cold, just right.",
+    "published_at": "2026-04-13T14:34:40+00:00"
+  },
+  {
+    "author": "Yossi Katz",
+    "rating": 4,
+    "text": "Glad the problems are being fixed. This visit was good — the lager was properly cold and tasted right again.",
+    "published_at": "2026-04-13T16:51:59+00:00"
+  },
+  {
+    "author": "Sarah Wilson",
+    "rating": 4,
+    "text": "Glad the problems are being fixed. This visit was good — the lager was properly cold and tasted right again.",
+    "published_at": "2026-04-13T19:03:31+00:00"
+  },
+  {
+    "author": "Einat Shachar",
+    "rating": 4,
+    "text": "Came back to try again after the rough patch and happy to report the beer is much better. Still settling back to the usual standard.",
+    "published_at": "2026-04-13T21:40:39+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 5,
+    "text": "Glad I came back! They clearly sorted out the keg issue — beer is back to its brilliant self. Best IPA I've had in weeks.",
+    "published_at": "2026-04-14T02:47:30+00:00"
+  },
+  {
+    "author": "Michael Stern",
+    "rating": 3,
+    "text": "Getting there. The beer is drinkable again. One keg still tasted a bit off so the clean-up isn't 100% complete.",
+    "published_at": "2026-04-14T04:59:19+00:00"
+  },
+  {
+    "author": "Anna Kowalski",
+    "rating": 4,
+    "text": "Came back to try again after the rough patch and happy to report the beer is much better. Still settling back to the usual standard.",
+    "published_at": "2026-04-14T05:27:50+00:00"
+  },
+  {
+    "author": "Rachel Green",
+    "rating": 3,
+    "text": "Getting there. The beer is drinkable again. One keg still tasted a bit off so the clean-up isn't 100% complete.",
+    "published_at": "2026-04-14T07:54:46+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 5,
+    "text": "Good to see the quality restored. The wheat beer in particular is back to its best. Credit to the staff for addressing the issue.",
+    "published_at": "2026-04-14T08:41:30+00:00"
+  },
+  {
+    "author": "Kevin O'Connor",
+    "rating": 4,
+    "text": "Quality is recovering. Not quite back to peak yet but noticeably better than two weeks ago. On the right track.",
+    "published_at": "2026-04-14T13:01:30+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 4,
+    "text": "Good improvement. The beer is much fresher and cleaner now. A couple more visits and I'll feel confident recommending it again.",
+    "published_at": "2026-04-14T14:15:45+00:00"
+  },
+  {
+    "author": "Shira Mizrahi",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-14T15:51:28+00:00"
+  },
+  {
+    "author": "Barak Ofer",
+    "rating": 5,
+    "text": "Back on form! Had heard the quality had dipped but last night everything was excellent. Lager was crisp and cold, just right.",
+    "published_at": "2026-04-14T19:51:54+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 3,
+    "text": "Getting there. The beer is drinkable again. One keg still tasted a bit off so the clean-up isn't 100% complete.",
+    "published_at": "2026-04-14T21:48:54+00:00"
+  },
+  {
+    "author": "Rachel Green",
+    "rating": 5,
+    "text": "Visited after a friend said they fixed the problems and it's true. First-class beer, friendly service, back to being one of my favourite spots.",
+    "published_at": "2026-04-14T22:47:13+00:00"
+  },
+  {
+    "author": "Iris Ariel",
+    "rating": 4,
+    "text": "Quality is recovering. Not quite back to peak yet but noticeably better than two weeks ago. On the right track.",
+    "published_at": "2026-04-14T23:03:49+00:00"
+  },
+  {
+    "author": "Ran Tal",
+    "rating": 5,
+    "text": "Huge improvement! Visited after the bad spell and the quality is back to where it was. The new keg is excellent. Well done for fixing it.",
+    "published_at": "2026-04-15T04:38:59+00:00"
+  },
+  {
+    "author": "Carmel Cohen",
+    "rating": 4,
+    "text": "Quality is recovering. Not quite back to peak yet but noticeably better than two weeks ago. On the right track.",
+    "published_at": "2026-04-15T05:08:32+00:00"
+  },
+  {
+    "author": "Einat Shachar",
+    "rating": 5,
+    "text": "Visited after a friend said they fixed the problems and it's true. First-class beer, friendly service, back to being one of my favourite spots.",
+    "published_at": "2026-04-15T08:36:07+00:00"
+  },
+  {
+    "author": "Inbal Navon",
+    "rating": 4,
+    "text": "Recovery is happening. Beer is back to being enjoyable. Will keep coming back to see if the upward trend holds.",
+    "published_at": "2026-04-15T12:21:06+00:00"
+  },
+  {
+    "author": "Natan Schwartz",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-15T15:02:30+00:00"
+  },
+  {
+    "author": "Liron Erez",
+    "rating": 3,
+    "text": "Better than the disaster a month ago. Still not the quality I remember from before the festival. Cautiously optimistic.",
+    "published_at": "2026-04-15T16:35:52+00:00"
+  },
+  {
+    "author": "Anna Kowalski",
+    "rating": 3,
+    "text": "Getting there. The beer is drinkable again. One keg still tasted a bit off so the clean-up isn't 100% complete.",
+    "published_at": "2026-04-15T18:18:12+00:00"
+  },
+  {
+    "author": "Liron Erez",
+    "rating": 4,
+    "text": "Recovery is happening. Beer is back to being enjoyable. Will keep coming back to see if the upward trend holds.",
+    "published_at": "2026-04-15T18:55:31+00:00"
+  },
+  {
+    "author": "Kevin O'Connor",
+    "rating": 3,
+    "text": "Better than the disaster a month ago. Still not the quality I remember from before the festival. Cautiously optimistic.",
+    "published_at": "2026-04-15T19:05:36+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 4,
+    "text": "Back to being a decent bar. Not quite the old Lager & Ale yet but getting there. The service is as good as ever.",
+    "published_at": "2026-04-15T19:38:42+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 4,
+    "text": "Much better than a few weeks ago. The staff mentioned they replaced the problem kegs and cleaned the lines. It shows.",
+    "published_at": "2026-04-15T19:58:07+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 3,
+    "text": "Better than the disaster a month ago. Still not the quality I remember from before the festival. Cautiously optimistic.",
+    "published_at": "2026-04-15T21:53:45+00:00"
+  },
+  {
+    "author": "Michal Brandt",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-15T23:09:47+00:00"
+  },
+  {
+    "author": "Assaf Blum",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-16T01:21:21+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 4,
+    "text": "Came back to try again after the rough patch and happy to report the beer is much better. Still settling back to the usual standard.",
+    "published_at": "2026-04-16T01:50:31+00:00"
+  },
+  {
+    "author": "Itay Weiss",
+    "rating": 4,
+    "text": "Recovery is happening. Beer is back to being enjoyable. Will keep coming back to see if the upward trend holds.",
+    "published_at": "2026-04-16T03:47:51+00:00"
+  },
+  {
+    "author": "Barak Ofer",
+    "rating": 4,
+    "text": "Came back to try again after the rough patch and happy to report the beer is much better. Still settling back to the usual standard.",
+    "published_at": "2026-04-16T04:46:51+00:00"
+  },
+  {
+    "author": "James O'Brien",
+    "rating": 5,
+    "text": "Huge improvement! Visited after the bad spell and the quality is back to where it was. The new keg is excellent. Well done for fixing it.",
+    "published_at": "2026-04-16T04:59:19+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 4,
+    "text": "Quality is recovering. Not quite back to peak yet but noticeably better than two weeks ago. On the right track.",
+    "published_at": "2026-04-16T10:38:52+00:00"
+  },
+  {
+    "author": "Noa Levi",
+    "rating": 4,
+    "text": "Good improvement. The beer is much fresher and cleaner now. A couple more visits and I'll feel confident recommending it again.",
+    "published_at": "2026-04-16T11:27:00+00:00"
+  },
+  {
+    "author": "Noa Levi",
+    "rating": 4,
+    "text": "Glad the problems are being fixed. This visit was good — the lager was properly cold and tasted right again.",
+    "published_at": "2026-04-16T12:17:12+00:00"
+  },
+  {
+    "author": "Doron Elias",
+    "rating": 4,
+    "text": "Recovery is happening. Beer is back to being enjoyable. Will keep coming back to see if the upward trend holds.",
+    "published_at": "2026-04-16T16:55:07+00:00"
+  },
+  {
+    "author": "Zohar Aloni",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-16T18:08:12+00:00"
+  },
+  {
+    "author": "Omer Alon",
+    "rating": 3,
+    "text": "Improved but not fully back to the standard I expect. Beer was okay, a bit inconsistent. Come back in a few weeks.",
+    "published_at": "2026-04-16T18:37:54+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 3,
+    "text": "Better than the disaster a month ago. Still not the quality I remember from before the festival. Cautiously optimistic.",
+    "published_at": "2026-04-16T19:41:51+00:00"
+  },
+  {
+    "author": "Guy Dagan",
+    "rating": 5,
+    "text": "Good to see the quality restored. The wheat beer in particular is back to its best. Credit to the staff for addressing the issue.",
+    "published_at": "2026-04-16T23:51:14+00:00"
+  },
+  {
+    "author": "Itay Weiss",
+    "rating": 5,
+    "text": "Back on form! Had heard the quality had dipped but last night everything was excellent. Lager was crisp and cold, just right.",
+    "published_at": "2026-04-17T00:54:52+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 4,
+    "text": "Came back to try again after the rough patch and happy to report the beer is much better. Still settling back to the usual standard.",
+    "published_at": "2026-04-17T05:30:20+00:00"
+  },
+  {
+    "author": "Nadav Ben Ami",
+    "rating": 4,
+    "text": "Glad the problems are being fixed. This visit was good — the lager was properly cold and tasted right again.",
+    "published_at": "2026-04-17T05:39:06+00:00"
+  },
+  {
+    "author": "Lena Müller",
+    "rating": 5,
+    "text": "Huge improvement! Visited after the bad spell and the quality is back to where it was. The new keg is excellent. Well done for fixing it.",
+    "published_at": "2026-04-17T05:59:07+00:00"
+  },
+  {
+    "author": "Inbal Navon",
+    "rating": 3,
+    "text": "Improved but not fully back to the standard I expect. Beer was okay, a bit inconsistent. Come back in a few weeks.",
+    "published_at": "2026-04-18T08:27:40+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-18T08:57:20+00:00"
+  },
+  {
+    "author": "Uri Tzur",
+    "rating": 5,
+    "text": "Good to see the quality restored. The wheat beer in particular is back to its best. Credit to the staff for addressing the issue.",
+    "published_at": "2026-04-18T11:25:48+00:00"
+  },
+  {
+    "author": "Ran Tal",
+    "rating": 5,
+    "text": "Good to see the quality restored. The wheat beer in particular is back to its best. Credit to the staff for addressing the issue.",
+    "published_at": "2026-04-18T14:03:13+00:00"
+  },
+  {
+    "author": "Tom Eriksson",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-18T15:43:53+00:00"
+  },
+  {
+    "author": "Avi Cohen",
+    "rating": 4,
+    "text": "Recovery is happening. Beer is back to being enjoyable. Will keep coming back to see if the upward trend holds.",
+    "published_at": "2026-04-18T18:36:18+00:00"
+  },
+  {
+    "author": "Noam Lichtenstein",
+    "rating": 5,
+    "text": "Huge improvement! Visited after the bad spell and the quality is back to where it was. The new keg is excellent. Well done for fixing it.",
+    "published_at": "2026-04-18T22:15:19+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 5,
+    "text": "Visited after a friend said they fixed the problems and it's true. First-class beer, friendly service, back to being one of my favourite spots.",
+    "published_at": "2026-04-19T01:41:33+00:00"
+  },
+  {
+    "author": "Alex Petrov",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-19T02:00:02+00:00"
+  },
+  {
+    "author": "Doron Elias",
+    "rating": 5,
+    "text": "Back on form! Had heard the quality had dipped but last night everything was excellent. Lager was crisp and cold, just right.",
+    "published_at": "2026-04-19T04:44:18+00:00"
+  },
+  {
+    "author": "Anna Kowalski",
+    "rating": 3,
+    "text": "Improved but not fully back to the standard I expect. Beer was okay, a bit inconsistent. Come back in a few weeks.",
+    "published_at": "2026-04-19T04:51:03+00:00"
+  },
+  {
+    "author": "Iris Ariel",
+    "rating": 3,
+    "text": "Better than the disaster a month ago. Still not the quality I remember from before the festival. Cautiously optimistic.",
+    "published_at": "2026-04-19T15:07:52+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 4,
+    "text": "Came back to try again after the rough patch and happy to report the beer is much better. Still settling back to the usual standard.",
+    "published_at": "2026-04-19T23:33:22+00:00"
+  },
+  {
+    "author": "Nadav Ben Ami",
+    "rating": 5,
+    "text": "Glad I came back! They clearly sorted out the keg issue — beer is back to its brilliant self. Best IPA I've had in weeks.",
+    "published_at": "2026-04-20T03:54:51+00:00"
+  },
+  {
+    "author": "Nir Ronen",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-20T04:21:29+00:00"
+  },
+  {
+    "author": "Liron Erez",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-20T06:16:11+00:00"
+  },
+  {
+    "author": "Noa Levi",
+    "rating": 3,
+    "text": "Improved but not fully back to the standard I expect. Beer was okay, a bit inconsistent. Come back in a few weeks.",
+    "published_at": "2026-04-20T07:35:22+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 5,
+    "text": "Good to see the quality restored. The wheat beer in particular is back to its best. Credit to the staff for addressing the issue.",
+    "published_at": "2026-04-20T07:59:55+00:00"
+  },
+  {
+    "author": "Kevin O'Connor",
+    "rating": 4,
+    "text": "Quality is recovering. Not quite back to peak yet but noticeably better than two weeks ago. On the right track.",
+    "published_at": "2026-04-20T14:04:21+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 3,
+    "text": "Improved but not fully back to the standard I expect. Beer was okay, a bit inconsistent. Come back in a few weeks.",
+    "published_at": "2026-04-20T14:22:15+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 3,
+    "text": "Improved but not fully back to the standard I expect. Beer was okay, a bit inconsistent. Come back in a few weeks.",
+    "published_at": "2026-04-20T21:11:28+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 5,
+    "text": "Visited after a friend said they fixed the problems and it's true. First-class beer, friendly service, back to being one of my favourite spots.",
+    "published_at": "2026-04-21T05:18:57+00:00"
+  },
+  {
+    "author": "Inbal Navon",
+    "rating": 4,
+    "text": "Recovery is happening. Beer is back to being enjoyable. Will keep coming back to see if the upward trend holds.",
+    "published_at": "2026-04-21T12:29:09+00:00"
+  },
+  {
+    "author": "Tali Haim",
+    "rating": 4,
+    "text": "Much better than a few weeks ago. The staff mentioned they replaced the problem kegs and cleaned the lines. It shows.",
+    "published_at": "2026-04-21T13:59:08+00:00"
+  },
+  {
+    "author": "Carmel Cohen",
+    "rating": 4,
+    "text": "Back to being a decent bar. Not quite the old Lager & Ale yet but getting there. The service is as good as ever.",
+    "published_at": "2026-04-21T18:54:10+00:00"
+  },
+  {
+    "author": "Iris Ariel",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-21T19:16:47+00:00"
+  },
+  {
+    "author": "Shira Mizrahi",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-21T20:32:49+00:00"
+  },
+  {
+    "author": "Tali Haim",
+    "rating": 5,
+    "text": "Back on form! Had heard the quality had dipped but last night everything was excellent. Lager was crisp and cold, just right.",
+    "published_at": "2026-04-21T22:43:00+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 5,
+    "text": "Great recovery! Heard about the issues but decided to give them another chance and I'm so glad I did. Beer was perfect.",
+    "published_at": "2026-04-22T02:21:38+00:00"
+  },
+  {
+    "author": "James O'Brien",
+    "rating": 3,
+    "text": "Improved but not fully back to the standard I expect. Beer was okay, a bit inconsistent. Come back in a few weeks.",
+    "published_at": "2026-04-22T05:29:12+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-22T05:57:48+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 5,
+    "text": "Huge improvement! Visited after the bad spell and the quality is back to where it was. The new keg is excellent. Well done for fixing it.",
+    "published_at": "2026-04-22T06:09:38+00:00"
+  },
+  {
+    "author": "Omer Alon",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-22T06:50:53+00:00"
+  },
+  {
+    "author": "Hadas Gal",
+    "rating": 5,
+    "text": "Glad I came back! They clearly sorted out the keg issue — beer is back to its brilliant self. Best IPA I've had in weeks.",
+    "published_at": "2026-04-22T13:51:22+00:00"
+  },
+  {
+    "author": "Nir Ronen",
+    "rating": 3,
+    "text": "Improved but not fully back to the standard I expect. Beer was okay, a bit inconsistent. Come back in a few weeks.",
+    "published_at": "2026-04-22T15:18:38+00:00"
+  },
+  {
+    "author": "Nir Ronen",
+    "rating": 4,
+    "text": "Came back to try again after the rough patch and happy to report the beer is much better. Still settling back to the usual standard.",
+    "published_at": "2026-04-22T15:55:59+00:00"
+  },
+  {
+    "author": "Sapir Kadosh",
+    "rating": 4,
+    "text": "Back to being a decent bar. Not quite the old Lager & Ale yet but getting there. The service is as good as ever.",
+    "published_at": "2026-04-22T16:16:37+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 3,
+    "text": "Getting there. The beer is drinkable again. One keg still tasted a bit off so the clean-up isn't 100% complete.",
+    "published_at": "2026-04-22T19:35:36+00:00"
+  },
+  {
+    "author": "Saar Ben Zion",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-23T01:03:49+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 5,
+    "text": "Visited after a friend said they fixed the problems and it's true. First-class beer, friendly service, back to being one of my favourite spots.",
+    "published_at": "2026-04-23T02:02:53+00:00"
+  },
+  {
+    "author": "Anna Kowalski",
+    "rating": 4,
+    "text": "Much better than a few weeks ago. The staff mentioned they replaced the problem kegs and cleaned the lines. It shows.",
+    "published_at": "2026-04-23T04:34:12+00:00"
+  },
+  {
+    "author": "Michal Brandt",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-23T09:58:33+00:00"
+  },
+  {
+    "author": "Barak Ofer",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-23T10:32:02+00:00"
+  },
+  {
+    "author": "Noa Levi",
+    "rating": 3,
+    "text": "Better than the disaster a month ago. Still not the quality I remember from before the festival. Cautiously optimistic.",
+    "published_at": "2026-04-23T10:52:29+00:00"
+  },
+  {
+    "author": "Omer Alon",
+    "rating": 4,
+    "text": "Quality is recovering. Not quite back to peak yet but noticeably better than two weeks ago. On the right track.",
+    "published_at": "2026-04-23T11:35:10+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 3,
+    "text": "Improved but not fully back to the standard I expect. Beer was okay, a bit inconsistent. Come back in a few weeks.",
+    "published_at": "2026-04-23T13:47:59+00:00"
+  },
+  {
+    "author": "Hadas Gal",
+    "rating": 3,
+    "text": "Improved but not fully back to the standard I expect. Beer was okay, a bit inconsistent. Come back in a few weeks.",
+    "published_at": "2026-04-23T14:24:10+00:00"
+  },
+  {
+    "author": "Ronen Shapiro",
+    "rating": 5,
+    "text": "Great recovery! Heard about the issues but decided to give them another chance and I'm so glad I did. Beer was perfect.",
+    "published_at": "2026-04-23T16:47:53+00:00"
+  },
+  {
+    "author": "Michael Stern",
+    "rating": 5,
+    "text": "Glad I came back! They clearly sorted out the keg issue — beer is back to its brilliant self. Best IPA I've had in weeks.",
+    "published_at": "2026-04-23T17:19:34+00:00"
+  },
+  {
+    "author": "Omer Alon",
+    "rating": 3,
+    "text": "Better than the disaster a month ago. Still not the quality I remember from before the festival. Cautiously optimistic.",
+    "published_at": "2026-04-23T18:07:55+00:00"
+  },
+  {
+    "author": "Amit Shimon",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-23T18:17:21+00:00"
+  },
+  {
+    "author": "Einat Shachar",
+    "rating": 4,
+    "text": "Much better than a few weeks ago. The staff mentioned they replaced the problem kegs and cleaned the lines. It shows.",
+    "published_at": "2026-04-24T00:15:59+00:00"
+  },
+  {
+    "author": "Sophie Dubois",
+    "rating": 3,
+    "text": "Getting there. The beer is drinkable again. One keg still tasted a bit off so the clean-up isn't 100% complete.",
+    "published_at": "2026-04-24T04:01:33+00:00"
+  },
+  {
+    "author": "Uri Tzur",
+    "rating": 5,
+    "text": "Huge improvement! Visited after the bad spell and the quality is back to where it was. The new keg is excellent. Well done for fixing it.",
+    "published_at": "2026-04-24T04:38:21+00:00"
+  },
+  {
+    "author": "Avi Cohen",
+    "rating": 5,
+    "text": "Good to see the quality restored. The wheat beer in particular is back to its best. Credit to the staff for addressing the issue.",
+    "published_at": "2026-04-24T07:01:46+00:00"
+  },
+  {
+    "author": "Yossi Katz",
+    "rating": 4,
+    "text": "Came back to try again after the rough patch and happy to report the beer is much better. Still settling back to the usual standard.",
+    "published_at": "2026-04-24T15:01:37+00:00"
+  },
+  {
+    "author": "Doron Elias",
+    "rating": 5,
+    "text": "Good to see the quality restored. The wheat beer in particular is back to its best. Credit to the staff for addressing the issue.",
+    "published_at": "2026-04-24T16:41:48+00:00"
+  },
+  {
+    "author": "Chloe Dupont",
+    "rating": 5,
+    "text": "Back on form! Had heard the quality had dipped but last night everything was excellent. Lager was crisp and cold, just right.",
+    "published_at": "2026-04-24T17:29:20+00:00"
+  },
+  {
+    "author": "Maya Peretz",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-25T01:21:52+00:00"
+  },
+  {
+    "author": "Hadas Gal",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-25T04:18:59+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 4,
+    "text": "Back to being a decent bar. Not quite the old Lager & Ale yet but getting there. The service is as good as ever.",
+    "published_at": "2026-04-25T05:30:26+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 4,
+    "text": "Back to being a decent bar. Not quite the old Lager & Ale yet but getting there. The service is as good as ever.",
+    "published_at": "2026-04-25T06:30:17+00:00"
+  },
+  {
+    "author": "Yossi Katz",
+    "rating": 4,
+    "text": "Quality is recovering. Not quite back to peak yet but noticeably better than two weeks ago. On the right track.",
+    "published_at": "2026-04-25T21:01:42+00:00"
+  },
+  {
+    "author": "Avi Cohen",
+    "rating": 5,
+    "text": "Great recovery! Heard about the issues but decided to give them another chance and I'm so glad I did. Beer was perfect.",
+    "published_at": "2026-04-26T00:34:33+00:00"
+  },
+  {
+    "author": "Itay Weiss",
+    "rating": 4,
+    "text": "Better visit than my last one. Seems like they addressed the draught issues. Beer was decent, not perfect but good.",
+    "published_at": "2026-04-26T01:08:36+00:00"
+  },
+  {
+    "author": "Dafna Harel",
+    "rating": 5,
+    "text": "Good to see the quality restored. The wheat beer in particular is back to its best. Credit to the staff for addressing the issue.",
+    "published_at": "2026-04-26T03:09:52+00:00"
+  },
+  {
+    "author": "Itay Weiss",
+    "rating": 4,
+    "text": "Recovery is happening. Beer is back to being enjoyable. Will keep coming back to see if the upward trend holds.",
+    "published_at": "2026-04-26T05:10:27+00:00"
+  },
+  {
+    "author": "Ran Tal",
+    "rating": 5,
+    "text": "Visited after a friend said they fixed the problems and it's true. First-class beer, friendly service, back to being one of my favourite spots.",
+    "published_at": "2026-04-26T06:24:59+00:00"
+  },
+  {
+    "author": "Tom Eriksson",
+    "rating": 4,
+    "text": "Quality is recovering. Not quite back to peak yet but noticeably better than two weeks ago. On the right track.",
+    "published_at": "2026-04-26T10:50:57+00:00"
+  },
+  {
+    "author": "Rachel Green",
+    "rating": 5,
+    "text": "Good to see the quality restored. The wheat beer in particular is back to its best. Credit to the staff for addressing the issue.",
+    "published_at": "2026-04-26T12:39:29+00:00"
+  },
+  {
+    "author": "Laura Bianchi",
+    "rating": 3,
+    "text": "Getting there. The beer is drinkable again. One keg still tasted a bit off so the clean-up isn't 100% complete.",
+    "published_at": "2026-04-26T13:28:48+00:00"
+  },
+  {
+    "author": "Shlomo Avraham",
+    "rating": 5,
+    "text": "Back on form! Had heard the quality had dipped but last night everything was excellent. Lager was crisp and cold, just right.",
+    "published_at": "2026-04-27T03:42:49+00:00"
+  },
+  {
+    "author": "Amit Shimon",
+    "rating": 4,
+    "text": "Much better than a few weeks ago. The staff mentioned they replaced the problem kegs and cleaned the lines. It shows.",
+    "published_at": "2026-04-27T06:09:01+00:00"
+  },
+  {
+    "author": "Assaf Blum",
+    "rating": 4,
+    "text": "Good improvement. The beer is much fresher and cleaner now. A couple more visits and I'll feel confident recommending it again.",
+    "published_at": "2026-04-27T11:11:04+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 3,
+    "text": "Getting there. The beer is drinkable again. One keg still tasted a bit off so the clean-up isn't 100% complete.",
+    "published_at": "2026-04-27T11:19:31+00:00"
+  },
+  {
+    "author": "Merav Luzon",
+    "rating": 4,
+    "text": "Much better than a few weeks ago. The staff mentioned they replaced the problem kegs and cleaned the lines. It shows.",
+    "published_at": "2026-04-27T12:00:21+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 3,
+    "text": "Better than the disaster a month ago. Still not the quality I remember from before the festival. Cautiously optimistic.",
+    "published_at": "2026-04-27T17:38:50+00:00"
+  },
+  {
+    "author": "Itay Weiss",
+    "rating": 4,
+    "text": "Back to being a decent bar. Not quite the old Lager & Ale yet but getting there. The service is as good as ever.",
+    "published_at": "2026-04-27T22:38:36+00:00"
+  },
+  {
+    "author": "Anat Shalev",
+    "rating": 5,
+    "text": "Great recovery! Heard about the issues but decided to give them another chance and I'm so glad I did. Beer was perfect.",
+    "published_at": "2026-04-28T03:04:29+00:00"
+  },
+  {
+    "author": "Nadav Ben Ami",
+    "rating": 4,
+    "text": "Glad the problems are being fixed. This visit was good — the lager was properly cold and tasted right again.",
+    "published_at": "2026-04-28T03:41:28+00:00"
+  },
+  {
+    "author": "Reut Vered",
+    "rating": 5,
+    "text": "Great recovery! Heard about the issues but decided to give them another chance and I'm so glad I did. Beer was perfect.",
+    "published_at": "2026-04-28T05:08:13+00:00"
+  },
+  {
+    "author": "Noam Lichtenstein",
+    "rating": 5,
+    "text": "Glad I came back! They clearly sorted out the keg issue — beer is back to its brilliant self. Best IPA I've had in weeks.",
+    "published_at": "2026-04-28T09:11:05+00:00"
+  },
+  {
+    "author": "Nir Ronen",
+    "rating": 5,
+    "text": "Huge improvement! Visited after the bad spell and the quality is back to where it was. The new keg is excellent. Well done for fixing it.",
+    "published_at": "2026-04-28T10:51:24+00:00"
+  },
+  {
+    "author": "Yaron Oren",
+    "rating": 4,
+    "text": "Back to being a decent bar. Not quite the old Lager & Ale yet but getting there. The service is as good as ever.",
+    "published_at": "2026-04-28T14:46:23+00:00"
+  },
+  {
+    "author": "Yael Har-Zion",
+    "rating": 4,
+    "text": "Much better than a few weeks ago. The staff mentioned they replaced the problem kegs and cleaned the lines. It shows.",
+    "published_at": "2026-04-28T21:31:10+00:00"
+  },
+  {
+    "author": "Osnat Ben Moshe",
+    "rating": 5,
+    "text": "Glad I came back! They clearly sorted out the keg issue — beer is back to its brilliant self. Best IPA I've had in weeks.",
+    "published_at": "2026-04-28T23:26:47+00:00"
+  },
+  {
+    "author": "Limor Hadad",
+    "rating": 4,
+    "text": "Quality is recovering. Not quite back to peak yet but noticeably better than two weeks ago. On the right track.",
+    "published_at": "2026-04-29T02:05:26+00:00"
+  },
+  {
+    "author": "Emma Fischer",
+    "rating": 4,
+    "text": "Recovery is happening. Beer is back to being enjoyable. Will keep coming back to see if the upward trend holds.",
+    "published_at": "2026-04-29T03:27:12+00:00"
+  },
+  {
+    "author": "Dafna Harel",
+    "rating": 3,
+    "text": "Getting there. The beer is drinkable again. One keg still tasted a bit off so the clean-up isn't 100% complete.",
+    "published_at": "2026-04-29T04:37:58+00:00"
+  },
+  {
+    "author": "Eitan Goldberg",
+    "rating": 4,
+    "text": "Recovery is happening. Beer is back to being enjoyable. Will keep coming back to see if the upward trend holds.",
+    "published_at": "2026-04-29T06:18:39+00:00"
+  },
+  {
+    "author": "Assaf Blum",
+    "rating": 5,
+    "text": "Good to see the quality restored. The wheat beer in particular is back to its best. Credit to the staff for addressing the issue.",
+    "published_at": "2026-04-29T08:50:30+00:00"
+  },
+  {
+    "author": "Amit Shimon",
+    "rating": 5,
+    "text": "Glad I came back! They clearly sorted out the keg issue — beer is back to its brilliant self. Best IPA I've had in weeks.",
+    "published_at": "2026-04-29T09:07:14+00:00"
+  },
+  {
+    "author": "Ran Tal",
+    "rating": 3,
+    "text": "Getting there. The beer is drinkable again. One keg still tasted a bit off so the clean-up isn't 100% complete.",
+    "published_at": "2026-04-29T11:14:48+00:00"
+  },
+  {
+    "author": "Sarah Wilson",
+    "rating": 5,
+    "text": "They've sorted it out. The off-beer issue from a few weeks ago is gone. Beer is excellent again. I'll be a regular again.",
+    "published_at": "2026-04-29T13:10:39+00:00"
+  },
+  {
+    "author": "Shlomo Avraham",
+    "rating": 5,
+    "text": "Visited after a friend said they fixed the problems and it's true. First-class beer, friendly service, back to being one of my favourite spots.",
+    "published_at": "2026-04-29T14:41:29+00:00"
+  },
+  {
+    "author": "David Park",
+    "rating": 4,
+    "text": "Much better than a few weeks ago. The staff mentioned they replaced the problem kegs and cleaned the lines. It shows.",
+    "published_at": "2026-04-29T15:40:50+00:00"
+  },
+  {
+    "author": "Hila Friedman",
+    "rating": 4,
+    "text": "Back to being a decent bar. Not quite the old Lager & Ale yet but getting there. The service is as good as ever.",
+    "published_at": "2026-04-30T00:24:25+00:00"
+  },
+  {
+    "author": "Noam Lichtenstein",
+    "rating": 4,
+    "text": "Quality is recovering. Not quite back to peak yet but noticeably better than two weeks ago. On the right track.",
+    "published_at": "2026-04-30T00:48:58+00:00"
+  },
+  {
+    "author": "Lena Müller",
+    "rating": 4,
+    "text": "Glad the problems are being fixed. This visit was good — the lager was properly cold and tasted right again.",
+    "published_at": "2026-04-30T01:21:06+00:00"
+  },
+  {
+    "author": "Dana Rosenberg",
+    "rating": 4,
+    "text": "Back to being a decent bar. Not quite the old Lager & Ale yet but getting there. The service is as good as ever.",
+    "published_at": "2026-04-30T07:00:13+00:00"
+  },
+  {
+    "author": "Amit Shimon",
+    "rating": 3,
+    "text": "Better than the disaster a month ago. Still not the quality I remember from before the festival. Cautiously optimistic.",
+    "published_at": "2026-04-30T12:21:36+00:00"
+  },
+  {
+    "author": "Pablo Ruiz",
+    "rating": 4,
+    "text": "Came back to try again after the rough patch and happy to report the beer is much better. Still settling back to the usual standard.",
+    "published_at": "2026-04-30T15:38:59+00:00"
+  }
+]

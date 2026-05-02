@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRequireAuth } from "@/lib/auth";
-import { apiFetch, ApiError } from "@/lib/api";
-import { trailEvent } from "@/lib/debugTrail";
-import Toast from "@/components/Toast";
+import { useParams } from "next/navigation";
 import { ChatPanel } from "@/components/agent/ChatPanel";
+import { ExecutiveSummary } from "@/components/agent/ExecutiveSummary";
 import { Workspace } from "@/components/agent/Workspace";
+import Toast from "@/components/Toast";
+import { apiFetch, ApiError } from "@/lib/api";
+import { useRequireAuth } from "@/lib/auth";
+import { trailEvent } from "@/lib/debugTrail";
 import { WorkspaceBlackboardProvider, useWorkspace } from "@/lib/workspaceBlackboard";
 import type { Dashboard, Review } from "@/lib/types";
 
@@ -133,26 +134,26 @@ export default function BusinessDetailPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex justify-center items-center h-[calc(100dvh-3rem)] bg-surface">
-        <span className="inline-block h-5 w-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+      <div className="flex h-[calc(100dvh-3rem)] items-center justify-center bg-[#0f172a]">
+        <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-brand border-t-transparent" />
       </div>
     );
   }
 
   if (loadError) {
     return (
-      <div className="max-w-4xl mx-auto py-8 px-4">
+      <div className="mx-auto max-w-4xl px-4 py-8">
         <Link
           href="/businesses"
-          className="text-sm text-text-muted hover:text-text-secondary mb-4 inline-flex items-center gap-1 transition-colors"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text-secondary"
         >
-          <span aria-hidden>&larr;</span> Back to businesses
+          Back to businesses
         </Link>
-        <div className="text-center py-16 bg-surface-card border border-border rounded-xl px-4">
-          <p className="text-text-secondary mb-6 max-w-md mx-auto leading-relaxed">{loadError}</p>
+        <div className="rounded-lg border border-border bg-surface-card px-4 py-16 text-center">
+          <p className="mx-auto mb-6 max-w-md leading-relaxed text-text-secondary">{loadError}</p>
           <Link
             href="/businesses"
-            className="inline-flex items-center justify-center bg-brand text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-hover transition-colors"
+            className="inline-flex items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-hover"
           >
             Back to your businesses
           </Link>
@@ -208,8 +209,8 @@ function BusinessDetailContent({
   toast: { message: string; type: "success" | "error" } | null;
   setToast: (t: { message: string; type: "success" | "error" } | null) => void;
   actionError: string;
-  activeTab: "workspace" | "chat";
-  setActiveTab: (tab: "workspace" | "chat") => void;
+  activeTab: ActiveTab;
+  setActiveTab: (tab: ActiveTab) => void;
   chatCollapsed: boolean;
   onCollapseChat: () => void;
   onExpandChat: () => void;
@@ -254,61 +255,64 @@ function BusinessDetailContent({
   const hasAnalysis = !!dashboard.ai_summary;
 
   return (
-    <div className="h-[calc(100dvh-3rem)] flex flex-col overflow-hidden bg-surface">
+    <div className="flex h-[calc(100dvh-3rem)] flex-col overflow-hidden bg-[#0f172a]">
       {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
 
-      {/* Header */}
-      <header className="shrink-0 bg-surface-card border-b border-border px-4 py-2.5">
+      <header className="shrink-0 border-b border-white/10 bg-[#0f172a] px-4 py-3 text-white">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/businesses"
-              className="shrink-0 text-sm text-text-muted hover:text-text-secondary transition-colors"
+              className="shrink-0 text-sm text-white/55 transition-colors hover:text-white"
             >
-              &larr; Back
+              Back
             </Link>
-            <span className="text-border shrink-0" aria-hidden>
+            <span className="shrink-0 text-white/20" aria-hidden>
               |
             </span>
-            <h1 className="font-semibold text-text-primary truncate">{dashboard.business_name}</h1>
+            <div className="min-w-0">
+              <h1 className="truncate font-semibold text-white">{dashboard.business_name}</h1>
+              <p className="hidden text-xs text-white/45 sm:block">
+                AI-assisted customer voice workspace
+              </p>
+            </div>
             {dashboard.business_type && dashboard.business_type !== "other" && (
-              <span className="shrink-0 hidden sm:inline-block text-xs bg-surface-elevated text-text-muted px-2 py-0.5 rounded-full capitalize border border-border-subtle">
+              <span className="hidden shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-xs capitalize text-white/60 sm:inline-block">
                 {dashboard.business_type}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={onFetchReviews}
               disabled={busy}
-              className="border border-border bg-surface-card text-text-secondary px-3 py-1.5 rounded-lg text-sm hover:bg-surface-elevated disabled:opacity-50 transition-colors"
+              className="rounded-lg border border-white/15 bg-white/[0.06] px-3 py-1.5 text-sm text-white/80 transition-colors hover:bg-white/[0.1] disabled:opacity-50"
             >
-              {fetchingReviews ? "Fetching…" : hasReviews ? "Refresh" : "Fetch Reviews"}
+              {fetchingReviews ? "Fetching..." : hasReviews ? "Refresh" : "Fetch Reviews"}
             </button>
             <button
               type="button"
               onClick={onAnalyze}
               disabled={busy || !hasReviews}
               title={!hasReviews ? "Fetch reviews first" : undefined}
-              className="bg-brand text-white px-3 py-1.5 rounded-lg text-sm hover:bg-brand-hover disabled:opacity-50 transition-colors"
+              className="rounded-lg bg-brand px-3 py-1.5 text-sm text-white transition-colors hover:bg-brand-hover disabled:opacity-50"
             >
-              {analyzing ? "Analyzing…" : hasAnalysis ? "Re-analyze" : "Analyze"}
+              {analyzing ? "Analyzing..." : hasAnalysis ? "Re-analyze" : "Analyze"}
             </button>
           </div>
         </div>
 
-        {actionError && <p className="mt-1.5 text-xs text-red-500">{actionError}</p>}
+        {actionError && <p className="mt-1.5 text-xs text-red-300">{actionError}</p>}
       </header>
 
-      {/* Mobile tab bar */}
-      <div className="lg:hidden shrink-0 bg-surface-card border-b border-border flex">
+      <div className="flex shrink-0 border-b border-white/10 bg-[#111827] p-1 lg:hidden">
         <button
           type="button"
           onClick={() => setActiveTab("workspace")}
-          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "workspace" ? "text-brand border-b-2 border-brand" : "text-text-muted"
+          className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
+            activeTab === "workspace" ? "bg-white text-[#111827]" : "text-white/55"
           }`}
         >
           Dashboard{state.widgets.length > 0 ? ` (${state.widgets.length})` : ""}
@@ -316,19 +320,19 @@ function BusinessDetailContent({
         <button
           type="button"
           onClick={() => setActiveTab("chat")}
-          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "chat" ? "text-brand border-b-2 border-brand" : "text-text-muted"
+          className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
+            activeTab === "chat" ? "bg-white text-[#111827]" : "text-white/55"
           }`}
         >
-          Chat
+          Assistant
         </button>
       </div>
 
-      {/* Desktop: dashboard canvas with floating assistant. Mobile: tab-based. */}
       <div
         data-testid="dashboard-desktop"
-        className="relative flex-1 overflow-hidden hidden lg:block"
+        className="relative hidden flex-1 overflow-hidden bg-[#f6f7fb] lg:flex lg:flex-col"
       >
+        <ExecutiveSummary dashboard={dashboard} />
         <Workspace
           widgets={state.widgets}
           onDelete={handleDeleteWidget}
@@ -341,7 +345,7 @@ function BusinessDetailContent({
         {!chatCollapsed ? (
           <aside
             data-testid="assistant-drawer"
-            className="absolute bottom-5 right-5 top-5 z-20 w-[min(420px,34vw)] overflow-hidden rounded-xl border border-border bg-surface-card shadow-2xl"
+            className="animate-panel-in absolute bottom-5 right-5 top-5 z-20 w-[min(430px,34vw)] overflow-hidden rounded-lg border border-white/15 bg-white shadow-2xl"
           >
             <ChatPanel key={id} businessId={id} onCollapse={onCollapseChat} />
           </aside>
@@ -349,21 +353,21 @@ function BusinessDetailContent({
           <button
             type="button"
             onClick={onExpandChat}
-            className="absolute bottom-6 right-6 z-20 flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white shadow-lg transition-colors hover:bg-brand-hover"
+            className="absolute bottom-6 right-6 z-20 flex items-center gap-2 rounded-full bg-[#111827] px-4 py-2 text-sm font-medium text-white shadow-xl transition-all hover:-translate-y-0.5 hover:bg-brand"
           >
-            Open Chat
+            Open Assistant
           </button>
         )}
       </div>
 
-      {/* Mobile panels */}
       <div
         data-testid="dashboard-mobile"
-        className="flex-1 overflow-hidden flex flex-col lg:hidden"
+        className="flex flex-1 flex-col overflow-hidden lg:hidden"
       >
         <div
-          className={`${activeTab === "workspace" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}
+          className={`${activeTab === "workspace" ? "flex" : "hidden"} flex-1 flex-col overflow-hidden`}
         >
+          <ExecutiveSummary dashboard={dashboard} />
           <Workspace
             widgets={state.widgets}
             onDelete={handleDeleteWidget}
@@ -375,7 +379,7 @@ function BusinessDetailContent({
           />
         </div>
         <div
-          className={`${activeTab === "chat" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}
+          className={`${activeTab === "chat" ? "flex" : "hidden"} flex-1 flex-col overflow-hidden bg-white`}
         >
           <ChatPanel key={id} businessId={id} />
         </div>

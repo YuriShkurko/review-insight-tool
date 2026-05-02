@@ -24,6 +24,7 @@ export type WorkspaceAction =
   | { type: "LOAD_ERROR"; error: string }
   | { type: "WIDGET_ADDED"; widget: WorkspaceWidget }
   | { type: "WIDGET_REMOVED"; widgetId: string }
+  | { type: "DASHBOARD_CLEARED" }
   | { type: "WIDGET_REORDERED"; widgetIds: string[] }
   | { type: "CLEAR_ERROR" };
 
@@ -95,6 +96,9 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         error: null,
         widgets: state.widgets.filter((w) => w.id !== action.widgetId),
       };
+
+    case "DASHBOARD_CLEARED":
+      return { ...state, isLoading: false, error: null, widgets: [] };
 
     case "WIDGET_REORDERED": {
       const byId = new Map(state.widgets.map((w) => [w.id, w]));

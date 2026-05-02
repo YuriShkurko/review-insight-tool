@@ -47,6 +47,8 @@ export function dispatchWorkspaceEvent(
     });
   } else if (action === "widget_removed" && data.widget_id && workspaceDispatch) {
     workspaceDispatch({ type: "WIDGET_REMOVED", widgetId: String(data.widget_id) });
+  } else if (action === "dashboard_cleared" && workspaceDispatch) {
+    workspaceDispatch({ type: "DASHBOARD_CLEARED" });
   } else if (
     action === "widgets_reordered" &&
     Array.isArray(data.widget_ids) &&

@@ -15,6 +15,7 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   get_review_change_summary: "Period Comparison",
   get_workspace: "Dashboard Widgets",
   remove_widget: "Remove Widget",
+  clear_dashboard: "Clear Dashboard",
   duplicate_widget: "Copy Widget",
   set_dashboard_order: "Reorder Dashboard",
 };
@@ -39,7 +40,7 @@ export function ChatMessage({
   if (item.kind === "user") {
     return (
       <div className="flex justify-end" data-testid="chat-message" data-message-role="user">
-        <div className="max-w-[80%] bg-brand text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm leading-relaxed">
+        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-brand px-4 py-2.5 text-sm leading-relaxed text-white shadow-sm">
           {item.text}
         </div>
       </div>
@@ -50,7 +51,7 @@ export function ChatMessage({
     if (!item.text && !isStreaming) return null;
     return (
       <div className="flex justify-start" data-testid="chat-message" data-message-role="assistant">
-        <div className="max-w-[85%] text-text-primary border-l-2 border-accent/30 pl-3 py-1 text-sm leading-relaxed whitespace-pre-wrap">
+        <div className="max-w-[85%] whitespace-pre-wrap rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-text-primary shadow-sm">
           {item.text}
           {isStreaming && (
             <span className="inline-block w-0.5 h-[1em] bg-text-muted animate-pulse ml-0.5 align-text-bottom" />
@@ -63,7 +64,7 @@ export function ChatMessage({
   if (item.kind === "tool_call") {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[85%] rounded-full border border-border-subtle bg-surface px-2.5 py-1">
+        <div className="max-w-[85%] rounded-full border border-slate-200 bg-white px-2.5 py-1 shadow-sm">
           <ToolCallIndicator name={item.name} isStreaming={isGlobalStreaming} />
         </div>
       </div>
@@ -91,9 +92,9 @@ export function ChatMessage({
       return (
         <div className="flex justify-start">
           <details
-            className={`max-w-[85%] rounded-full border px-2.5 py-1 text-xs ${
+            className={`max-w-[85%] rounded-full border px-2.5 py-1 text-xs shadow-sm ${
               succeeded
-                ? "border-border-subtle bg-surface text-text-muted"
+                ? "border-slate-200 bg-white text-text-muted"
                 : "border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/20"
             }`}
           >
@@ -112,25 +113,29 @@ export function ChatMessage({
 
     if (
       item.name === "remove_widget" ||
+      item.name === "clear_dashboard" ||
       item.name === "duplicate_widget" ||
       item.name === "set_dashboard_order"
     ) {
       const ok =
         item.result?.removed === true ||
+        item.result?.cleared === true ||
         item.result?.duplicated === true ||
         item.result?.reordered === true;
       const label =
         item.name === "remove_widget"
           ? "Removed from dashboard"
-          : item.name === "duplicate_widget"
-            ? "Copied on dashboard"
-            : "Dashboard order updated";
+          : item.name === "clear_dashboard"
+            ? "Cleared dashboard"
+            : item.name === "duplicate_widget"
+              ? "Copied on dashboard"
+              : "Dashboard order updated";
       return (
         <div className="flex justify-start">
           <details
-            className={`max-w-[85%] rounded-full border px-2.5 py-1 text-xs ${
+            className={`max-w-[85%] rounded-full border px-2.5 py-1 text-xs shadow-sm ${
               ok
-                ? "border-border-subtle bg-surface text-text-muted"
+                ? "border-slate-200 bg-white text-text-muted"
                 : "border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/20"
             }`}
           >
@@ -161,11 +166,11 @@ export function ChatMessage({
     return (
       <div className="flex w-full justify-start" data-testid="chat-tool-result">
         <details
-          className={`group w-full overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm ${
+          className={`group w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm ${
             isChartWidget ? "max-w-xl" : "max-w-sm"
           }`}
         >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 bg-surface-elevated px-3 py-2">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 bg-slate-50 px-3 py-2">
             <span className="min-w-0 truncate text-xs font-medium text-text-secondary">
               {title} preview
             </span>
@@ -183,7 +188,7 @@ export function ChatMessage({
                 type="button"
                 data-testid="pin-widget-button"
                 onClick={() => onPin(widgetType, title, item.result)}
-                className="shrink-0 text-xs text-text-muted hover:text-brand transition-colors font-medium"
+                className="shrink-0 text-xs font-medium text-text-muted transition-colors hover:text-brand"
               >
                 + Dashboard
               </button>

@@ -403,17 +403,26 @@ function BusinessDetailContent({
         data-testid="dashboard-desktop"
         className="relative hidden flex-1 overflow-hidden bg-[#f6f7fb] lg:flex lg:flex-col"
       >
-        <Workspace
-          widgets={state.widgets}
-          onDelete={handleDeleteWidget}
-          onReorder={handleReorder}
-          isLoading={state.isLoading}
-          error={state.error}
-          onRetry={reload}
-          onDismissError={dismissError}
-          presentationMode={presentationMode}
-          scrollHeader={<ExecutiveSummary dashboard={dashboard} />}
-        />
+        {/* Keep workspace chrome clear of the fixed assistant panel (same width as aside: right-5 + w). */}
+        <div
+          className={`flex min-h-0 flex-1 flex-col overflow-hidden ${
+            !presentationMode && !chatCollapsed
+              ? "pr-[calc(1.25rem+min(430px,34vw))]"
+              : ""
+          }`}
+        >
+          <Workspace
+            widgets={state.widgets}
+            onDelete={handleDeleteWidget}
+            onReorder={handleReorder}
+            isLoading={state.isLoading}
+            error={state.error}
+            onRetry={reload}
+            onDismissError={dismissError}
+            presentationMode={presentationMode}
+            scrollHeader={<ExecutiveSummary dashboard={dashboard} />}
+          />
+        </div>
         {!presentationMode && !chatCollapsed ? (
           <aside
             data-testid="assistant-drawer"

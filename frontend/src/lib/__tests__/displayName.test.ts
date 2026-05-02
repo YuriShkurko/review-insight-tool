@@ -4,7 +4,10 @@ import { displayBusinessName } from "../displayName";
 describe("displayBusinessName", () => {
   it("uses the place_id override map for known demos", () => {
     expect(
-      displayBusinessName({ place_id: "sim_lager_ale_tlv", name: "Lager & Ale (Rothschild) — Sim" }),
+      displayBusinessName({
+        place_id: "sim_lager_ale_tlv",
+        name: "Lager & Ale (Rothschild) — Sim",
+      }),
     ).toBe("Craft Lager Bar (Demo)");
     expect(displayBusinessName({ place_id: "offline_beer_garden", name: "Beer Garden" })).toBe(
       "Beer Garden (Demo)",
@@ -27,9 +30,9 @@ describe("displayBusinessName", () => {
   });
 
   it("titleizes an unknown sandbox place_id as a last resort", () => {
-    expect(
-      displayBusinessName({ place_id: "sim_some_random_thing", name: "" }),
-    ).toBe("Some Random Thing (Demo)");
+    expect(displayBusinessName({ place_id: "sim_some_random_thing", name: "" })).toBe(
+      "Some Random Thing (Demo)",
+    );
   });
 
   it("passes real-world names through unchanged", () => {

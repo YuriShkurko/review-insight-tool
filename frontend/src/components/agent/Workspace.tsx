@@ -191,132 +191,132 @@ export function Workspace({
       <div className="flex-1 overflow-y-auto">
         {scrollHeader}
         <div className="px-5 py-5">
-        {error && ordered.length > 0 && (
-          <div className="mb-3 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs text-red-700 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span>{error}</span>
-              <div className="flex shrink-0 items-center gap-3">
-                {onRetry && (
-                  <button
-                    type="button"
-                    onClick={onRetry}
-                    className="font-medium text-red-800 hover:text-red-950"
-                  >
-                    Retry
-                  </button>
-                )}
-                {onDismissError && (
-                  <button
-                    type="button"
-                    onClick={onDismissError}
-                    aria-label="Dismiss error"
-                    className="font-medium text-red-800 hover:text-red-950"
-                  >
-                    x
-                  </button>
-                )}
+          {error && ordered.length > 0 && (
+            <div className="mb-3 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs text-red-700 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span>{error}</span>
+                <div className="flex shrink-0 items-center gap-3">
+                  {onRetry && (
+                    <button
+                      type="button"
+                      onClick={onRetry}
+                      className="font-medium text-red-800 hover:text-red-950"
+                    >
+                      Retry
+                    </button>
+                  )}
+                  {onDismissError && (
+                    <button
+                      type="button"
+                      onClick={onDismissError}
+                      aria-label="Dismiss error"
+                      className="font-medium text-red-800 hover:text-red-950"
+                    >
+                      x
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {ordered.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <div
-              data-testid="workspace-empty-state"
-              className="max-w-sm rounded-lg border border-dashed border-slate-300 bg-white px-8 py-12 text-center shadow-sm"
-            >
-              <div className="mx-auto mb-3 h-8 w-8 rounded-lg bg-brand-light" />
-              <p className="text-sm font-semibold text-text-primary">No pinned insights yet</p>
-              <p className="mt-1 text-xs leading-relaxed text-text-muted">
-                Ask the AI a question, then tap{" "}
-                <span className="font-medium text-brand">+ Dashboard</span> to pin results here.
-              </p>
+          {ordered.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <div
+                data-testid="workspace-empty-state"
+                className="max-w-sm rounded-lg border border-dashed border-slate-300 bg-white px-8 py-12 text-center shadow-sm"
+              >
+                <div className="mx-auto mb-3 h-8 w-8 rounded-lg bg-brand-light" />
+                <p className="text-sm font-semibold text-text-primary">No pinned insights yet</p>
+                <p className="mt-1 text-xs leading-relaxed text-text-muted">
+                  Ask the AI a question, then tap{" "}
+                  <span className="font-medium text-brand">+ Dashboard</span> to pin results here.
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="space-y-5">
-              {SECTIONS.map((sectionId) => {
-                const sectionWidgets = grouped[sectionId];
-                if (sectionWidgets.length === 0) return null;
-                const isHeroSection = sectionId === heroSection;
-                const { hero, supporting } = splitHeroWidgets(
-                  sectionId,
-                  heroSection,
-                  sectionWidgets,
-                );
-                return (
-                  <div
-                    key={sectionId}
-                    data-testid={`workspace-section-${sectionId}`}
-                    className={`animate-rise-in rounded-lg border px-4 py-5 ${
-                      isHeroSection
-                        ? "border-slate-200 bg-white shadow-sm"
-                        : "border-slate-200/80 bg-white/70"
-                    }`}
-                  >
-                    <div className="mb-4 flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-brand">
-                          {isHeroSection ? "Hero insight" : SECTION_LABELS[sectionId]}
-                        </p>
-                        <h3 className="mt-1 text-base font-semibold text-text-primary">
-                          {SECTION_LABELS[sectionId]}
-                        </h3>
-                        <p className="mt-0.5 text-xs text-text-muted">
-                          {SECTION_DESCRIPTIONS[sectionId]}
-                        </p>
-                      </div>
-                      <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-text-muted">
-                        {sectionWidgets.length}
-                      </span>
-                    </div>
-                    <SortableContext
-                      items={sectionWidgets.map((w) => w.id)}
-                      strategy={rectSortingStrategy}
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="space-y-5">
+                {SECTIONS.map((sectionId) => {
+                  const sectionWidgets = grouped[sectionId];
+                  if (sectionWidgets.length === 0) return null;
+                  const isHeroSection = sectionId === heroSection;
+                  const { hero, supporting } = splitHeroWidgets(
+                    sectionId,
+                    heroSection,
+                    sectionWidgets,
+                  );
+                  return (
+                    <div
+                      key={sectionId}
+                      data-testid={`workspace-section-${sectionId}`}
+                      className={`animate-rise-in rounded-lg border px-4 py-5 ${
+                        isHeroSection
+                          ? "border-slate-200 bg-white shadow-sm"
+                          : "border-slate-200/80 bg-white/70"
+                      }`}
                     >
-                      {hero && (
-                        <div
-                          data-testid="workspace-hero-lane"
-                          className="mb-4 grid grid-cols-2 gap-4 xl:grid-cols-4"
-                        >
-                          <SortableWidgetCard
-                            key={hero.id}
-                            widget={hero}
-                            onDelete={onDelete}
-                            prominence="hero"
-                            readOnly={presentationMode}
-                          />
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-brand">
+                            {isHeroSection ? "Hero insight" : SECTION_LABELS[sectionId]}
+                          </p>
+                          <h3 className="mt-1 text-base font-semibold text-text-primary">
+                            {SECTION_LABELS[sectionId]}
+                          </h3>
+                          <p className="mt-0.5 text-xs text-text-muted">
+                            {SECTION_DESCRIPTIONS[sectionId]}
+                          </p>
                         </div>
-                      )}
-                      {supporting.length > 0 && (
-                        <div
-                          data-testid={hero ? "workspace-supporting-lane" : undefined}
-                          className="grid grid-cols-2 gap-4 xl:grid-cols-3 2xl:grid-cols-4"
-                        >
-                          {supporting.map((widget) => (
+                        <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-text-muted">
+                          {sectionWidgets.length}
+                        </span>
+                      </div>
+                      <SortableContext
+                        items={sectionWidgets.map((w) => w.id)}
+                        strategy={rectSortingStrategy}
+                      >
+                        {hero && (
+                          <div
+                            data-testid="workspace-hero-lane"
+                            className="mb-4 grid grid-cols-2 gap-4 xl:grid-cols-4"
+                          >
                             <SortableWidgetCard
-                              key={widget.id}
-                              widget={widget}
+                              key={hero.id}
+                              widget={hero}
                               onDelete={onDelete}
-                              prominence="standard"
+                              prominence="hero"
                               readOnly={presentationMode}
                             />
-                          ))}
-                        </div>
-                      )}
-                    </SortableContext>
-                  </div>
-                );
-              })}
-            </div>
-          </DndContext>
-        )}
+                          </div>
+                        )}
+                        {supporting.length > 0 && (
+                          <div
+                            data-testid={hero ? "workspace-supporting-lane" : undefined}
+                            className="grid grid-cols-2 gap-4 xl:grid-cols-3 2xl:grid-cols-4"
+                          >
+                            {supporting.map((widget) => (
+                              <SortableWidgetCard
+                                key={widget.id}
+                                widget={widget}
+                                onDelete={onDelete}
+                                prominence="standard"
+                                readOnly={presentationMode}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </SortableContext>
+                    </div>
+                  );
+                })}
+              </div>
+            </DndContext>
+          )}
         </div>
       </div>
     </div>

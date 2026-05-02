@@ -39,9 +39,7 @@ export default function BusinessesPage() {
 
   const sortedBusinesses = (() => {
     const others = businesses.filter((b) => b.id !== recommendedBusiness?.id);
-    others.sort(
-      (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-    );
+    others.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
     return recommendedBusiness ? [recommendedBusiness, ...others] : others;
   })();
 

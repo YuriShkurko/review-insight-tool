@@ -132,14 +132,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
             className="chart-path-reveal text-brand"
           />
           {/* Anchor first/last so a single-point or short series still reads. */}
-          {xy.length > 0 && (
-            <circle
-              cx={xy[0].x}
-              cy={xy[0].y}
-              r={1.6}
-              className="fill-brand/70"
-            />
-          )}
+          {xy.length > 0 && <circle cx={xy[0].x} cy={xy[0].y} r={1.6} className="fill-brand/70" />}
           {xy.length > 1 && (
             <circle
               cx={xy[xy.length - 1].x}
@@ -150,12 +143,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
           )}
           {/* Highlighted dot for the selected index only. */}
           {selectedIdx !== null && xy[selectedIdx] && (
-            <circle
-              cx={xy[selectedIdx].x}
-              cy={xy[selectedIdx].y}
-              r={3}
-              className="fill-brand"
-            />
+            <circle cx={xy[selectedIdx].x} cy={xy[selectedIdx].y} r={3} className="fill-brand" />
           )}
           {/* Invisible hit zones drive hover/click without cluttering the line. */}
           {points.map((point, index) => {

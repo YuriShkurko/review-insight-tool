@@ -14,6 +14,7 @@ from app.agent.tools import (
     WIDGET_TYPES,
     _coerce_pin_widget_arguments,
     _create_custom_chart_data,
+    _clear_dashboard,
     _duplicate_widget,
     _get_rating_distribution,
     _get_review_change_summary,
@@ -518,6 +519,47 @@ class TestRemoveWidget:
         db.query.assert_not_called()
 
 
+class TestClearDashboard:
+    def test_clears_all_widgets_for_business_and_user(self):
+        widget_1 = MagicMock()
+        widget_1.id = uuid.uuid4()
+        widget_2 = MagicMock()
+        widget_2.id = uuid.uuid4()
+
+        db = MagicMock()
+        q = MagicMock()
+        q.filter.return_value = q
+        q.all.return_value = [widget_1, widget_2]
+        db.query.return_value = q
+
+        result = _clear_dashboard(db, uuid.uuid4(), uuid.uuid4())
+
+        assert result == {
+            "cleared": True,
+            "removed_count": 2,
+            "widget_ids": [str(widget_1.id), str(widget_2.id)],
+        }
+        db.delete.assert_any_call(widget_1)
+        db.delete.assert_any_call(widget_2)
+        assert db.delete.call_count == 2
+        db.commit.assert_called_once()
+
+    def test_execute_tool_routes_clear_dashboard(self):
+        widget = MagicMock()
+        widget.id = uuid.uuid4()
+        db = MagicMock()
+        q = MagicMock()
+        q.filter.return_value = q
+        q.all.return_value = [widget]
+        db.query.return_value = q
+
+        result = execute_tool("clear_dashboard", {}, db, uuid.uuid4(), uuid.uuid4())
+
+        assert result["cleared"] is True
+        assert result["removed_count"] == 1
+        db.delete.assert_called_once_with(widget)
+
+
 # ---------------------------------------------------------------------------
 # system_prompt synthesis instructions
 # ---------------------------------------------------------------------------
@@ -545,6 +587,20 @@ class TestSystemPrompt:
 
         prompt = build_system_prompt(business)
         assert "get_top_issues" in prompt, "Prompt should instruct agent to use get_top_issues"
+
+    def test_prompt_directs_clear_then_improvement_dashboard_fill(self):
+        business = MagicMock()
+        business.name = "Test Bar"
+        business.business_type = "bar"
+        business.address = None
+        business.avg_rating = None
+        business.total_reviews = 10
+
+        prompt = build_system_prompt(business)
+
+        assert "clear_dashboard once" in prompt
+        assert "IMPROVEMENT DASHBOARD FILL" in prompt
+        assert "with at least 6 widgets" in prompt
 
     def test_prompt_contains_three_step_pin_sequence(self):
         """Prompt must describe the required data→pin→report sequence."""

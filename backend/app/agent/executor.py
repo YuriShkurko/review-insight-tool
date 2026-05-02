@@ -25,12 +25,32 @@ from app.models.conversation import Conversation
 
 logger = logging.getLogger(__name__)
 
-MAX_ITERATIONS = 8  # guard against runaway tool loops
+MAX_ITERATIONS = 20  # guard against runaway tool loops; dashboard fills need many tool rounds.
 # Cap how many tool_results we restore from prior turns so the registry
 # does not grow unbounded across long conversations. The model still has
 # the full history; this only governs the cached-payload registry that
 # pin_widget uses to wire data.
 _REHYDRATE_TOOL_LIMIT = 12
+_NON_DATA_TOOLS = {
+    "pin_widget",
+    "get_workspace",
+    "remove_widget",
+    "clear_dashboard",
+    "duplicate_widget",
+    "set_dashboard_order",
+}
+
+
+def _tool_execution_order(tool_calls: list) -> list:
+    """Run data tools before pin_widget inside one assistant tool batch.
+
+    Live LLMs may return a parallel-looking batch where pin_widget appears
+    before the source data tool it references. The chat-completions protocol
+    requires every tool_call_id to receive a tool response; executing data
+    producers first lets source_tool resolution work even when the model's
+    call order is not dependency-safe.
+    """
+    return sorted(enumerate(tool_calls), key=lambda item: (item[1].name == "pin_widget", item[0]))
 
 
 def _sse(event: str, data: dict) -> str:
@@ -71,13 +91,7 @@ def _rehydrate_tool_results(history: list[dict]) -> dict[str, dict]:
             continue
         # Skip non-data tools — pin_widget/remove_widget/duplicate_widget
         # do not produce reusable payloads.
-        if name in {
-            "pin_widget",
-            "get_workspace",
-            "remove_widget",
-            "duplicate_widget",
-            "set_dashboard_order",
-        }:
+        if name in _NON_DATA_TOOLS:
             continue
         raw = msg.get("content")
         if not isinstance(raw, str):
@@ -217,7 +231,7 @@ async def run_agent(
             break
 
         # Execute tools
-        for tc in tool_calls:
+        for _, tc in _tool_execution_order(tool_calls):
             yield _sse("tool_call", {"name": tc.name, "args": tc.arguments})
             try:
                 if tc.name == "pin_widget":
@@ -315,13 +329,7 @@ async def run_agent(
                     if (
                         isinstance(result, dict)
                         and "error" not in result
-                        and tc.name
-                        not in {
-                            "get_workspace",
-                            "remove_widget",
-                            "duplicate_widget",
-                            "set_dashboard_order",
-                        }
+                        and tc.name not in _NON_DATA_TOOLS
                     ):
                         tool_results[tc.name] = result
             except Exception as exc:
@@ -343,6 +351,14 @@ async def run_agent(
                 yield _sse(
                     "workspace_event",
                     {"action": "widget_removed", "widget_id": result["widget_id"]},
+                )
+            if tc.name == "clear_dashboard" and result.get("cleared"):
+                yield _sse(
+                    "workspace_event",
+                    {
+                        "action": "dashboard_cleared",
+                        "widget_ids": result.get("widget_ids", []),
+                    },
                 )
             if tc.name == "duplicate_widget" and result.get("duplicated") and result.get("widget"):
                 yield _sse(

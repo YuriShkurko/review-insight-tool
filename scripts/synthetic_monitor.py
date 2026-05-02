@@ -15,6 +15,7 @@ Environment variables:
 import contextlib
 import json
 import os
+import re
 import sys
 import time
 import uuid
@@ -23,8 +24,22 @@ from datetime import UTC, datetime
 import httpx
 
 BASE_URL = os.environ.get("MONITOR_BASE_URL", "http://localhost:8000")
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+
+STEP_DEPENDENCIES: dict[str, list[str]] = {
+    "analyze": ["fetch_reviews"],
+    "dashboard": ["analyze"],
+    "fetch_competitor_reviews": ["add_competitor"],
+    "analyze_competitor": ["fetch_competitor_reviews"],
+    "comparison_cold": ["analyze_competitor"],
+    "comparison_cached": ["analyze_competitor"],
+}
+
+STEP_TIMEOUTS_SECONDS: dict[str, int] = {
+    "analyze": 180,
+    "analyze_competitor": 180,
+}
 
 
 _OFFLINE_PLACE_IDS = [
@@ -61,6 +76,8 @@ class SyntheticMonitor:
         self.token: str | None = None
         # Track created businesses so cleanup always runs
         self._biz_ids: list[str] = []
+        # Track per-step outcomes for dependency-aware skipping
+        self._step_results: dict[str, str] = {}  # name -> "passed"|"failed"|"skipped"
 
     def _record(self, name: str, success: bool, duration_ms: float, detail: str = "") -> None:
         self.results.append(
@@ -72,9 +89,30 @@ class SyntheticMonitor:
                 "timestamp": datetime.now(UTC).isoformat(),
             }
         )
+        self._step_results[name] = "passed" if success else "failed"
         status = "PASS" if success else "FAIL"
         detail_str = f" — {detail}" if detail else ""
         print(f"  [{status}] {name} ({round(duration_ms)}ms){detail_str}", flush=True)
+
+    def _skip(self, name: str, reason: str) -> None:
+        self.results.append(
+            {
+                "name": name,
+                "success": False,
+                "duration_ms": 0,
+                "detail": f"skipped: {reason}",
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        )
+        self._step_results[name] = "skipped"
+        print(f"  [SKIP] {name} — {reason}", flush=True)
+
+    def _check_deps(self, name: str) -> str | None:
+        """Return the first blocking prerequisite name if any dep didn't pass."""
+        for dep in STEP_DEPENDENCIES.get(name, []):
+            if self._step_results.get(dep) != "passed":
+                return dep
+        return None
 
     def _timed(self, name: str, fn):
         t0 = time.perf_counter()
@@ -158,12 +196,14 @@ class SyntheticMonitor:
         return r is not None
 
     def check_analyze(self, biz_id: str, label: str = "analyze") -> bool:
+        timeout = STEP_TIMEOUTS_SECONDS.get(label)
         r = self._timed(
             label,
             lambda: self._check(
                 self.client.post(
                     f"/businesses/{biz_id}/analyze",
                     headers=self._headers(),
+                    **({"timeout": timeout} if timeout is not None else {}),
                 ),
                 200,
             ),
@@ -257,8 +297,18 @@ class SyntheticMonitor:
                 return self.results
 
             self.check_fetch_reviews(biz_id)
-            self.check_analyze(biz_id)
-            self.check_dashboard(biz_id)
+
+            blocker = self._check_deps("analyze")
+            if blocker:
+                self._skip("analyze", f"blocked: {blocker} did not pass")
+            else:
+                self.check_analyze(biz_id)
+
+            blocker = self._check_deps("dashboard")
+            if blocker:
+                self._skip("dashboard", f"blocked: {blocker} did not pass")
+            else:
+                self.check_dashboard(biz_id)
 
             # ── Competitor + comparison ──────────────────────────────────────
             try:
@@ -270,29 +320,52 @@ class SyntheticMonitor:
             comp_biz_id = self.check_add_competitor(biz_id, comp_place_id)
 
             if comp_biz_id:
-                self.check_fetch_reviews(comp_biz_id, label="fetch_competitor_reviews")
-                self.check_analyze(comp_biz_id, label="analyze_competitor")
+                blocker = self._check_deps("fetch_competitor_reviews")
+                if blocker:
+                    self._skip("fetch_competitor_reviews", f"blocked: {blocker} did not pass")
+                else:
+                    self.check_fetch_reviews(comp_biz_id, label="fetch_competitor_reviews")
+
+                blocker = self._check_deps("analyze_competitor")
+                if blocker:
+                    self._skip("analyze_competitor", f"blocked: {blocker} did not pass")
+                else:
+                    self.check_analyze(comp_biz_id, label="analyze_competitor")
 
                 # Cold comparison (LLM call)
-                self.check_comparison(biz_id, label="comparison_cold")
+                blocker = self._check_deps("comparison_cold")
+                if blocker:
+                    self._skip("comparison_cold", f"blocked: {blocker} did not pass")
+                else:
+                    self.check_comparison(biz_id, label="comparison_cold")
 
                 # Warm comparison (should hit MongoDB cache)
-                self.check_comparison(biz_id, label="comparison_cached")
+                blocker = self._check_deps("comparison_cached")
+                if blocker:
+                    self._skip("comparison_cached", f"blocked: {blocker} did not pass")
+                else:
+                    self.check_comparison(biz_id, label="comparison_cached")
 
         finally:
             self.cleanup()
 
         # ── Report ────────────────────────────────────────────────────────────
-        failures = [r for r in self.results if not r["success"]]
-        passed = len(self.results) - len(failures)
+        skipped = [r for r in self.results if r["detail"].startswith("skipped:")]
+        failures = [r for r in self.results if not r["success"] and r not in skipped]
+        passed = sum(1 for r in self.results if r["success"])
         total = len(self.results)
 
         print(f"\nResult: {passed}/{total} checks passed", flush=True)
+        if skipped:
+            print(f"Skipped: {len(skipped)} (blocked by upstream failure)", flush=True)
 
         if failures:
             lines = "\n".join(f"  - {f['name']}: {f['detail']}" for f in failures)
+            skipped_note = ""
+            if skipped:
+                skipped_note = f"\nSkipped (blocked): {', '.join(s['name'] for s in skipped)}"
             self._send_alert(
-                f"SYNTHETIC MONITOR: {len(failures)}/{total} checks failed\n{lines}"
+                f"SYNTHETIC MONITOR: {len(failures)}/{total} checks failed\n{lines}{skipped_note}"
             )
 
         return self.results
@@ -302,8 +375,16 @@ class SyntheticMonitor:
             print(f"\nALERT (Telegram not configured): {message}", file=sys.stderr)
             return
         try:
+            url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+            if re.search(r"[\x00-\x1f\x7f]", url):
+                print(
+                    f"ALERT SEND FAILED: URL contains non-printable characters "
+                    f"(check TELEGRAM_BOT_TOKEN env var); original message: {message}",
+                    file=sys.stderr,
+                )
+                return
             httpx.post(
-                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+                url,
                 json={"chat_id": TELEGRAM_CHAT_ID, "text": f"🔴 {message}"},
                 timeout=10,
             )

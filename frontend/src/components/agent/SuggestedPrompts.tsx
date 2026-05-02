@@ -9,21 +9,21 @@ const PROMPTS = [
 
 export function SuggestedPrompts({ onSelect }: { onSelect: (prompt: string) => void }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full px-6 py-8 gap-6">
+    <div className="flex h-full flex-col items-center justify-center gap-6 px-6 py-8">
       <div className="text-center">
-        <div className="text-4xl mb-3">✦</div>
-        <p className="text-lg font-semibold text-text-primary">Ask anything about your reviews</p>
-        <p className="text-sm text-text-secondary mt-1.5 leading-relaxed max-w-xs">
-          The AI can search reviews, spot trends, and pin insights directly to your dashboard.
+        <div className="mx-auto mb-3 h-9 w-9 rounded-lg bg-brand-light" />
+        <p className="text-lg font-semibold text-text-primary">Ask about your reviews</p>
+        <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-text-secondary">
+          Search reviews, spot trends, and pin useful answers directly to the dashboard.
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
+      <div className="grid w-full max-w-sm grid-cols-2 gap-2">
         {PROMPTS.map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => onSelect(p)}
-            className="text-xs px-3 py-2.5 rounded-xl border border-border bg-surface-card text-text-secondary hover:border-brand/40 hover:text-brand hover:bg-brand-light/20 shadow-sm hover:shadow transition-all text-left leading-snug"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left text-xs leading-snug text-text-secondary shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:text-brand hover:shadow"
           >
             {p}
           </button>

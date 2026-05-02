@@ -14,6 +14,14 @@
   },
   "businesses": [
     {
+      "place_id": "sim_lager_ale_tlv",
+      "name": "Lager & Ale (Rothschild) — Sim",
+      "business_type": "bar",
+      "address": "Rothschild Blvd, Tel Aviv, Israel",
+      "role": "main",
+      "reviews_file": "sim_lager_ale_reviews.json"
+    },
+    {
       "place_id": "offline_lager_ale",
       "name": "Lager & Ale (Rothschild)",
       "business_type": "bar",

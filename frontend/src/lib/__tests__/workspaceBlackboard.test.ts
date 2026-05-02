@@ -210,6 +210,16 @@ describe("workspaceReducer", () => {
     expect(actions).toEqual([{ type: "WIDGET_REORDERED", widgetIds: ["w3", "w1"] }]);
   });
 
+  it("dispatches dashboard_cleared workspace events to the reducer action", () => {
+    const actions: unknown[] = [];
+
+    dispatchWorkspaceEvent({ action: "dashboard_cleared", widget_ids: ["w1", "w2"] }, (action) =>
+      actions.push(action),
+    );
+
+    expect(actions).toEqual([{ type: "DASHBOARD_CLEARED" }]);
+  });
+
   it("reorders requested widgets and preserves unspecified widgets after them", () => {
     const state = workspaceReducer(
       { ...INITIAL, widgets: [widget("w1", 0), widget("w2", 1), widget("w3", 2)] },
@@ -272,6 +282,19 @@ describe("workspaceReducer", () => {
 
     expect(state.widgets).toEqual([]);
     expect(state.error).toBeNull();
+  });
+
+  it("DASHBOARD_CLEARED removes every widget and clears stale error", () => {
+    const before: WorkspaceState = {
+      ...INITIAL,
+      error: "Server error: Something went wrong.",
+      widgets: [widget("w1", 0), widget("w2", 1)],
+    };
+    const state = workspaceReducer(before, { type: "DASHBOARD_CLEARED" });
+
+    expect(state.widgets).toEqual([]);
+    expect(state.error).toBeNull();
+    expect(state.isLoading).toBe(false);
   });
 
   it("CLEAR_ERROR drops the banner without touching widgets", () => {

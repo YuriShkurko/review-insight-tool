@@ -104,6 +104,21 @@ class OfflineProvider(ReviewProvider):
                 )
             )
 
+        # Shift all dates so the most recent review lands on today.
+        # Keeps relative spacing intact so weekly/monthly tools see real data.
+        dated = [r for r in result if r["published_at"] is not None]
+        if dated:
+            max_pub = max(r["published_at"] for r in dated)  # type: ignore[type-var]
+            now = datetime.now(UTC)
+            if max_pub < now:
+                shift = now - max_pub
+                result = [
+                    {**r, "published_at": r["published_at"] + shift}
+                    if r["published_at"] is not None
+                    else r
+                    for r in result
+                ]
+
         logger.info(
             "op=offline_fetch place_id=%s reviews=%d file=%s",
             place_id,

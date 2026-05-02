@@ -432,6 +432,63 @@ def test_agent_remove_widget_tool_emits_workspace_event(
 # ---------------------------------------------------------------------------
 
 
+def test_agent_clear_dashboard_tool_removes_all_widgets_and_emits_event(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    biz_id = _make_biz(client, auth_headers)
+    for title in ("Avg Rating", "Top Issues"):
+        r = client.post(
+            f"/api/businesses/{biz_id}/agent/workspace",
+            json={"widget_type": "metric_card", "title": title, "data": {"value": 4.2}},
+            headers=auth_headers,
+        )
+        assert r.status_code == 201
+    call_count = 0
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return ("", [ToolCall(id="tc1", name="clear_dashboard", arguments={})])
+            return ("Cleared the dashboard.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Clear the dashboard"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    clear_result = next(
+        e
+        for e in events
+        if e["type"] == "tool_result" and e["data"].get("name") == "clear_dashboard"
+    )
+    assert clear_result["data"]["result"]["cleared"] is True
+    assert clear_result["data"]["result"]["removed_count"] == 2
+
+    workspace_event = next(e for e in events if e["type"] == "workspace_event")
+    assert workspace_event["data"]["action"] == "dashboard_cleared"
+    assert len(workspace_event["data"]["widget_ids"]) == 2
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json() == []
+
+
 def test_agent_data_tool_pin_round_trip_emits_workspace_event(
     client: TestClient, auth_headers: dict, monkeypatch
 ):
@@ -1704,3 +1761,203 @@ def test_same_data_tool_called_twice_in_one_turn_overwrites_in_tool_results(
     # 30-day metric/days. This is the current keyed-by-name behavior.
     pinned = workspace_event["data"]["widget"]["data"]
     assert pinned.get("days") == 30 or pinned.get("period") == "30d"
+
+
+def test_parallel_pin_before_source_tool_still_persists_widget(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """Live models can batch tool calls out of dependency order.
+
+    If pin_widget arrives before its source_tool in the same assistant message,
+    the executor should run the data producer first so the pin persists instead
+    of briefly flashing in chat and reconciling to an empty dashboard.
+    """
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _provider():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(
+                            id="p1",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "summary_card",
+                                "title": "Overview",
+                                "source_tool": "get_dashboard",
+                            },
+                        ),
+                        ToolCall(id="d1", name="get_dashboard", arguments={}),
+                    ],
+                )
+            return ("Pinned the overview.", [])
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider)
+    biz_id = _make_biz(client, auth_headers)
+    client.post(f"/api/businesses/{biz_id}/fetch-reviews", headers=auth_headers)
+
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Add an overview widget to my dashboard"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    pin = next(
+        e for e in events if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin["data"]["result"]["pinned"] is True
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    widgets = r.json()
+    assert len(widgets) == 1
+    assert widgets[0]["widget_type"] == "summary_card"
+    assert widgets[0]["data"]
+
+
+def test_full_dashboard_build_can_exceed_old_iteration_cap(
+    client: TestClient, auth_headers: dict, monkeypatch
+):
+    """A six-widget dashboard build takes 12 tool rounds if the model is serial."""
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    turns = [
+        [ToolCall(id="d1", name="get_dashboard", arguments={})],
+        [
+            ToolCall(
+                id="p1",
+                name="pin_widget",
+                arguments={
+                    "widget_type": "summary_card",
+                    "title": "Overview",
+                    "source_tool": "get_dashboard",
+                },
+            )
+        ],
+        [ToolCall(id="d2", name="get_review_series", arguments={"days": 30})],
+        [
+            ToolCall(
+                id="p2",
+                name="pin_widget",
+                arguments={
+                    "widget_type": "line_chart",
+                    "title": "Review trend",
+                    "source_tool": "get_review_series",
+                },
+            )
+        ],
+        [ToolCall(id="d3", name="get_rating_distribution", arguments={"days": 30})],
+        [
+            ToolCall(
+                id="p3",
+                name="pin_widget",
+                arguments={
+                    "widget_type": "donut_chart",
+                    "title": "Rating distribution",
+                    "source_tool": "get_rating_distribution",
+                },
+            )
+        ],
+        [ToolCall(id="d4", name="get_top_issues", arguments={"limit": 4, "days": 30})],
+        [
+            ToolCall(
+                id="p4",
+                name="pin_widget",
+                arguments={
+                    "widget_type": "horizontal_bar_chart",
+                    "title": "Top issues",
+                    "source_tool": "get_top_issues",
+                },
+            )
+        ],
+        [
+            ToolCall(
+                id="d5",
+                name="get_review_insights",
+                arguments={"focus": "positive", "period": "past_30d"},
+            )
+        ],
+        [
+            ToolCall(
+                id="p5",
+                name="pin_widget",
+                arguments={
+                    "widget_type": "summary_card",
+                    "title": "Praise themes",
+                    "source_tool": "get_review_insights",
+                },
+            )
+        ],
+        [ToolCall(id="d6", name="query_reviews", arguments={"limit": 5})],
+        [
+            ToolCall(
+                id="p6",
+                name="pin_widget",
+                arguments={
+                    "widget_type": "review_list",
+                    "title": "Recent evidence",
+                    "source_tool": "query_reviews",
+                },
+            )
+        ],
+    ]
+    call_count = 0
+
+    def _provider():
+        mock = MagicMock()
+
+        def _complete(messages, tools, **kw):
+            nonlocal call_count
+            if call_count < len(turns):
+                result = ("", turns[call_count])
+                call_count += 1
+                return result
+            return ("Built the dashboard.", [])
+
+        mock.complete_with_tools.side_effect = _complete
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _provider)
+    biz_id = _make_biz(client, auth_headers)
+    client.post(f"/api/businesses/{biz_id}/fetch-reviews", headers=auth_headers)
+
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Fill the dashboard with relevant data"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    added = [e for e in events if e["type"] == "workspace_event"]
+    assert len(added) == 6
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    widgets = r.json()
+    assert [w["widget_type"] for w in widgets] == [
+        "summary_card",
+        "line_chart",
+        "donut_chart",
+        "horizontal_bar_chart",
+        "summary_card",
+        "review_list",
+    ]
+    assert all(w["data"] for w in widgets)

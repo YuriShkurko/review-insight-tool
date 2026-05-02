@@ -15,12 +15,12 @@ export function MetricCard({ data }: { data: Record<string, unknown> }) {
   }
 
   return (
-    <div className="text-center py-3">
-      <p className="text-3xl font-bold text-text-primary">
+    <div className="py-3 text-left">
+      <p className="text-4xl font-semibold tracking-tight text-text-primary">
         {typeof value === "number" ? value.toLocaleString() : String(value)}
       </p>
-      {label && <p className="text-sm text-text-secondary mt-1">{label}</p>}
-      {sublabel && <p className="text-xs text-text-muted mt-0.5">{sublabel}</p>}
+      {label && <p className="mt-1 text-sm font-medium text-text-secondary">{label}</p>}
+      {sublabel && <p className="mt-0.5 text-xs text-text-muted">{sublabel}</p>}
     </div>
   );
 }

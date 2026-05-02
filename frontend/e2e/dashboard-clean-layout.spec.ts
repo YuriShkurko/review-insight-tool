@@ -4,13 +4,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import {
-  dashboard,
-  gotoBusiness,
-  injectAuthToken,
-  pinWidgetDirect,
-  seedUser,
-} from "./helpers/api";
+import { dashboard, gotoBusiness, injectAuthToken, pinWidgetDirect, seedUser } from "./helpers/api";
 
 test("Clean layout groups widgets by section and persists after refresh", async ({
   page,

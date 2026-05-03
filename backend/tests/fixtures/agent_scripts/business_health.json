@@ -1,0 +1,14 @@
+[
+  {
+    "text": "",
+    "tool_calls": [{"name": "get_business_health", "arguments": {}}]
+  },
+  {
+    "text": "",
+    "tool_calls": [{"name": "pin_widget", "arguments": {"widget_type": "health_score", "title": "Business Health", "source_tool": "get_business_health"}}]
+  },
+  {
+    "text": "Pinned your business health score to the dashboard.",
+    "tool_calls": []
+  }
+]

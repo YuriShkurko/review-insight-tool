@@ -29,6 +29,14 @@ WidgetType = Literal[
     "donut_chart",
     "horizontal_bar_chart",
     "comparison_chart",
+    "health_score",
+    "signal_timeline",
+    "sales_summary",
+    "operations_risk",
+    "local_presence_card",
+    "social_signal",
+    "opportunity_list",
+    "action_plan",
 ]
 
 WIDGET_TYPES: frozenset[str] = frozenset(get_args(WidgetType))
@@ -45,6 +53,14 @@ DATA_TOOL_NAMES: list[str] = [
     "get_top_issues",
     "get_review_insights",
     "get_review_change_summary",
+    "get_business_health",
+    "get_signal_timeline",
+    "get_sales_summary",
+    "get_operations_summary",
+    "get_local_presence_summary",
+    "get_social_signal_summary",
+    "get_opportunities",
+    "get_action_plan",
     "create_custom_chart_data",
 ]
 
@@ -304,6 +320,116 @@ TOOL_DEFINITIONS: list[dict] = [
     {
         "type": "function",
         "function": {
+            "name": "get_business_health",
+            "description": (
+                "Compute an opinionated Business Insight health score from existing review and "
+                "analysis data. Reviews are the first signal; this returns sub-scores, drivers, "
+                "risks, opportunities, source/freshness/confidence, and limitations. Pin with "
+                "widget_type health_score."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_signal_timeline",
+            "description": (
+                "Build a timeline of what changed recently using existing review dates, volume, "
+                "ratings, and theme shifts. Use for questions like 'what changed this week?' or "
+                "'why did ratings drop?'. Pin with widget_type signal_timeline."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "days": {
+                        "type": "integer",
+                        "enum": [7, 14, 30, 60, 90],
+                        "default": 30,
+                        "description": "Rolling window to summarize.",
+                    }
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_sales_summary",
+            "description": (
+                "Return deterministic demo sales/POS-lite signals for the business: revenue, "
+                "orders, average ticket, category mix, and a recommendation. This is demo/offline "
+                "data unless a real signal provider is connected. Pin with widget_type sales_summary."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_operations_summary",
+            "description": (
+                "Return deterministic demo operations signals: staffing, wait time, service pressure, "
+                "incidents, and risk recommendation. This is demo/offline data unless a real signal "
+                "provider is connected. Pin with widget_type operations_risk."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_local_presence_summary",
+            "description": (
+                "Return deterministic demo local presence signals: profile completeness, search views, "
+                "direction clicks, call clicks, and listing readiness. This is demo/offline data unless "
+                "a real signal provider is connected. Pin with widget_type local_presence_card."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_social_signal_summary",
+            "description": (
+                "Return deterministic demo social/content signals: mention count, sentiment, top topic, "
+                "and recommended response. This is demo/offline data unless a real signal provider is "
+                "connected. Pin with widget_type social_signal."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_opportunities",
+            "description": (
+                "Return prioritized, evidence-backed business opportunities from reviews, "
+                "analysis, and currently enabled demo signals. Use for growth levers, "
+                "opportunities, and what the business could do next. Pin with widget_type "
+                "opportunity_list."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_action_plan",
+            "description": (
+                "Return a practical action plan with evidence, likely cause, recommended action, "
+                "effort, impact, suggested owner, and metric to watch. Use for questions like "
+                "'what should I do this week?' or 'make an action plan'. Pin with widget_type "
+                "action_plan."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "create_custom_chart_data",
             "description": (
                 "Build a chart-ready payload from data you derived yourself (composing other tools, "
@@ -525,6 +651,14 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "get_top_issues": "horizontal_bar_chart",
     "get_review_insights": "summary_card",
     "get_review_change_summary": "comparison_chart",
+    "get_business_health": "health_score",
+    "get_signal_timeline": "signal_timeline",
+    "get_sales_summary": "sales_summary",
+    "get_operations_summary": "operations_risk",
+    "get_local_presence_summary": "local_presence_card",
+    "get_social_signal_summary": "social_signal",
+    "get_opportunities": "opportunity_list",
+    "get_action_plan": "action_plan",
     "create_custom_chart_data": None,
     "pin_widget": None,
     "get_workspace": None,
@@ -549,12 +683,49 @@ TOOL_COMPATIBLE_WIDGETS: dict[str, frozenset[str]] = {
     "get_top_issues": frozenset({"horizontal_bar_chart", "bar_chart", "insight_list"}),
     "get_review_insights": frozenset({"summary_card", "insight_list"}),
     "get_review_change_summary": frozenset({"comparison_chart", "comparison_card"}),
+    "get_business_health": frozenset({"health_score", "summary_card"}),
+    "get_signal_timeline": frozenset({"signal_timeline", "summary_card"}),
+    "get_sales_summary": frozenset({"sales_summary", "summary_card"}),
+    "get_operations_summary": frozenset({"operations_risk", "summary_card"}),
+    "get_local_presence_summary": frozenset({"local_presence_card", "summary_card"}),
+    "get_social_signal_summary": frozenset({"social_signal", "summary_card"}),
+    "get_opportunities": frozenset({"opportunity_list", "insight_list", "summary_card"}),
+    "get_action_plan": frozenset({"action_plan", "insight_list", "summary_card"}),
     # create_custom_chart_data builds chart-ready payloads itself; widget_type
     # is enforced inside the tool, but pin_widget still gates against this map.
     "create_custom_chart_data": frozenset(
         {"bar_chart", "horizontal_bar_chart", "pie_chart", "donut_chart", "insight_list"}
     ),
 }
+
+
+_DEMO_SIGNAL_TOOL_NAMES = {
+    "get_sales_summary",
+    "get_operations_summary",
+    "get_local_presence_summary",
+    "get_social_signal_summary",
+}
+
+_BUSINESS_INSIGHT_TOOL_NAMES = {
+    "get_business_health",
+    "get_signal_timeline",
+    "get_opportunities",
+    "get_action_plan",
+} | _DEMO_SIGNAL_TOOL_NAMES
+
+
+def get_active_tool_definitions() -> list:
+    """Return TOOL_DEFINITIONS filtered by current feature flag settings."""
+    from app.config import settings  # local import to avoid circular at module load
+
+    excluded: set[str] = set()
+    if not settings.BUSINESS_INSIGHT_ENABLED:
+        excluded = _BUSINESS_INSIGHT_TOOL_NAMES
+    elif not settings.DEMO_SIGNALS_ENABLED or settings.SIGNAL_PROVIDER != "demo":
+        excluded = _DEMO_SIGNAL_TOOL_NAMES
+    if not excluded:
+        return TOOL_DEFINITIONS
+    return [t for t in TOOL_DEFINITIONS if t["function"]["name"] not in excluded]
 
 
 def format_compatibility_for_prompt() -> str:
@@ -659,6 +830,26 @@ def execute_tool(
             current_period=str(args.get("current_period", "this_month")),
             previous_period=str(args.get("previous_period", "last_month")),
         )
+    if name == "get_business_health":
+        return _get_business_health(db, business_id)
+    if name == "get_signal_timeline":
+        try:
+            parsed_days = int(args.get("days", 30))
+        except (TypeError, ValueError):
+            parsed_days = 30
+        return _get_signal_timeline(db, business_id, days=parsed_days)
+    if name == "get_sales_summary":
+        return _get_sales_summary(business_id)
+    if name == "get_operations_summary":
+        return _get_operations_summary(business_id)
+    if name == "get_local_presence_summary":
+        return _get_local_presence_summary(business_id)
+    if name == "get_social_signal_summary":
+        return _get_social_signal_summary(business_id)
+    if name == "get_opportunities":
+        return _get_opportunities(db, business_id)
+    if name == "get_action_plan":
+        return _get_action_plan(db, business_id)
     if name == "create_custom_chart_data":
         return _create_custom_chart_data(args)
     if name == "pin_widget":
@@ -1345,6 +1536,778 @@ def _get_review_change_summary(
         "previous_themes": previous_themes,
         "limitation": " ".join(limitations) if limitations else None,
         "recommended_focus": recommended,
+    }
+
+
+def _clamp_score(value: float) -> int:
+    return max(0, min(100, round(value)))
+
+
+def _get_business_health(db: Session, business_id: uuid.UUID) -> dict:
+    from app.models.analysis import Analysis
+
+    reviews = (
+        db.query(Review)
+        .filter(Review.business_id == business_id)
+        .order_by(Review.published_at.desc())
+        .all()
+    )
+    analysis = db.query(Analysis).filter(Analysis.business_id == business_id).first()
+
+    review_count = len(reviews)
+    ratings = [int(r.rating) for r in reviews if r.rating is not None]
+    avg_rating = round(sum(ratings) / len(ratings), 2) if ratings else None
+    latest_review_at = max((r.published_at for r in reviews if r.published_at), default=None)
+    now = datetime.now(UTC)
+    recent_reviews = [
+        r for r in reviews if r.published_at and r.published_at >= now - timedelta(days=30)
+    ]
+    prior_reviews = [
+        r
+        for r in reviews
+        if r.published_at and now - timedelta(days=60) <= r.published_at < now - timedelta(days=30)
+    ]
+    low_rating_count = sum(1 for r in reviews if int(r.rating or 0) <= 2)
+    complaint_count = len(getattr(analysis, "top_complaints", None) or [])
+    risk_count = len(getattr(analysis, "risk_areas", None) or [])
+    praise_count = len(getattr(analysis, "top_praise", None) or [])
+    action_items = getattr(analysis, "action_items", None) or []
+    recommended_focus = getattr(analysis, "recommended_focus", None) or ""
+
+    freshness_days = None
+    if latest_review_at is not None:
+        latest = (
+            latest_review_at if latest_review_at.tzinfo else latest_review_at.replace(tzinfo=UTC)
+        )
+        freshness_days = max(0, (now - latest).days)
+
+    reputation = 35 if avg_rating is None else _clamp_score((avg_rating / 5) * 100)
+    if review_count >= 50:
+        reputation = _clamp_score(reputation + 5)
+    if review_count < 5:
+        reputation = _clamp_score(reputation - 10)
+
+    if review_count == 0:
+        customer_experience = 30
+    else:
+        negative_share = low_rating_count / review_count
+        customer_experience = _clamp_score(90 - negative_share * 80 - complaint_count * 4)
+        if praise_count:
+            customer_experience = _clamp_score(customer_experience + min(8, praise_count * 2))
+
+    operations_risk = _clamp_score(88 - risk_count * 10 - complaint_count * 3)
+    if low_rating_count:
+        operations_risk = _clamp_score(operations_risk - min(20, low_rating_count * 2))
+
+    if recent_reviews or prior_reviews:
+        recent_avg = (
+            sum(int(r.rating) for r in recent_reviews) / len(recent_reviews)
+            if recent_reviews
+            else None
+        )
+        prior_avg = (
+            sum(int(r.rating) for r in prior_reviews) / len(prior_reviews)
+            if prior_reviews
+            else None
+        )
+        momentum_value = 62.0
+        if recent_avg is not None:
+            momentum_value += (recent_avg - 3.5) * 12
+        if prior_avg is not None and recent_avg is not None:
+            momentum_value += (recent_avg - prior_avg) * 14
+        if len(recent_reviews) > len(prior_reviews):
+            momentum_value += 4
+        momentum = _clamp_score(momentum_value)
+    else:
+        momentum = 40
+
+    competitive_position = 50
+    local_presence = 45
+    if review_count > 0:
+        local_presence = _clamp_score(45 + min(25, review_count // 2))
+    if freshness_days is not None and freshness_days <= 14:
+        local_presence = _clamp_score(local_presence + 10)
+
+    sub_scores = [
+        {
+            "id": "reputation",
+            "label": "Reputation",
+            "score": reputation,
+            "evidence": f"{avg_rating:.2f} average rating across {review_count} reviews"
+            if avg_rating is not None
+            else "No rating data yet",
+        },
+        {
+            "id": "customer_experience",
+            "label": "Customer Experience",
+            "score": customer_experience,
+            "evidence": f"{low_rating_count} low-rating reviews and {complaint_count} complaint themes",
+        },
+        {
+            "id": "operations_risk",
+            "label": "Operations Risk",
+            "score": operations_risk,
+            "evidence": f"{risk_count} risk areas and {len(action_items)} action items from analysis",
+        },
+        {
+            "id": "momentum",
+            "label": "Momentum",
+            "score": momentum,
+            "evidence": f"{len(recent_reviews)} reviews in the last 30 days",
+        },
+        {
+            "id": "competitive_position",
+            "label": "Competitive Position",
+            "score": competitive_position,
+            "evidence": "Run competitor comparison to replace this neutral baseline",
+        },
+        {
+            "id": "local_presence",
+            "label": "Local Presence Readiness",
+            "score": local_presence,
+            "evidence": "Estimated from review count and freshness until local profile data is connected",
+        },
+    ]
+    score = _clamp_score(sum(s["score"] for s in sub_scores) / len(sub_scores))
+
+    drivers: list[str] = []
+    risks: list[str] = []
+    opportunities: list[str] = []
+    if avg_rating is not None:
+        drivers.append(f"Average rating is {avg_rating:.2f} across {review_count} reviews.")
+    if freshness_days is not None:
+        drivers.append(f"Latest review is {freshness_days} day(s) old.")
+    if complaint_count:
+        risks.append(f"{complaint_count} complaint theme(s) are present in the latest analysis.")
+    if risk_count:
+        risks.append(f"{risk_count} risk area(s) need operational attention.")
+    if recommended_focus:
+        opportunities.append(str(recommended_focus))
+    elif action_items:
+        opportunities.append(str(action_items[0]))
+    elif praise_count:
+        opportunities.append("Use strong praise themes as the next growth lever.")
+
+    limitations = []
+    if review_count == 0:
+        limitations.append("No reviews are loaded yet, so the score is a low-confidence baseline.")
+    if analysis is None:
+        limitations.append("Run analysis to include complaint, praise, action, and risk themes.")
+    limitations.append(
+        "Local presence and competitive position are conservative baselines until connected signals are available."
+    )
+
+    return {
+        "score": score,
+        "label": "Business Health",
+        "summary": (
+            "Computed from review quality, customer-experience friction, operational risk, "
+            "momentum, and readiness signals."
+        ),
+        "sub_scores": sub_scores,
+        "drivers": drivers[:3],
+        "risks": risks[:3],
+        "opportunities": opportunities[:3],
+        "source": "reviews_and_analysis",
+        "is_demo": False,
+        "freshness": latest_review_at.isoformat() if latest_review_at else None,
+        "confidence": "medium" if review_count >= 10 and analysis is not None else "low",
+        "limitations": limitations,
+    }
+
+
+def _get_signal_timeline(db: Session, business_id: uuid.UUID, *, days: int = 30) -> dict:
+    window_days = days if days in {7, 14, 30, 60, 90} else 30
+    now = datetime.now(UTC)
+    current_start = now - timedelta(days=window_days)
+    previous_start = current_start - timedelta(days=window_days)
+
+    current_reviews = (
+        db.query(Review)
+        .filter(
+            Review.business_id == business_id,
+            Review.published_at >= current_start,
+            Review.published_at < now,
+        )
+        .order_by(Review.published_at.asc())
+        .all()
+    )
+    previous_reviews = (
+        db.query(Review)
+        .filter(
+            Review.business_id == business_id,
+            Review.published_at >= previous_start,
+            Review.published_at < current_start,
+        )
+        .order_by(Review.published_at.asc())
+        .all()
+    )
+    current = _stats(current_reviews)
+    previous = _stats(previous_reviews)
+    events: list[dict] = []
+    limitations: list[str] = []
+
+    if not current_reviews:
+        limitations.append(f"No dated reviews found in the past {window_days} days.")
+
+    count_delta = current["count"] - previous["count"]
+    if previous["count"] > 0:
+        count_change_pct = round((count_delta / previous["count"]) * 100, 1)
+    else:
+        count_change_pct = None
+    if current["count"] or previous["count"]:
+        direction = (
+            "increased" if count_delta > 0 else "fell" if count_delta < 0 else "held steady"
+        )
+        severity = "positive" if count_delta > 0 else "warning" if count_delta < 0 else "neutral"
+        events.append(
+            {
+                "id": "review-volume",
+                "date": now.date().isoformat(),
+                "type": "volume",
+                "severity": severity,
+                "title": f"Review volume {direction}",
+                "summary": (
+                    f"{current['count']} reviews in the past {window_days} days versus "
+                    f"{previous['count']} in the prior window."
+                ),
+                "impact": "More recent reviews give the agent fresher evidence."
+                if count_delta > 0
+                else "Lower review volume reduces confidence in short-term conclusions.",
+                "evidence": {
+                    "current_count": current["count"],
+                    "previous_count": previous["count"],
+                    "count_delta": count_delta,
+                    "change_pct": count_change_pct,
+                },
+            }
+        )
+
+    rating_delta = None
+    if current["avg_rating"] is not None and previous["avg_rating"] is not None:
+        rating_delta = round(current["avg_rating"] - previous["avg_rating"], 2)
+        if abs(rating_delta) >= 0.2:
+            direction = "improved" if rating_delta > 0 else "dropped"
+            events.append(
+                {
+                    "id": "rating-change",
+                    "date": now.date().isoformat(),
+                    "type": "rating",
+                    "severity": "positive" if rating_delta > 0 else "critical",
+                    "title": f"Average rating {direction}",
+                    "summary": (
+                        f"Average rating moved from {previous['avg_rating']} to "
+                        f"{current['avg_rating']}."
+                    ),
+                    "impact": "This is large enough to change customer perception."
+                    if abs(rating_delta) >= 0.4
+                    else "This is a moderate movement worth watching.",
+                    "evidence": {
+                        "current_avg_rating": current["avg_rating"],
+                        "previous_avg_rating": previous["avg_rating"],
+                        "rating_delta": rating_delta,
+                    },
+                }
+            )
+    elif current["count"] < 3 or previous["count"] < 3:
+        limitations.append("Rating-change analysis needs at least a few reviews in both windows.")
+
+    current_negative = _theme_rows(current_reviews, focus="negative", limit=3)
+    previous_negative = _theme_rows(previous_reviews, focus="negative", limit=3)
+    current_top = current_negative[0] if current_negative else None
+    previous_top = previous_negative[0] if previous_negative else None
+    if current_top and (not previous_top or current_top["theme"] != previous_top["theme"]):
+        events.append(
+            {
+                "id": "top-issue-shift",
+                "date": now.date().isoformat(),
+                "type": "theme",
+                "severity": "warning" if current_top["avg_rating"] <= 3 else "neutral",
+                "title": f"Top issue shifted to {current_top['theme']}",
+                "summary": (
+                    f"{current_top['theme']} is now the leading friction theme "
+                    f"({current_top['count']} mention(s))."
+                ),
+                "impact": "This may explain recent rating or sentiment movement.",
+                "evidence": {
+                    "current_theme": current_top,
+                    "previous_theme": previous_top,
+                },
+            }
+        )
+
+    low_reviews = [r for r in current_reviews if int(r.rating or 0) <= 2]
+    if low_reviews:
+        latest_low = sorted(
+            low_reviews, key=lambda r: r.published_at or datetime.min.replace(tzinfo=UTC)
+        )[-1]
+        events.append(
+            {
+                "id": "low-rating-evidence",
+                "date": latest_low.published_at.date().isoformat()
+                if latest_low.published_at
+                else now.date().isoformat(),
+                "type": "evidence",
+                "severity": "critical",
+                "title": "Recent low-rating evidence",
+                "summary": _quote(latest_low.text) or "A recent low-rating review needs review.",
+                "impact": "Use this as supporting evidence before choosing an action.",
+                "evidence": {
+                    "rating": latest_low.rating,
+                    "review_id": str(latest_low.id),
+                },
+            }
+        )
+
+    if not events:
+        events.append(
+            {
+                "id": "stable-window",
+                "date": now.date().isoformat(),
+                "type": "status",
+                "severity": "neutral",
+                "title": "No major signal shift detected",
+                "summary": f"The past {window_days} days do not show a clear volume, rating, or issue shift.",
+                "impact": "Keep collecting reviews and watch for new changes.",
+                "evidence": {
+                    "current": current,
+                    "previous": previous,
+                },
+            }
+        )
+
+    events.sort(key=lambda event: str(event.get("date", "")), reverse=True)
+    return {
+        "period": f"past {window_days} days",
+        "events": events[:6],
+        "summary": (
+            f"Found {len(events[:6])} timeline signal(s) from review volume, rating, and theme data."
+        ),
+        "source": "reviews",
+        "is_demo": False,
+        "freshness": now.isoformat(),
+        "confidence": "medium"
+        if current["count"] >= 5 and (previous["count"] >= 3 or current["count"] >= 10)
+        else "low",
+        "limitations": limitations
+        or [
+            "Timeline currently uses review signals only; operations, sales, local events, and weather will come from demo or connected providers later."
+        ],
+    }
+
+
+def _demo_signal_seed(business_id: uuid.UUID) -> int:
+    return business_id.int % 97
+
+
+def _demo_signal_disabled_payload(signal: str) -> dict:
+    return {
+        "summary": f"{signal} demo signals are disabled.",
+        "metrics": [],
+        "items": [],
+        "source": "none",
+        "is_demo": False,
+        "freshness": None,
+        "confidence": "none",
+        "limitations": [
+            "Set DEMO_SIGNALS_ENABLED=true and SIGNAL_PROVIDER=demo to use deterministic offline signals."
+        ],
+    }
+
+
+def _demo_signals_enabled() -> bool:
+    from app.config import settings
+
+    return (
+        settings.BUSINESS_INSIGHT_ENABLED
+        and settings.DEMO_SIGNALS_ENABLED
+        and settings.SIGNAL_PROVIDER == "demo"
+    )
+
+
+def _demo_signal_base(signal: str, business_id: uuid.UUID) -> dict:
+    if not _demo_signals_enabled():
+        return _demo_signal_disabled_payload(signal)
+    return {
+        "source": f"demo_{signal}",
+        "is_demo": True,
+        "freshness": datetime.now(UTC).isoformat(),
+        "confidence": "demo",
+        "limitations": [
+            "Demo/offline signal: use this to prove the Business Insight experience before connecting a real integration."
+        ],
+        "_seed": _demo_signal_seed(business_id),
+    }
+
+
+def _get_sales_summary(business_id: uuid.UUID) -> dict:
+    base = _demo_signal_base("sales", business_id)
+    if not base.get("is_demo"):
+        return base
+    seed = int(base.pop("_seed"))
+    orders = 420 + seed * 7
+    avg_ticket = round(18 + (seed % 11) * 1.35, 2)
+    revenue = round(orders * avg_ticket)
+    beer_share = 42 + seed % 14
+    food_share = 28 + seed % 9
+    other_share = max(0, 100 - beer_share - food_share)
+    peak_day = ["Thursday", "Friday", "Saturday", "Sunday"][seed % 4]
+    return {
+        **base,
+        "label": "Demo Sales Summary",
+        "summary": (
+            f"Demo POS-lite signals show {orders} orders and about ${revenue:,} revenue "
+            f"over the last 30 days, with {peak_day} as the strongest day."
+        ),
+        "metrics": [
+            {"label": "Revenue", "value": revenue, "unit": "USD"},
+            {"label": "Orders", "value": orders, "unit": "orders"},
+            {"label": "Average ticket", "value": avg_ticket, "unit": "USD"},
+        ],
+        "items": [
+            {"label": "Beer / drinks", "value": beer_share, "unit": "%"},
+            {"label": "Food", "value": food_share, "unit": "%"},
+            {"label": "Other", "value": other_share, "unit": "%"},
+        ],
+        "recommendation": "Compare demand spikes with review complaints before changing staffing or promotions.",
+    }
+
+
+def _get_operations_summary(business_id: uuid.UUID) -> dict:
+    base = _demo_signal_base("operations", business_id)
+    if not base.get("is_demo"):
+        return base
+    seed = int(base.pop("_seed"))
+    wait_minutes = 7 + seed % 18
+    staffing_gap = seed % 5
+    incidents = 1 + seed % 4
+    risk_score = _clamp_score(35 + wait_minutes * 2 + staffing_gap * 8 + incidents * 5)
+    return {
+        **base,
+        "label": "Demo Operations Risk",
+        "score": risk_score,
+        "summary": (
+            f"Demo operations signals show {wait_minutes} minute estimated waits, "
+            f"{staffing_gap} staffing gap(s), and {incidents} service-pressure incident(s)."
+        ),
+        "metrics": [
+            {"label": "Estimated wait", "value": wait_minutes, "unit": "min"},
+            {"label": "Staffing gaps", "value": staffing_gap, "unit": "shifts"},
+            {"label": "Incidents", "value": incidents, "unit": "events"},
+        ],
+        "items": [
+            {"label": "Rush-hour pressure", "value": risk_score, "unit": "risk"},
+            {"label": "Service recovery", "value": max(0, 100 - risk_score), "unit": "readiness"},
+        ],
+        "recommendation": "Staff the peak window first, then watch wait-time complaints in the signal timeline.",
+    }
+
+
+def _get_local_presence_summary(business_id: uuid.UUID) -> dict:
+    base = _demo_signal_base("local_presence", business_id)
+    if not base.get("is_demo"):
+        return base
+    seed = int(base.pop("_seed"))
+    completeness = 68 + seed % 25
+    views = 1800 + seed * 41
+    direction_clicks = 90 + seed * 3
+    call_clicks = 24 + seed % 31
+    return {
+        **base,
+        "label": "Demo Local Presence",
+        "score": completeness,
+        "summary": (
+            f"Demo local presence signals show {views:,} profile views, "
+            f"{direction_clicks} direction clicks, and {call_clicks} call clicks."
+        ),
+        "metrics": [
+            {"label": "Profile readiness", "value": completeness, "unit": "%"},
+            {"label": "Views", "value": views, "unit": "views"},
+            {"label": "Direction clicks", "value": direction_clicks, "unit": "clicks"},
+        ],
+        "items": [
+            {"label": "Photos", "value": 80 + seed % 16, "unit": "%"},
+            {"label": "Hours accuracy", "value": 75 + seed % 20, "unit": "%"},
+            {"label": "Review response freshness", "value": 55 + seed % 35, "unit": "%"},
+        ],
+        "recommendation": "Improve listing freshness before running local promotions.",
+    }
+
+
+def _get_social_signal_summary(business_id: uuid.UUID) -> dict:
+    base = _demo_signal_base("social", business_id)
+    if not base.get("is_demo"):
+        return base
+    seed = int(base.pop("_seed"))
+    mentions = 35 + seed % 70
+    positive = 54 + seed % 28
+    neutral = 18 + seed % 18
+    negative = max(0, 100 - positive - neutral)
+    topic = ["craft beer", "service speed", "outdoor seating", "happy hour"][seed % 4]
+    return {
+        **base,
+        "label": "Demo Social Signals",
+        "summary": (
+            f"Demo social signals show {mentions} local mentions. The leading topic is {topic}."
+        ),
+        "metrics": [
+            {"label": "Mentions", "value": mentions, "unit": "mentions"},
+            {"label": "Positive", "value": positive, "unit": "%"},
+            {"label": "Negative", "value": negative, "unit": "%"},
+        ],
+        "items": [
+            {"label": "Positive sentiment", "value": positive, "unit": "%"},
+            {"label": "Neutral sentiment", "value": neutral, "unit": "%"},
+            {"label": "Negative sentiment", "value": negative, "unit": "%"},
+        ],
+        "recommendation": f"Use {topic} as a content angle only if review evidence supports it too.",
+    }
+
+
+def _analysis_text_items(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    result: list[str] = []
+    for item in value:
+        if isinstance(item, str) and item.strip():
+            result.append(item.strip())
+        elif isinstance(item, dict):
+            label = item.get("label") or item.get("theme") or item.get("text")
+            if isinstance(label, str) and label.strip():
+                result.append(label.strip())
+    return result
+
+
+def _opportunity_priority(impact: str, effort: str) -> str:
+    if impact == "high" and effort in {"low", "medium"}:
+        return "high"
+    if impact == "medium" and effort == "low":
+        return "high"
+    if impact == "low" and effort == "high":
+        return "low"
+    return "medium"
+
+
+def _opportunity_item(
+    *,
+    item_id: str,
+    title: str,
+    evidence: str,
+    likely_cause: str,
+    recommended_action: str,
+    effort: str,
+    impact: str,
+    metric_to_watch: str,
+    source: str,
+    suggested_owner: str,
+    example_response: str | None = None,
+) -> dict:
+    return {
+        "id": item_id,
+        "title": title,
+        "evidence": evidence,
+        "likely_cause": likely_cause,
+        "recommended_action": recommended_action,
+        "effort": effort,
+        "impact": impact,
+        "priority": _opportunity_priority(impact, effort),
+        "metric_to_watch": metric_to_watch,
+        "source": source,
+        "suggested_owner": suggested_owner,
+        "example_response": example_response,
+        "is_demo": source.startswith("demo_"),
+    }
+
+
+def _get_opportunities(db: Session, business_id: uuid.UUID) -> dict:
+    from app.models.analysis import Analysis
+
+    reviews = (
+        db.query(Review)
+        .filter(Review.business_id == business_id)
+        .order_by(Review.published_at.desc())
+        .all()
+    )
+    analysis = db.query(Analysis).filter(Analysis.business_id == business_id).first()
+
+    complaints = _analysis_text_items(getattr(analysis, "top_complaints", None))
+    praise = _analysis_text_items(getattr(analysis, "top_praise", None))
+    risks = _analysis_text_items(getattr(analysis, "risk_areas", None))
+    actions = _analysis_text_items(getattr(analysis, "action_items", None))
+    recommended_focus = str(getattr(analysis, "recommended_focus", "") or "").strip()
+    low_reviews = [r for r in reviews if int(r.rating or 0) <= 2]
+    recent_reviews = [
+        r
+        for r in reviews
+        if r.published_at and r.published_at >= datetime.now(UTC) - timedelta(days=30)
+    ]
+
+    opportunities: list[dict] = []
+    if recommended_focus or actions or complaints or low_reviews:
+        complaint = complaints[0] if complaints else "recent low-rating reviews"
+        action = recommended_focus or (actions[0] if actions else f"Fix the {complaint} pattern.")
+        evidence = (
+            f"{complaint} appears in analysis with {len(low_reviews)} low-rating review(s)."
+            if analysis is not None
+            else f"{len(low_reviews)} low-rating review(s) point to customer friction."
+        )
+        opportunities.append(
+            _opportunity_item(
+                item_id="fix-primary-friction",
+                title=f"Fix {complaint}",
+                evidence=evidence,
+                likely_cause=risks[0]
+                if risks
+                else "The recurring review theme is likely tied to an operational handoff.",
+                recommended_action=action,
+                effort="medium",
+                impact="high",
+                metric_to_watch="Share of 1-2 star reviews and complaint mentions",
+                source="reviews_analysis",
+                suggested_owner="General manager",
+                example_response=(
+                    "Thanks for flagging this. We are tightening the peak-time process and will keep watching this feedback."
+                ),
+            )
+        )
+
+    if praise:
+        opportunities.append(
+            _opportunity_item(
+                item_id="amplify-praise-theme",
+                title=f"Promote {praise[0]}",
+                evidence=f"{praise[0]} is a positive review theme customers already mention.",
+                likely_cause="Customers are already noticing a differentiated strength.",
+                recommended_action=(
+                    f"Turn {praise[0]} into the next offer, post, staff script, or review-response theme."
+                ),
+                effort="low",
+                impact="medium",
+                metric_to_watch="Positive mentions and profile engagement",
+                source="reviews_analysis",
+                suggested_owner="Marketing lead",
+            )
+        )
+
+    sales = _get_sales_summary(business_id)
+    if sales.get("is_demo") and sales.get("metrics"):
+        peak_hint = str(sales.get("summary") or "Demo demand signals show a repeatable peak.")
+        opportunities.append(
+            _opportunity_item(
+                item_id="align-demand-operations",
+                title="Match staffing and offers to demand",
+                evidence=peak_hint,
+                likely_cause="Demand likely concentrates into a small number of peak windows.",
+                recommended_action=(
+                    "Use the demo demand pattern to test one peak-window staffing or promotion change, then compare review friction."
+                ),
+                effort="medium",
+                impact="medium",
+                metric_to_watch="Orders, wait complaints, and average rating in peak windows",
+                source=str(sales.get("source") or "demo_sales"),
+                suggested_owner="Operations lead",
+            )
+        )
+
+    local = _get_local_presence_summary(business_id)
+    local_score = local.get("score")
+    if local.get("is_demo") and isinstance(local_score, int) and local_score < 88:
+        opportunities.append(
+            _opportunity_item(
+                item_id="refresh-local-presence",
+                title="Refresh local presence before promotions",
+                evidence=str(local.get("summary") or "Demo local presence is not fully ready."),
+                likely_cause="Profile freshness and response activity may be reducing conversion from local search.",
+                recommended_action=(
+                    "Update hours, photos, and recent review responses before sending more traffic to the listing."
+                ),
+                effort="low",
+                impact="medium",
+                metric_to_watch="Profile readiness, direction clicks, and calls",
+                source=str(local.get("source") or "demo_local_presence"),
+                suggested_owner="Marketing lead",
+            )
+        )
+
+    if not opportunities:
+        opportunities.append(
+            _opportunity_item(
+                item_id="load-review-evidence",
+                title="Load enough evidence for a real action plan",
+                evidence=f"{len(reviews)} review(s) are currently available.",
+                likely_cause="The workspace does not yet have enough customer signal to rank business levers.",
+                recommended_action="Import or scrape current reviews, then run analysis before prioritizing changes.",
+                effort="low",
+                impact="high",
+                metric_to_watch="Review count and analysis freshness",
+                source="reviews",
+                suggested_owner="Owner",
+            )
+        )
+
+    priority_rank = {"high": 0, "medium": 1, "low": 2}
+    opportunities.sort(key=lambda item: priority_rank.get(str(item.get("priority")), 3))
+    is_demo = any(item.get("is_demo") for item in opportunities)
+    limitations = [
+        "Opportunities are computed from current reviews/analysis plus deterministic demo signals where enabled."
+    ]
+    if analysis is None:
+        limitations.append("Run analysis to improve complaint, praise, risk, and action evidence.")
+    if is_demo:
+        limitations.append(
+            "Items marked demo are offline placeholders until real providers are connected."
+        )
+
+    return {
+        "summary": "Prioritized opportunities from review evidence, AI analysis, and enabled demo business signals.",
+        "opportunities": opportunities[:5],
+        "source": "reviews_analysis_demo_signals" if is_demo else "reviews_analysis",
+        "is_demo": is_demo,
+        "freshness": datetime.now(UTC).isoformat(),
+        "confidence": "medium" if len(reviews) >= 10 and analysis is not None else "low",
+        "limitations": limitations,
+        "review_count": len(reviews),
+        "recent_review_count": len(recent_reviews),
+    }
+
+
+def _get_action_plan(db: Session, business_id: uuid.UUID) -> dict:
+    opportunities_result = _get_opportunities(db, business_id)
+    source_opportunities = opportunities_result.get("opportunities")
+    opportunities = source_opportunities if isinstance(source_opportunities, list) else []
+    actions: list[dict] = []
+    for index, opportunity in enumerate(opportunities[:3], start=1):
+        if not isinstance(opportunity, dict):
+            continue
+        actions.append(
+            {
+                "id": opportunity.get("id") or f"action-{index}",
+                "rank": index,
+                "issue_or_opportunity": opportunity.get("title") or "Business opportunity",
+                "evidence": opportunity.get("evidence") or "No evidence provided.",
+                "likely_cause": opportunity.get("likely_cause") or "Cause is not yet clear.",
+                "recommended_action": opportunity.get("recommended_action")
+                or "Choose one measurable change and review the result.",
+                "effort": opportunity.get("effort") or "medium",
+                "impact": opportunity.get("impact") or "medium",
+                "suggested_owner": opportunity.get("suggested_owner") or "Owner",
+                "metric_to_watch": opportunity.get("metric_to_watch")
+                or "Rating and review themes",
+                "example_response": opportunity.get("example_response"),
+                "source": opportunity.get("source") or "reviews_analysis",
+                "is_demo": opportunity.get("is_demo") is True,
+            }
+        )
+
+    return {
+        "summary": "A short action plan for the next operating cycle, ranked by evidence, impact, and effort.",
+        "actions": actions,
+        "weekly_priorities": [action["recommended_action"] for action in actions],
+        "source": opportunities_result.get("source", "reviews_analysis"),
+        "is_demo": opportunities_result.get("is_demo") is True,
+        "freshness": opportunities_result.get("freshness"),
+        "confidence": opportunities_result.get("confidence", "low"),
+        "limitations": opportunities_result.get("limitations", []),
     }
 
 

@@ -1,0 +1,14 @@
+[
+  {
+    "text": "",
+    "tool_calls": [{"name": "get_social_signal_summary", "arguments": {}}]
+  },
+  {
+    "text": "",
+    "tool_calls": [{"name": "pin_widget", "arguments": {"widget_type": "social_signal", "title": "Social Signals", "source_tool": "get_social_signal_summary"}}]
+  },
+  {
+    "text": "Added the social signal card to your dashboard.",
+    "tool_calls": []
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "text": "",
+    "tool_calls": [{"name": "get_operations_summary", "arguments": {}}]
+  },
+  {
+    "text": "",
+    "tool_calls": [{"name": "pin_widget", "arguments": {"widget_type": "operations_risk", "title": "Operations Risk", "source_tool": "get_operations_summary"}}]
+  },
+  {
+    "text": "Added the operations risk card to your dashboard.",
+    "tool_calls": []
+  }
+]

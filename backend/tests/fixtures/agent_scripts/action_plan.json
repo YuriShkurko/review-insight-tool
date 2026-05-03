@@ -1,0 +1,14 @@
+[
+  {
+    "text": "",
+    "tool_calls": [{"name": "get_action_plan", "arguments": {}}]
+  },
+  {
+    "text": "",
+    "tool_calls": [{"name": "pin_widget", "arguments": {"widget_type": "action_plan", "title": "Action Plan", "source_tool": "get_action_plan"}}]
+  },
+  {
+    "text": "Pinned your action plan to the dashboard.",
+    "tool_calls": []
+  }
+]

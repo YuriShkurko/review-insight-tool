@@ -171,8 +171,8 @@ export default function BusinessesPage() {
 
   if (isLoading || loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-[#f6f7fb]">
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-text-secondary shadow-sm">
+      <div className="flex min-h-[50vh] items-center justify-center bg-surface">
+        <div className="rounded-lg border border-border bg-surface-card px-4 py-3 text-sm text-text-secondary shadow-sm">
           <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent align-[-2px]" />
           Loading workspaces
         </div>
@@ -183,21 +183,21 @@ export default function BusinessesPage() {
   return (
     <div
       data-testid="business-launcher"
-      className="min-h-[calc(100dvh-3rem)] bg-[#f6f7fb] px-4 py-6 sm:px-6 lg:px-8"
+      className="min-h-[calc(100dvh-3rem)] bg-surface px-4 py-6 sm:px-6 lg:px-8"
     >
       <div className="mx-auto max-w-7xl space-y-6">
         <section className="rounded-lg bg-[#111827] px-5 py-6 text-white shadow-sm sm:px-7">
           <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr] lg:items-end">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-white/45">
-                Review Insight
+                Business Insight
               </p>
               <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-                Your review intelligence workspaces
+                Your business insight workspaces
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/65">
-                Pick a business, open its AI dashboard, and turn customer voice into a demo-ready
-                story.
+                Pick a business, open its AI command center, and turn reputation, competitor, and
+                operating signals into a demo-ready story.
               </p>
               <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/65">
                 <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1">
@@ -266,7 +266,7 @@ export default function BusinessesPage() {
         )}
 
         {loadError ? (
-          <div className="rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
+          <div className="rounded-lg border border-border bg-surface-card px-6 py-12 text-center">
             <p className="mb-3 text-text-secondary">{loadError}</p>
             <button
               onClick={() => refreshAll()}
@@ -289,10 +289,10 @@ export default function BusinessesPage() {
             ) : (
               <div className="bg-surface-card border border-border rounded-xl p-8">
                 <h2 className="text-lg font-semibold text-text-primary mb-1">
-                  Welcome to Review Insight
+                  Welcome to Business Insight
                 </h2>
                 <p className="text-text-secondary text-sm mb-5">
-                  Understand what your customers are saying — in three simple steps.
+                  Start with reviews, then build a broader business picture in three simple steps.
                 </p>
                 <ol className="space-y-3 text-sm text-text-secondary">
                   <li className="flex items-start gap-3">
@@ -326,7 +326,7 @@ export default function BusinessesPage() {
                     </span>
                     <span>
                       <strong className="text-text-primary">Run analysis</strong> — AI generates a
-                      summary, top complaints, praise, action items, and risk areas.
+                      business-ready summary, top complaints, praise, action items, and risk areas.
                     </span>
                   </li>
                 </ol>

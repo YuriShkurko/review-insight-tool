@@ -64,7 +64,7 @@ export function SummaryCard({ data }: { data: Record<string, unknown> }) {
       )}
       {complaints && complaints.length > 0 && (
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-red-500">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-danger">
             Top Complaints
           </p>
           <ul className="space-y-0.5">
@@ -79,7 +79,7 @@ export function SummaryCard({ data }: { data: Record<string, unknown> }) {
       )}
       {praise && praise.length > 0 && (
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-green-600">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-success">
             Top Praise
           </p>
           <ul className="space-y-0.5">

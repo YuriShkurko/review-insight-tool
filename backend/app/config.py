@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     LLM_AGENT_MODEL: str = "gpt-4o-mini"
 
     REVIEW_PROVIDER: str = "mock"
+    BUSINESS_INSIGHT_ENABLED: bool = True
+    DEMO_SIGNALS_ENABLED: bool = True
+    SIGNAL_PROVIDER: str = "demo"
     OUTSCRAPER_API_KEY: str = ""
     OUTSCRAPER_REVIEWS_LIMIT: int = 100
     OUTSCRAPER_SORT: str = "newest"

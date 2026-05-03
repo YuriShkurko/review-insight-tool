@@ -33,13 +33,15 @@ should use get_signal_timeline.
 - Business health questions ("how is the business doing", "health score", "business snapshot")
 should use get_business_health.
 - Opportunity/growth-lever questions should use get_opportunities.
-- Action-plan/weekly-priority/what-should-we-do-next questions should use get_action_plan."""
+- Action-plan/weekly-priority/what-should-we-do-next questions should use get_action_plan.
+- Money-flow / financial-flow / profit-bridge questions should use get_financial_flow."""
 
 _BI_WIDGET_SELECTION = """\
 - What happened / signal timeline -> signal_timeline.
 - Business health / business snapshot -> health_score.
 - Opportunities / growth levers -> opportunity_list.
-- Action plan / weekly priorities / next moves -> action_plan."""
+- Action plan / weekly priorities / next moves -> action_plan.
+- Money flow / financial flow / profit bridge / where money goes / revenue to profit -> money_flow."""
 
 _DEMO_DISCLOSURE = """\
 DEMO SIGNAL DISCLOSURE:
@@ -79,7 +81,9 @@ def build_system_prompt(business: Business) -> str:
         """\
   2. Business health — call get_business_health → pin as health_score.
   3. Signal timeline — call get_signal_timeline → pin as signal_timeline.
-  4. Demo demand — call get_sales_summary → pin as sales_summary."""
+  4. Demo demand — call get_sales_summary → pin as sales_summary.
+  5. Money flow — call get_financial_flow → pin as money_flow.
+  6. Action plan — call get_action_plan → pin as action_plan."""
         if bi_active
         else ""
     )
@@ -96,19 +100,35 @@ def build_system_prompt(business: Business) -> str:
 
     improvement_bi_steps = (
         """\
-  2. Business health — call get_business_health → pin as health_score."""
+  2. Business health — call get_business_health → pin as health_score.
+  3. Money flow — call get_financial_flow → pin as money_flow."""
         if bi_active
         else ""
     )
     improvement_bi_steps_block = (improvement_bi_steps + "\n") if improvement_bi_steps else ""
 
-    improvement_demo_step = (
+    improvement_post_timeline = (
         """\
-  6. Demo operations — call get_operations_summary → pin as operations_risk."""
+  7. Demo operations — call get_operations_summary → pin as operations_risk.
+  8. Evidence — call query_reviews (max_rating=3, limit=5) → pin as review_list.
+  9. Trend — call get_review_series (period="past_30d") → pin as line_chart.
+  10. Rating mix — call get_rating_distribution → pin as donut_chart.
+  11. Optional: call get_review_change_summary → pin as comparison_chart if current and prior
+     period data are both available.
+  12. Optional: call create_custom_chart_data using issue/theme outputs to pin an action-priority
+     insight_list with recommended fixes.
+"""
         if demo_active
-        else ""
+        else """\
+  7. Evidence — call query_reviews (max_rating=3, limit=5) → pin as review_list.
+  8. Trend — call get_review_series (period="past_30d") → pin as line_chart.
+  9. Rating mix — call get_rating_distribution → pin as donut_chart.
+  10. Optional: call get_review_change_summary → pin as comparison_chart if current and prior
+     period data are both available.
+  11. Optional: call create_custom_chart_data using issue/theme outputs to pin an action-priority
+     insight_list with recommended fixes.
+"""
     )
-    improvement_demo_step_block = (improvement_demo_step + "\n") if improvement_demo_step else ""
 
     improvement_action_plan = (
         "Add an action-plan widget to improvement dashboards when possible: "
@@ -226,11 +246,29 @@ When the user says "clean layout", "auto-arrange", "group by topic", or similar:
      then Trends, Issues, Evidence, Actions.
   Do not remove and recreate widgets to change order.
 
+AFTER RUNNING COMPETITOR COMPARISON:
+After a successful competitor comparison, if there is already a health_score widget on the
+dashboard, you MUST refresh it: call get_workspace to find the health_score widget_id, call
+remove_widget to remove it, then call get_business_health and pin_widget to re-add it. The
+Competitive Position sub-score is computed at pin time using the latest comparison cache and
+will not update on its own — you must re-pin to reflect the real result.
+
 KNOWN LIMITATION:
 The executor keys cached tool results by tool name. If you call the same data tool twice in
 the same turn with different filters, only the most recent result is wired into pin_widget.
 If you need to pin two charts from the same tool with different filters, pin the first
 result, then call the tool again with the new filter, then pin again.
+
+MONEY FLOW — CRITICAL OVERRIDE:
+When the user asks about "money flow", "financial flow", "where money goes", "profit bridge",
+"revenue to profit", "show revenue costs and profit", or any question about how money moves
+through the business:
+  1. ALWAYS call get_financial_flow first.
+  2. Pin the result as widget_type=money_flow — NOT bar_chart, NOT horizontal_bar_chart.
+  3. Do NOT substitute a generic bar chart or "Revenue Breakdown" chart as the primary answer.
+  4. A revenue-category bar chart is only acceptable as an optional second supporting widget
+     after the money_flow widget has already been pinned.
+  5. The tool returns demo data labeled is_demo=true — always disclose this.
 
 ANALYSIS TOOL CHOICE - CRITICAL:
 - Open-ended review questions ("worst reviews this month", "good parts this week",
@@ -239,6 +277,7 @@ Use focus=negative for worst/complaints/improvement and focus=positive for prais
 - Change questions ("what changed compared to last month") should use get_review_change_summary.{analysis_tool_addendum}
 - Use get_top_issues when the user specifically asks for ranked issues or a dashboard issue list.
 - Use query_reviews only when the user explicitly asks for raw reviews or a full review list.
+- For money-flow / financial-flow / profit-bridge queries, call get_financial_flow and pin as money_flow — do not use generic bar charts for this.
 
 WIDGET SELECTION - CRITICAL:
 - Rating distribution/share -> pie_chart or donut_chart. Use bar_chart only if the user explicitly asks for bars.
@@ -269,13 +308,13 @@ When the user asks to "fill the dashboard", "add relevant data", "build a full d
 similar open-ended build requests, execute this plan in a single turn (minimum 6 widgets,
 8 if data is available):
   1. Overview — call get_dashboard → pin as summary_card (ai summary + top-level KPIs).
-{comprehensive_bi_steps_block}  5. Trend — call get_review_series (period="past_30d") → pin as line_chart.
-  6. Distribution — call get_rating_distribution → pin as donut_chart.
-  7. Top issues — call get_top_issues → pin as horizontal_bar_chart.
-  8. Praise themes — call get_review_insights (focus="positive") → pin as summary_card.
-  9. Evidence — call query_reviews (limit=5, sort by recency or lowest rating) → pin as review_list.
-  10. Optional 10th: call get_review_trends → pin as trend_indicator (shows week-over-week delta).
-  11. Optional 11th: call get_review_change_summary → pin as comparison_chart (only if there are
+{comprehensive_bi_steps_block}  7. Trend — call get_review_series (period="past_30d") → pin as line_chart.
+  8. Distribution — call get_rating_distribution → pin as donut_chart.
+  9. Top issues — call get_top_issues → pin as horizontal_bar_chart.
+  10. Praise themes — call get_review_insights (focus="positive") → pin as summary_card.
+  11. Evidence — call query_reviews (limit=5, sort by recency or lowest rating) → pin as review_list.
+  12. Optional 12th: call get_review_trends → pin as trend_indicator (shows week-over-week delta).
+  13. Optional 13th: call get_review_change_summary → pin as comparison_chart (only if there are
      both current-period AND prior-period reviews; skip if same data as step 2).
 {comprehensive_opportunities}Do NOT call the same tool twice with the same time window. Do NOT call get_review_change_summary
 more than once per fill operation. Apply the EMPTY DATA FALLBACK rule for any step that returns
@@ -286,17 +325,10 @@ When the replacement dashboard should focus on "what to improve", "areas for imp
 "problems", "complaints", "negative feedback", or "priorities", still build a full dashboard
 with at least 6 widgets. Use this issue-focused mix:
   1. Overview — call get_dashboard → pin as summary_card.
-{improvement_bi_steps_block}  3. Top issues — call get_top_issues → pin as horizontal_bar_chart.
-  4. Negative themes — call get_review_insights (focus="negative") → pin as summary_card.
-  5. Signal timeline — call get_signal_timeline → pin as signal_timeline.
-{improvement_demo_step_block}  7. Evidence — call query_reviews (max_rating=3, limit=5) → pin as review_list.
-  8. Trend — call get_review_series (period="past_30d") → pin as line_chart.
-  9. Rating mix — call get_rating_distribution → pin as donut_chart.
-  10. Optional: call get_review_change_summary → pin as comparison_chart if current and prior
-     period data are both available.
-  11. Optional: call create_custom_chart_data using issue/theme outputs to pin an action-priority
-     insight_list with recommended fixes.
-{improvement_action_plan}Do not stop after only the top issues chart or one summary. A useful improvement dashboard needs
+{improvement_bi_steps_block}  4. Top issues — call get_top_issues → pin as horizontal_bar_chart.
+  5. Negative themes — call get_review_insights (focus="negative") → pin as summary_card.
+  6. Signal timeline — call get_signal_timeline → pin as signal_timeline.
+{improvement_post_timeline}{improvement_action_plan}Do not stop after only the top issues chart or one summary. A useful improvement dashboard needs
 issue ranking, negative-theme synthesis, supporting reviews, trend context, and rating context.
 
 RESPONSE STYLE - CRITICAL:

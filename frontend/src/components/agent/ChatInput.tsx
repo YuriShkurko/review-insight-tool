@@ -33,7 +33,7 @@ export function ChatInput({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about your reviews…"
+          placeholder="Ask your business copilot..."
           disabled={disabled}
           rows={1}
           className="flex-1 resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/30 disabled:opacity-50 max-h-28 overflow-y-auto"

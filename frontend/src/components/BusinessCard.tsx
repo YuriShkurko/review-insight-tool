@@ -20,19 +20,19 @@ function getStatus(business: Business): { label: string; detail: string; tone: s
     return {
       label: "Needs reviews",
       detail: "Fetch reviews before building an insight dashboard.",
-      tone: "border-slate-200 bg-slate-50 text-slate-600",
+      tone: "border-border-subtle bg-surface text-text-muted",
     };
   }
   if (business.avg_rating != null) {
     return {
       label: "Demo ready",
       detail: "Reviews are loaded and ready for analysis.",
-      tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      tone: "border-success/30 bg-success-soft text-success",
     };
   }
   return {
     label: "Review data ready",
-    detail: "Open the workspace to analyze customer voice.",
+    detail: "Open the workspace to build a business insight dashboard.",
     tone: "border-brand/20 bg-brand-light text-brand",
   };
 }
@@ -54,8 +54,8 @@ export default function BusinessCard({
     <article
       data-testid="business-tile"
       data-business-id={business.id}
-      className={`group rounded-lg border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
-        featured ? "border-brand/30 ring-2 ring-brand/10" : "border-slate-200"
+      className={`group rounded-lg border bg-surface-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+        featured ? "border-brand/30 ring-2 ring-brand/10" : "border-border"
       }`}
     >
       <div className="flex h-full flex-col gap-5">
@@ -68,10 +68,10 @@ export default function BusinessCard({
                 </span>
               )}
               {business.business_type && business.business_type !== "other" && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-medium capitalize text-slate-500">
+                <span className="inline-flex items-center gap-1 rounded-full border border-border-subtle bg-surface px-2 py-0.5 text-[10px] font-medium capitalize text-text-muted">
                   <BusinessTypeIcon
                     businessType={business.business_type}
-                    className="h-3 w-3 text-slate-500"
+                    className="h-3 w-3 text-text-muted"
                   />
                   {business.business_type}
                 </span>
@@ -100,7 +100,7 @@ export default function BusinessCard({
                 onDelete(business.id);
               }}
               disabled={deleting}
-              className="shrink-0 rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+              className="shrink-0 rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 disabled:opacity-50"
             >
               {deleting ? "Deleting..." : "Delete"}
             </button>
@@ -108,7 +108,7 @@ export default function BusinessCard({
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+          <div className="rounded-lg border border-border-subtle bg-surface px-3 py-2">
             <p className="text-[10px] font-medium uppercase tracking-wider text-text-muted">
               Rating
             </p>
@@ -116,7 +116,7 @@ export default function BusinessCard({
               {formatRating(business.avg_rating)}
             </p>
           </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+          <div className="rounded-lg border border-border-subtle bg-surface px-3 py-2">
             <p className="text-[10px] font-medium uppercase tracking-wider text-text-muted">
               Reviews
             </p>
@@ -131,7 +131,7 @@ export default function BusinessCard({
           <p className="mt-0.5 text-xs opacity-80">{status.detail}</p>
         </div>
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-border-subtle pt-4">
           <span className="text-xs text-text-muted">{formatUpdated(business.updated_at)}</span>
           <Link
             href={`/businesses/${business.id}`}

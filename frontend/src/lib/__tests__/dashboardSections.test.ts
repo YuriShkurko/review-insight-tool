@@ -89,6 +89,11 @@ describe("classifyWidget", () => {
     expect(classifyWidget(w("1", "review_list"))).toBe("evidence");
   });
 
+  it("puts opportunity and action widgets in actions", () => {
+    expect(classifyWidget(w("1", "opportunity_list"))).toBe("actions");
+    expect(classifyWidget(w("2", "action_plan"))).toBe("actions");
+  });
+
   it("fallback unknown type goes to overview", () => {
     expect(classifyWidget(w("1", "unknown_widget_xyz"))).toBe("overview");
   });

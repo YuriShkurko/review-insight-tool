@@ -13,6 +13,14 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   get_top_issues: "Top Issues",
   get_review_insights: "Review Insights",
   get_review_change_summary: "Period Comparison",
+  get_business_health: "Business Health",
+  get_signal_timeline: "Signal Timeline",
+  get_sales_summary: "Sales Summary",
+  get_operations_summary: "Operations Summary",
+  get_local_presence_summary: "Local Presence",
+  get_social_signal_summary: "Social Signals",
+  get_opportunities: "Opportunities",
+  get_action_plan: "Action Plan",
   get_workspace: "Dashboard Widgets",
   remove_widget: "Remove Widget",
   clear_dashboard: "Clear Dashboard",
@@ -51,7 +59,7 @@ export function ChatMessage({
     if (!item.text && !isStreaming) return null;
     return (
       <div className="flex justify-start" data-testid="chat-message" data-message-role="assistant">
-        <div className="max-w-[85%] whitespace-pre-wrap rounded-lg border border-l-2 border-slate-200 border-l-accent/40 bg-white px-3 py-2 text-sm leading-relaxed text-text-primary shadow-sm">
+        <div className="max-w-[85%] whitespace-pre-wrap rounded-lg border border-border border-l-2 border-l-accent/50 bg-surface-card px-3 py-2 text-sm leading-relaxed text-text-primary shadow-sm">
           {item.text}
           {isStreaming && (
             <span className="inline-block w-0.5 h-[1em] bg-text-muted animate-pulse ml-0.5 align-text-bottom" />
@@ -64,7 +72,7 @@ export function ChatMessage({
   if (item.kind === "tool_call") {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[85%] rounded-full border border-slate-200 bg-white px-2.5 py-1 shadow-sm">
+        <div className="max-w-[85%] rounded-full border border-border bg-surface-elevated px-2.5 py-1 shadow-sm">
           <ToolCallIndicator name={item.name} isStreaming={isGlobalStreaming} />
         </div>
       </div>
@@ -78,7 +86,7 @@ export function ChatMessage({
       if (!succeeded && isRecovered) {
         return (
           <div className="flex justify-start">
-            <details className="group max-w-[85%] rounded-full border border-border-subtle bg-surface px-2.5 py-1 text-xs text-text-muted">
+            <details className="group max-w-[85%] rounded-full border border-border-subtle bg-surface px-2.5 py-1 text-xs text-text-secondary">
               <summary className="cursor-pointer list-none">
                 Recovered with a compatible chart type
               </summary>
@@ -94,15 +102,15 @@ export function ChatMessage({
           <details
             className={`max-w-[85%] rounded-full border px-2.5 py-1 text-xs shadow-sm ${
               succeeded
-                ? "border-slate-200 bg-white text-text-muted"
-                : "border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/20"
+                ? "border-border-subtle bg-surface text-text-secondary"
+                : "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
             }`}
           >
             <summary className="cursor-pointer list-none">
               {succeeded ? "Pinned to workspace" : "Pin failed"}
             </summary>
             {!succeeded && (
-              <p className="mt-1 max-w-xs whitespace-pre-wrap pl-1 text-[11px] leading-relaxed">
+              <p className="mt-1 max-w-xs whitespace-pre-wrap pl-1 text-[11px] leading-relaxed text-red-800 dark:text-red-100">
                 {error}
               </p>
             )}
@@ -135,15 +143,15 @@ export function ChatMessage({
           <details
             className={`max-w-[85%] rounded-full border px-2.5 py-1 text-xs shadow-sm ${
               ok
-                ? "border-slate-200 bg-white text-text-muted"
-                : "border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/20"
+                ? "border-border-subtle bg-surface text-text-secondary"
+                : "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
             }`}
           >
             <summary className="cursor-pointer list-none">
               {ok ? label : `${formatToolName(item.name)} failed`}
             </summary>
             {!ok && (
-              <p className="mt-1 max-w-xs whitespace-pre-wrap pl-1 text-[11px] leading-relaxed">
+              <p className="mt-1 max-w-xs whitespace-pre-wrap pl-1 text-[11px] leading-relaxed text-red-800 dark:text-red-100">
                 {(item.result?.error as string) || "The dashboard action did not complete."}
               </p>
             )}
@@ -166,11 +174,11 @@ export function ChatMessage({
     return (
       <div className="flex w-full justify-start" data-testid="chat-tool-result">
         <details
-          className={`group w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm ${
+          className={`group w-full overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm ${
             isChartWidget ? "max-w-xl" : "max-w-sm"
           }`}
         >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 bg-slate-50 px-3 py-2">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 bg-surface-elevated px-3 py-2">
             <span className="min-w-0 truncate text-xs font-medium text-text-secondary">
               {title} preview
             </span>
@@ -181,14 +189,14 @@ export function ChatMessage({
           </summary>
           <div className="border-t border-border-subtle px-3 py-2">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="truncate text-xs text-text-muted">
+              <span className="truncate text-xs text-text-secondary">
                 {widgetType.replace(/_/g, " ")}
               </span>
               <button
                 type="button"
                 data-testid="pin-widget-button"
                 onClick={() => onPin(widgetType, title, item.result)}
-                className="shrink-0 text-xs font-medium text-text-muted transition-colors hover:text-brand"
+                className="shrink-0 text-xs font-medium text-text-secondary transition-colors hover:text-brand"
               >
                 + Dashboard
               </button>

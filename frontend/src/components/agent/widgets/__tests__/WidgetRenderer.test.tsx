@@ -19,6 +19,117 @@ const FIXTURES: Array<[string, Record<string, unknown>, string]> = [
   ["donut_chart", { slices: [{ label: "Positive", value: 8, percent: 80 }] }, "Positive"],
   ["horizontal_bar_chart", { bars: [{ label: "slow service", value: 3 }] }, "slow service"],
   [
+    "health_score",
+    {
+      score: 72,
+      label: "Business Health",
+      confidence: "medium",
+      source: "reviews_and_analysis",
+      sub_scores: [{ id: "reputation", label: "Reputation", score: 84 }],
+      drivers: ["Average rating is 4.20 across 24 reviews."],
+      risks: ["2 complaint themes are present."],
+      opportunities: ["Fix rush-hour wait time."],
+    },
+    "Business Health",
+  ],
+  [
+    "signal_timeline",
+    {
+      period: "past 30 days",
+      summary: "Found 2 timeline signals.",
+      events: [
+        {
+          id: "rating-change",
+          date: "2026-05-01",
+          severity: "critical",
+          title: "Average rating dropped",
+          summary: "Average rating moved from 4.6 to 3.8.",
+          impact: "This is large enough to change customer perception.",
+        },
+      ],
+    },
+    "Average rating dropped",
+  ],
+  [
+    "sales_summary",
+    {
+      label: "Demo Sales Summary",
+      summary: "Demo POS-lite signals show 500 orders.",
+      is_demo: true,
+      source: "demo_sales",
+      confidence: "demo",
+      metrics: [{ label: "Revenue", value: 12000, unit: "USD" }],
+      items: [{ label: "Beer / drinks", value: 52, unit: "%" }],
+      recommendation: "Compare demand spikes with review complaints.",
+    },
+    "Demo signal",
+  ],
+  [
+    "operations_risk",
+    {
+      label: "Demo Operations Risk",
+      summary: "Demo operations signals show 18 minute estimated waits.",
+      metrics: [{ label: "Estimated wait", value: 18, unit: "min" }],
+      recommendation: "Staff the peak window first.",
+    },
+    "Estimated wait",
+  ],
+  [
+    "local_presence_card",
+    {
+      label: "Demo Local Presence",
+      summary: "Demo local presence signals show 2,000 profile views.",
+      metrics: [{ label: "Views", value: 2000, unit: "views" }],
+    },
+    "Demo Local Presence",
+  ],
+  [
+    "social_signal",
+    {
+      label: "Demo Social Signals",
+      summary: "Demo social signals show 55 local mentions.",
+      metrics: [{ label: "Mentions", value: 55, unit: "mentions" }],
+    },
+    "Demo Social Signals",
+  ],
+  [
+    "opportunity_list",
+    {
+      summary: "Prioritized opportunities from review evidence.",
+      opportunities: [
+        {
+          id: "fix-primary-friction",
+          title: "Fix slow wait",
+          evidence: "slow wait appears in analysis.",
+          recommended_action: "Add one more server during rush.",
+          priority: "high",
+          impact: "high",
+          effort: "medium",
+          metric_to_watch: "Low-rating review share",
+        },
+      ],
+    },
+    "Fix slow wait",
+  ],
+  [
+    "action_plan",
+    {
+      summary: "A short action plan for the next operating cycle.",
+      actions: [
+        {
+          id: "fix-primary-friction",
+          rank: 1,
+          issue_or_opportunity: "Fix slow wait",
+          evidence: "slow wait appears in analysis.",
+          recommended_action: "Add one more server during rush.",
+          suggested_owner: "General manager",
+          metric_to_watch: "Low-rating review share",
+        },
+      ],
+    },
+    "General manager",
+  ],
+  [
     "comparison_chart",
     {
       current_period: "this month",
@@ -29,6 +140,19 @@ const FIXTURES: Array<[string, Record<string, unknown>, string]> = [
       count_delta: 2,
     },
     "this month",
+  ],
+  [
+    "money_flow",
+    {
+      revenue: 9000,
+      cogs: 2700,
+      operating_expenses: 3150,
+      net_profit: 3150,
+      currency: "USD",
+      period: "Last 30 days",
+      is_demo: true,
+    },
+    "$9,000",
   ],
 ];
 
@@ -98,6 +222,32 @@ describe("WidgetRenderer supported widget fixtures", () => {
     expect(renderToStaticMarkup(<WidgetRenderer widgetType="bar_chart" data={{}} />)).toContain(
       "No chart data available.",
     );
+  });
+
+  it("money_flow computes gross profit and shows margin", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRenderer
+        widgetType="money_flow"
+        data={{ revenue: 10000, cogs: 3000, operating_expenses: 4000, currency: "USD" }}
+      />,
+    );
+    expect(html).toContain("Gross Profit");
+    expect(html).toContain("Net Profit");
+    expect(html).toContain("70% margin");
+    expect(html).toContain("30% margin");
+    expect(html).not.toContain("Ranking");
+  });
+
+  it("money_flow shows empty state when no revenue", () => {
+    const html = renderToStaticMarkup(<WidgetRenderer widgetType="money_flow" data={{}} />);
+    expect(html).toContain("No financial flow data available.");
+  });
+
+  it("money_flow is not mapped to unsupported widget type", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRenderer widgetType="money_flow" data={{ revenue: 5000 }} />,
+    );
+    expect(html).not.toContain("Unsupported widget type");
   });
 
   it("donut_chart legend shows label, value, and percentage for each slice", () => {

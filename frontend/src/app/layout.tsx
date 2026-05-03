@@ -9,8 +9,8 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Review Insight Tool",
-  description: "Analyze Google Maps reviews with AI-powered insights.",
+  title: "Business Insight",
+  description: "An AI business copilot for local SMBs.",
 };
 
 export default function RootLayout({

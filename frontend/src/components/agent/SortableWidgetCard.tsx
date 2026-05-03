@@ -16,9 +16,37 @@ const FULL_WIDTH_TYPES = new Set([
   "summary_card",
   "insight_list",
   "comparison_card",
+  "money_flow",
 ]);
 
 type WidgetKind = "kpi" | "chart" | "evidence" | "recommendation" | "narrative";
+
+const WIDGET_LABELS: Record<string, string> = {
+  metric_card: "KPI",
+  trend_indicator: "Trend",
+  line_chart: "Time Series",
+  bar_chart: "Bar Chart",
+  pie_chart: "Distribution",
+  donut_chart: "Distribution",
+  horizontal_bar_chart: "Ranking",
+  comparison_chart: "Period Comparison",
+  comparison_card: "Competitor Analysis",
+  health_score: "Health Score",
+  signal_timeline: "Signal Timeline",
+  sales_summary: "Demo · Sales",
+  operations_risk: "Demo · Operations",
+  local_presence_card: "Demo · Local Presence",
+  social_signal: "Demo · Social",
+  opportunity_list: "Opportunities",
+  action_plan: "Action Plan",
+  review_list: "Review Evidence",
+  summary_card: "Summary",
+  insight_list: "Insights",
+  money_flow: "Financial Flow",
+};
+function widgetLabel(widgetType: string): string {
+  return WIDGET_LABELS[widgetType] ?? widgetType.replace(/_/g, " ");
+}
 
 function getWidgetKind(widgetType: string): WidgetKind {
   if (widgetType === "metric_card" || widgetType === "trend_indicator") return "kpi";
@@ -45,32 +73,32 @@ const KIND_STYLES: Record<
   { card: string; header: string; body: string; eyebrow: string }
 > = {
   kpi: {
-    card: "border-brand/20 bg-white shadow-sm",
-    header: "bg-brand-light/40",
+    card: "border-brand/20 bg-surface-card shadow-sm",
+    header: "bg-brand-light/30",
     body: "px-4 py-5",
     eyebrow: "text-brand",
   },
   chart: {
-    card: "border-border-subtle bg-white shadow-sm",
-    header: "bg-white",
+    card: "border-border-subtle bg-surface-card shadow-sm",
+    header: "bg-surface-card",
     body: "p-4 sm:p-5",
-    eyebrow: "text-accent",
+    eyebrow: "text-info",
   },
   evidence: {
-    card: "border-slate-200 bg-slate-50/80 shadow-sm",
-    header: "bg-slate-50/80",
+    card: "border-border-subtle bg-surface shadow-sm",
+    header: "bg-surface",
     body: "p-4",
-    eyebrow: "text-slate-500",
+    eyebrow: "text-text-muted",
   },
   recommendation: {
-    card: "border-amber-200 bg-amber-50/60 shadow-sm",
-    header: "bg-amber-50/70",
+    card: "border-warning/30 bg-warning-soft shadow-sm",
+    header: "bg-warning-soft",
     body: "p-4",
-    eyebrow: "text-amber-700",
+    eyebrow: "text-warning",
   },
   narrative: {
-    card: "border-border-subtle bg-white shadow-sm",
-    header: "bg-white",
+    card: "border-border-subtle bg-surface-card shadow-sm",
+    header: "bg-surface-card",
     body: "p-4",
     eyebrow: "text-text-muted",
   },
@@ -111,7 +139,7 @@ export function SortableWidgetCard({
       data-widget-type={widget.widget_type}
       data-widget-kind={kind}
       data-prominence={prominence}
-      className={`group animate-rise-in overflow-hidden rounded-lg border transition-all duration-200 ${
+      className={`group animate-rise-in overflow-hidden rounded-xl border transition-all duration-200 ${
         styles.card
       } ${isFullWidth || isHero ? "col-span-2" : "col-span-1"} ${
         isHero ? "xl:col-span-4 2xl:col-span-4" : ""
@@ -147,8 +175,8 @@ export function SortableWidgetCard({
           >
             {widget.title}
           </p>
-          <p className={`mt-0.5 text-[11px] capitalize ${styles.eyebrow}`}>
-            {widget.widget_type.replace(/_/g, " ")}
+          <p className={`mt-0.5 text-[11px] ${styles.eyebrow}`}>
+            {widgetLabel(widget.widget_type)}
           </p>
         </div>
 

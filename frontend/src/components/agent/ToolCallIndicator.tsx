@@ -20,7 +20,7 @@ export const TOOL_LABELS: Record<string, string> = {
 
 export function ToolCallIndicator({ name, isStreaming }: { name: string; isStreaming: boolean }) {
   return (
-    <div className="flex items-center gap-2 py-0.5 text-xs text-text-muted">
+    <div className="flex items-center gap-2 py-0.5 text-xs text-text-secondary">
       {isStreaming ? (
         <span className="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border border-brand border-t-transparent" />
       ) : (

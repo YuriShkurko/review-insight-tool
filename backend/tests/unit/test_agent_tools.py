@@ -11,19 +11,30 @@ from app.agent.tools import (
     DATA_TOOL_NAMES,
     TOOL_COMPATIBLE_WIDGETS,
     TOOL_DEFINITIONS,
+    TOOL_WIDGET_TYPES,
     WIDGET_TYPES,
     _clear_dashboard,
     _coerce_pin_widget_arguments,
     _create_custom_chart_data,
     _duplicate_widget,
+    _get_action_plan,
+    _get_business_health,
+    _get_financial_flow,
+    _get_local_presence_summary,
+    _get_operations_summary,
+    _get_opportunities,
     _get_rating_distribution,
     _get_review_change_summary,
     _get_review_insights,
+    _get_sales_summary,
+    _get_signal_timeline,
+    _get_social_signal_summary,
     _get_top_issues,
     _pin_widget,
     _remove_widget,
     execute_tool,
     format_compatibility_for_prompt,
+    pin_rejects_money_flow_bar_masquerade,
 )
 
 # ---------------------------------------------------------------------------
@@ -115,6 +126,32 @@ def _make_sequence_db(review_sets: list[list]) -> MagicMock:
     def _query(model):
         if model.__name__ == "Review":
             return next(iterator)
+        fallback = MagicMock()
+        fallback.filter.return_value = fallback
+        fallback.first.return_value = None
+        fallback.all.return_value = []
+        return fallback
+
+    db.query.side_effect = _query
+    return db
+
+
+def _make_health_db(reviews: list, analysis: MagicMock | None = None) -> MagicMock:
+    db = MagicMock()
+    review_query = MagicMock()
+    review_query.filter.return_value = review_query
+    review_query.order_by.return_value = review_query
+    review_query.all.return_value = reviews
+
+    analysis_query = MagicMock()
+    analysis_query.filter.return_value = analysis_query
+    analysis_query.first.return_value = analysis
+
+    def _query(model):
+        if model.__name__ == "Review":
+            return review_query
+        if model.__name__ == "Analysis":
+            return analysis_query
         fallback = MagicMock()
         fallback.filter.return_value = fallback
         fallback.first.return_value = None
@@ -728,6 +765,300 @@ class TestCompatibilityExposure:
 
 
 # ---------------------------------------------------------------------------
+# money_flow / get_financial_flow routing
+# ---------------------------------------------------------------------------
+
+
+class TestMoneyFlowRouting:
+    def _business(self):
+        b = MagicMock()
+        b.name = "Test Cafe"
+        b.business_type = "cafe"
+        b.address = None
+        b.avg_rating = 4.2
+        b.total_reviews = 20
+        return b
+
+    def test_money_flow_widget_type_registered(self):
+        assert "money_flow" in WIDGET_TYPES
+
+    def test_get_financial_flow_in_data_tool_names(self):
+        assert "get_financial_flow" in DATA_TOOL_NAMES
+
+    def test_get_financial_flow_compatible_with_money_flow(self):
+        assert "money_flow" in TOOL_COMPATIBLE_WIDGETS["get_financial_flow"]
+
+    def test_get_financial_flow_not_in_demo_signal_gate(self):
+        from app.agent.tools import _DEMO_SIGNAL_TOOL_NAMES
+
+        assert "get_financial_flow" not in _DEMO_SIGNAL_TOOL_NAMES, (
+            "get_financial_flow must not be gated by demo signals — it is BI-always-on"
+        )
+
+    def test_get_financial_flow_in_bi_tool_names(self):
+        from app.agent.tools import _BUSINESS_INSIGHT_TOOL_NAMES
+
+        assert "get_financial_flow" in _BUSINESS_INSIGHT_TOOL_NAMES
+
+    def test_system_prompt_has_money_flow_override(self):
+        prompt = build_system_prompt(self._business())
+        assert "get_financial_flow" in prompt
+        assert "money_flow" in prompt
+        assert "MONEY FLOW" in prompt
+
+    def test_system_prompt_forbids_bar_chart_for_money_flow(self):
+        prompt = build_system_prompt(self._business())
+        assert "NOT bar_chart" in prompt or "not bar_chart" in prompt.lower()
+
+    def test_system_prompt_comprehensive_fill_includes_money_flow_and_action_plan(self):
+        prompt = build_system_prompt(self._business())
+        assert "5. Money flow" in prompt and "get_financial_flow" in prompt
+        assert "6. Action plan" in prompt and "get_action_plan" in prompt
+        assert "7. Trend" in prompt
+
+    def test_get_financial_flow_returns_required_fields(self):
+        result = _get_financial_flow(uuid.uuid4())
+        assert "revenue" in result
+        assert "cogs" in result
+        assert "gross_profit" in result
+        assert "operating_expenses" in result
+        assert "net_profit" in result
+        assert result["revenue"] > 0
+        assert result["gross_profit"] == result["revenue"] - result["cogs"]
+        assert result["net_profit"] == result["gross_profit"] - result["operating_expenses"]
+
+    def test_get_financial_flow_active_when_bi_enabled(self):
+        from app.agent.tools import get_active_tool_definitions
+
+        active_names = {t["function"]["name"] for t in get_active_tool_definitions()}
+        assert "get_financial_flow" in active_names, (
+            "get_financial_flow must be active when BUSINESS_INSIGHT_ENABLED=True"
+        )
+
+
+# ---------------------------------------------------------------------------
+# _get_business_health
+# ---------------------------------------------------------------------------
+
+
+class TestBusinessHealth:
+    def test_health_score_uses_reviews_analysis_and_provenance(self):
+        reviews = [
+            _make_review(5, "Great beer", days_ago=2),
+            _make_review(4, "Good service", days_ago=5),
+            _make_review(2, "Slow wait", days_ago=8),
+            _make_review(5, "Nice staff", days_ago=35),
+        ]
+        analysis = MagicMock()
+        analysis.top_complaints = [{"label": "slow wait", "count": 2}]
+        analysis.risk_areas = ["Queue pressure"]
+        analysis.top_praise = [{"label": "beer", "count": 3}]
+        analysis.action_items = ["Add one more server during rush."]
+        analysis.recommended_focus = "Fix rush-hour wait time."
+        db = _make_health_db(reviews, analysis)
+
+        result = _get_business_health(db, uuid.uuid4())
+
+        assert result["label"] == "Business Health"
+        assert 0 <= result["score"] <= 100
+        assert result["source"] == "reviews_and_analysis"
+        assert result["is_demo"] is False
+        assert result["confidence"] == "low"  # fewer than 10 reviews
+        assert {s["id"] for s in result["sub_scores"]} == {
+            "reputation",
+            "customer_experience",
+            "operations_risk",
+            "momentum",
+            "competitive_position",
+            "local_presence",
+        }
+        assert result["drivers"]
+        assert result["risks"]
+        assert result["opportunities"] == ["Fix rush-hour wait time."]
+        assert "connected signals" in result["limitations"][-1]
+
+    def test_health_score_handles_empty_data_honestly(self):
+        result = _get_business_health(_make_health_db([]), uuid.uuid4())
+
+        assert result["score"] < 50
+        assert result["confidence"] == "low"
+        assert result["freshness"] is None
+        assert any("No reviews are loaded" in item for item in result["limitations"])
+        assert any("Run analysis" in item for item in result["limitations"])
+
+    def test_health_tool_registry_is_pinnable(self):
+        assert "get_business_health" in DATA_TOOL_NAMES
+        assert TOOL_WIDGET_TYPES["get_business_health"] == "health_score"
+        assert "health_score" in TOOL_COMPATIBLE_WIDGETS["get_business_health"]
+        rendered = format_compatibility_for_prompt()
+        assert "get_business_health" in rendered
+        assert "health_score" in rendered
+
+
+# ---------------------------------------------------------------------------
+# _get_signal_timeline
+# ---------------------------------------------------------------------------
+
+
+class TestSignalTimeline:
+    def test_signal_timeline_detects_rating_and_theme_shift(self):
+        current = [
+            _make_review(2, "Slow wait and cold beer", days_ago=2),
+            _make_review(2, "Very slow service", days_ago=4),
+            _make_review(4, "Friendly staff", days_ago=6),
+            _make_review(3, "Crowded but okay", days_ago=8),
+        ]
+        previous = [
+            _make_review(5, "Great beer", days_ago=35),
+            _make_review(5, "Excellent atmosphere", days_ago=38),
+            _make_review(4, "Good value", days_ago=40),
+        ]
+
+        result = _get_signal_timeline(
+            _make_sequence_db([current, previous]), uuid.uuid4(), days=30
+        )
+
+        assert result["period"] == "past 30 days"
+        assert result["source"] == "reviews"
+        assert result["is_demo"] is False
+        assert result["events"]
+        event_ids = {event["id"] for event in result["events"]}
+        assert "rating-change" in event_ids
+        assert "top-issue-shift" in event_ids
+        assert "low-rating-evidence" in event_ids
+        assert result["confidence"] in {"low", "medium"}
+
+    def test_signal_timeline_handles_empty_data(self):
+        result = _get_signal_timeline(_make_sequence_db([[], []]), uuid.uuid4(), days=30)
+
+        assert result["events"][0]["id"] == "stable-window"
+        assert result["confidence"] == "low"
+        assert any("No dated reviews" in item for item in result["limitations"])
+
+    def test_signal_timeline_tool_registry_is_pinnable(self):
+        assert "get_signal_timeline" in DATA_TOOL_NAMES
+        assert TOOL_WIDGET_TYPES["get_signal_timeline"] == "signal_timeline"
+        assert "signal_timeline" in TOOL_COMPATIBLE_WIDGETS["get_signal_timeline"]
+        rendered = format_compatibility_for_prompt()
+        assert "get_signal_timeline" in rendered
+        assert "signal_timeline" in rendered
+
+
+# ---------------------------------------------------------------------------
+# Demo multi-signal summaries
+# ---------------------------------------------------------------------------
+
+
+class TestDemoSignalSummaries:
+    def test_demo_signal_summaries_are_deterministic_and_marked_demo(self):
+        business_id = uuid.UUID("00000000-0000-0000-0000-00000000002a")
+
+        sales_1 = _get_sales_summary(business_id)
+        sales_2 = _get_sales_summary(business_id)
+        operations = _get_operations_summary(business_id)
+        local = _get_local_presence_summary(business_id)
+        social = _get_social_signal_summary(business_id)
+
+        assert sales_1["metrics"] == sales_2["metrics"]
+        for result in (sales_1, operations, local, social):
+            assert result["is_demo"] is True
+            assert result["source"].startswith("demo_")
+            assert result["confidence"] == "demo"
+            assert result["metrics"]
+            assert result["items"]
+            assert result["recommendation"]
+            assert "Demo/offline signal" in result["limitations"][0]
+
+    def test_demo_signal_disabled_payload_is_honest(self, monkeypatch):
+        import app.config as config_mod
+
+        monkeypatch.setattr(config_mod.settings, "DEMO_SIGNALS_ENABLED", False)
+
+        result = _get_sales_summary(uuid.uuid4())
+
+        assert result["is_demo"] is False
+        assert result["source"] == "none"
+        assert result["confidence"] == "none"
+        assert result["metrics"] == []
+        assert "DEMO_SIGNALS_ENABLED=true" in result["limitations"][0]
+
+    def test_demo_signal_tools_are_pinnable(self):
+        expected = {
+            "get_sales_summary": "sales_summary",
+            "get_operations_summary": "operations_risk",
+            "get_local_presence_summary": "local_presence_card",
+            "get_social_signal_summary": "social_signal",
+        }
+        for tool_name, widget_type in expected.items():
+            assert tool_name in DATA_TOOL_NAMES
+            assert TOOL_WIDGET_TYPES[tool_name] == widget_type
+            assert widget_type in TOOL_COMPATIBLE_WIDGETS[tool_name]
+
+
+# ---------------------------------------------------------------------------
+# Opportunity and action-plan synthesis
+# ---------------------------------------------------------------------------
+
+
+class TestOpportunityActionPlan:
+    def test_opportunities_mix_review_analysis_and_demo_signals(self):
+        reviews = [
+            _make_review(2, "Slow wait and crowded bar", days_ago=2),
+            _make_review(5, "Great beer list", days_ago=4),
+        ]
+        analysis = MagicMock()
+        analysis.top_complaints = [{"label": "slow wait", "count": 2}]
+        analysis.risk_areas = ["Peak shift pressure"]
+        analysis.top_praise = [{"label": "beer list", "count": 3}]
+        analysis.action_items = ["Add one more server during rush."]
+        analysis.recommended_focus = "Fix rush-hour wait time."
+
+        result = _get_opportunities(_make_health_db(reviews, analysis), uuid.uuid4())
+
+        assert result["opportunities"]
+        assert result["source"] == "reviews_analysis_demo_signals"
+        assert result["is_demo"] is True
+        assert result["confidence"] == "low"
+        titles = {item["title"] for item in result["opportunities"]}
+        assert "Fix slow wait" in titles
+        assert "Promote beer list" in titles
+        assert any(item["source"].startswith("demo_") for item in result["opportunities"])
+        assert any("demo" in item.lower() for item in result["limitations"])
+
+    def test_action_plan_converts_opportunities_to_owner_metric_actions(self):
+        reviews = [_make_review(2, "Slow wait", days_ago=1)]
+        analysis = MagicMock()
+        analysis.top_complaints = [{"label": "slow wait", "count": 1}]
+        analysis.risk_areas = ["Peak shift pressure"]
+        analysis.top_praise = []
+        analysis.action_items = ["Add one more server during rush."]
+        analysis.recommended_focus = "Fix rush-hour wait time."
+
+        result = _get_action_plan(_make_health_db(reviews, analysis), uuid.uuid4())
+
+        assert result["actions"]
+        first = result["actions"][0]
+        assert first["rank"] == 1
+        assert first["issue_or_opportunity"] == "Fix slow wait"
+        assert first["suggested_owner"] == "General manager"
+        assert first["metric_to_watch"]
+        assert result["weekly_priorities"]
+
+    def test_opportunity_and_action_tools_are_pinnable(self):
+        expected = {
+            "get_opportunities": "opportunity_list",
+            "get_action_plan": "action_plan",
+        }
+        for tool_name, widget_type in expected.items():
+            assert tool_name in DATA_TOOL_NAMES
+            assert TOOL_WIDGET_TYPES[tool_name] == widget_type
+            assert widget_type in TOOL_COMPATIBLE_WIDGETS[tool_name]
+        rendered = format_compatibility_for_prompt()
+        assert "get_action_plan" in rendered
+        assert "action_plan" in rendered
+
+
+# ---------------------------------------------------------------------------
 # _create_custom_chart_data validation
 # ---------------------------------------------------------------------------
 
@@ -858,6 +1189,60 @@ class TestCreateCustomChartData:
             }
         )
         assert "error" in result
+
+
+class TestMoneyFlowIntercept:
+    def test_profit_bridge_labels_return_redirect_error(self):
+        result = _create_custom_chart_data(
+            {
+                "widget_type": "horizontal_bar_chart",
+                "labels": ["Revenue", "COGS", "Gross Profit", "Operating Expenses", "Net Profit"],
+                "values": [100.0, 40.0, 60.0, 25.0, 35.0],
+                "source_summary": "Composed from hypothetical P&L segments.",
+            }
+        )
+        assert result.get("error") == "money_flow_redirect"
+        assert result.get("redirect_tool") == "get_financial_flow"
+        assert result.get("redirect_widget_type") == "money_flow"
+
+    def test_only_two_money_keywords_does_not_redirect(self):
+        result = _create_custom_chart_data(
+            {
+                "widget_type": "horizontal_bar_chart",
+                "labels": ["Revenue", "COGS", "Other"],
+                "values": [10.0, 4.0, 1.0],
+                "source_summary": "Manual roll-up.",
+            }
+        )
+        assert "error" not in result
+        assert result["widget_type"] == "horizontal_bar_chart"
+
+    def test_pin_rejects_masquerade_from_cached_payload(self):
+        payload = {
+            "widget_type": "horizontal_bar_chart",
+            "labels": ["revenue", "cogs", "gross profit", "net profit"],
+            "values": [1, 1, 1, 1],
+            "bars": [{"label": "revenue", "value": 1}, {"label": "cogs", "value": 1}],
+            "source_summary": "x",
+        }
+        block = pin_rejects_money_flow_bar_masquerade(
+            "create_custom_chart_data", "horizontal_bar_chart", payload
+        )
+        assert block is not None
+        assert block["pinned"] is False
+        assert "money_flow" in block["error"].lower() or "profit" in block["error"].lower()
+
+    def test_pin_rejects_skips_non_custom_source(self):
+        payload = {
+            "labels": ["Revenue", "COGS", "Gross Profit", "Operating Expenses", "Net Profit"],
+            "values": [1, 1, 1, 1, 1],
+        }
+        assert (
+            pin_rejects_money_flow_bar_masquerade(
+                "get_top_issues", "horizontal_bar_chart", payload
+            )
+            is None
+        )
 
 
 # ---------------------------------------------------------------------------

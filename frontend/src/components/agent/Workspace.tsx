@@ -94,8 +94,8 @@ export function Workspace({
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#f6f7fb]">
-        <div className="rounded-lg border border-border-subtle bg-white px-4 py-3 text-sm text-text-secondary shadow-sm">
+      <div className="flex h-full items-center justify-center bg-surface">
+        <div className="rounded-lg border border-border bg-surface-card px-4 py-3 text-sm text-text-secondary shadow-sm">
           <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent align-[-2px]" />
           Preparing workspace
         </div>
@@ -105,7 +105,7 @@ export function Workspace({
 
   if (error && ordered.length === 0) {
     return (
-      <div className="flex h-full flex-col overflow-hidden bg-[#f6f7fb]">
+      <div className="flex h-full flex-col overflow-hidden bg-surface">
         <div className="shrink-0 px-5 pb-2 pt-4">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-text-secondary">
             Dashboard
@@ -114,7 +114,7 @@ export function Workspace({
         <div className="flex flex-1 items-center justify-center px-4">
           <div
             data-testid="workspace-error-banner"
-            className="max-w-sm rounded-lg border border-red-200 bg-white px-8 py-10 text-center shadow-sm"
+            className="max-w-sm rounded-lg border border-red-200 bg-surface-card px-8 py-10 text-center shadow-sm dark:border-red-900/50 dark:bg-surface-elevated"
           >
             <p className="text-sm font-medium text-red-700">{error}</p>
             <div className="mt-4 flex items-center justify-center gap-3">
@@ -144,16 +144,75 @@ export function Workspace({
     );
   }
 
+  // Presentation mode: compact report layout — no drag handles, no empty section bodies.
+  if (presentationMode && ordered.length > 0) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-surface">
+        <div className="flex shrink-0 items-center justify-between border-b border-border bg-surface-card/95 px-5 py-3 backdrop-blur">
+          <div className="flex items-center gap-2.5">
+            <span
+              data-testid="presentation-mode-badge"
+              className="rounded-full border border-warning/30 bg-warning-soft px-2.5 py-0.5 text-xs font-medium text-warning dark:border-amber-400/25 dark:bg-amber-950/40 dark:text-amber-200"
+            >
+              Presentation
+            </span>
+            <span className="text-xs text-text-muted">
+              {ordered.length} widget{ordered.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {scrollHeader}
+          <div className="px-4 py-4">
+            {SECTIONS.map((sectionId) => {
+              const sectionWidgets = grouped[sectionId];
+              if (sectionWidgets.length === 0) return null;
+              const cols =
+                sectionWidgets.length === 1
+                  ? "grid-cols-1"
+                  : sectionWidgets.length === 2
+                    ? "grid-cols-2"
+                    : "grid-cols-2 xl:grid-cols-3";
+              return (
+                <div
+                  key={sectionId}
+                  data-testid={`workspace-section-${sectionId}`}
+                  className="mb-4"
+                >
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+                    {SECTION_LABELS[sectionId]}
+                  </p>
+                  <div className={`grid gap-3 ${cols}`}>
+                    {sectionWidgets.map((widget) => (
+                      <SortableWidgetCard
+                        key={widget.id}
+                        widget={widget}
+                        onDelete={onDelete}
+                        prominence="standard"
+                        readOnly={true}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#f6f7fb]">
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/85 px-5 py-4 backdrop-blur">
+    <div className="flex h-full flex-col overflow-hidden bg-surface">
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-surface-card/95 px-5 py-4 backdrop-blur">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-brand">
             Analytics canvas
           </p>
           <h2 className="mt-0.5 text-lg font-semibold text-text-primary">Dashboard</h2>
           <p className="mt-0.5 text-xs text-text-muted">
-            Story-driven review intelligence, organized for presentation.
+            Story-driven business insight, organized for presentation.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -166,23 +225,15 @@ export function Workspace({
               className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
                 justOrganized
                   ? "cursor-default border-brand/30 bg-brand/10 text-brand"
-                  : "border-slate-200 bg-white text-text-secondary shadow-sm hover:-translate-y-0.5 hover:border-brand/30 hover:text-text-primary"
+                  : "border-border bg-surface-card text-text-secondary shadow-sm hover:-translate-y-0.5 hover:border-brand/30 hover:text-text-primary"
               }`}
             >
               {justOrganized ? "Organized" : "Clean layout"}
             </button>
           )}
           {ordered.length > 0 && (
-            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-text-muted shadow-sm">
+            <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-text-muted shadow-sm">
               {ordered.length} widget{ordered.length !== 1 ? "s" : ""}
-            </span>
-          )}
-          {presentationMode && (
-            <span
-              data-testid="presentation-mode-badge"
-              className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 shadow-sm"
-            >
-              Presentation mode
             </span>
           )}
         </div>
@@ -192,7 +243,7 @@ export function Workspace({
         {scrollHeader}
         <div className="px-5 py-5">
           {error && ordered.length > 0 && (
-            <div className="mb-3 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs text-red-700 shadow-sm">
+            <div className="mb-3 rounded-lg border border-red-200 bg-surface-card px-3 py-2 text-xs text-red-700 shadow-sm dark:border-red-900/50 dark:bg-surface-elevated dark:text-red-200">
               <div className="flex items-center justify-between gap-3">
                 <span>{error}</span>
                 <div className="flex shrink-0 items-center gap-3">
@@ -224,12 +275,12 @@ export function Workspace({
             <div className="flex h-full items-center justify-center">
               <div
                 data-testid="workspace-empty-state"
-                className="max-w-sm rounded-lg border border-dashed border-slate-300 bg-white px-8 py-12 text-center shadow-sm"
+                className="max-w-sm rounded-lg border border-dashed border-border bg-surface-card px-8 py-12 text-center shadow-sm"
               >
                 <div className="mx-auto mb-3 h-8 w-8 rounded-lg bg-brand-light" />
                 <p className="text-sm font-semibold text-text-primary">No pinned insights yet</p>
                 <p className="mt-1 text-xs leading-relaxed text-text-muted">
-                  Ask the AI a question, then tap{" "}
+                  Ask the business copilot a question, then tap{" "}
                   <span className="font-medium text-brand">+ Dashboard</span> to pin results here.
                 </p>
               </div>
@@ -256,8 +307,8 @@ export function Workspace({
                       data-testid={`workspace-section-${sectionId}`}
                       className={`animate-rise-in rounded-lg border px-4 py-5 ${
                         isHeroSection
-                          ? "border-slate-200 bg-white shadow-sm"
-                          : "border-slate-200/80 bg-white/70"
+                          ? "border-border bg-surface-card shadow-sm"
+                          : "border-border/80 bg-surface-elevated/90"
                       }`}
                     >
                       <div className="mb-4 flex items-start justify-between gap-3">
@@ -272,7 +323,7 @@ export function Workspace({
                             {SECTION_DESCRIPTIONS[sectionId]}
                           </p>
                         </div>
-                        <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-text-muted">
+                        <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs text-text-muted">
                           {sectionWidgets.length}
                         </span>
                       </div>
@@ -290,7 +341,7 @@ export function Workspace({
                               widget={hero}
                               onDelete={onDelete}
                               prominence="hero"
-                              readOnly={presentationMode}
+                              readOnly={false}
                             />
                           </div>
                         )}
@@ -305,7 +356,7 @@ export function Workspace({
                                 widget={widget}
                                 onDelete={onDelete}
                                 prominence="standard"
-                                readOnly={presentationMode}
+                                readOnly={false}
                               />
                             ))}
                           </div>

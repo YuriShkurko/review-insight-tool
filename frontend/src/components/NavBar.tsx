@@ -83,7 +83,7 @@ export default function NavBar() {
     <nav className="bg-surface-card border-b border-border">
       <div className="max-w-screen-xl mx-auto px-4 h-12 flex items-center justify-between">
         <Link href="/businesses" className="font-semibold text-base text-text-primary">
-          Review Insight
+          Business Insight
         </Link>
         <div className="flex items-center gap-3 text-sm">
           <ThemeToggle />

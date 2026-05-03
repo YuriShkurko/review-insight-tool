@@ -1,6 +1,6 @@
-# Review Insight Tool — Backend
+# Business Insight - Backend
 
-FastAPI backend that fetches Google Maps reviews, stores them in PostgreSQL, and generates AI-powered insights using OpenAI. Supports mock, offline sandbox, and live review providers.
+FastAPI backend for the Business Insight SMB copilot. It starts by fetching Google Maps reviews, stores them in PostgreSQL, and generates AI-powered business insights using OpenAI. Supports mock, offline sandbox, simulation, and live review providers.
 
 ## Quick Start
 

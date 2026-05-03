@@ -108,7 +108,7 @@ describe("ChatMessage pin_widget tool_result branch", () => {
     const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
     expect(html).toContain("Pin failed");
     expect(html).toContain("Failed to pin widget");
-    expect(html).toContain("text-red-600");
+    expect(html).toContain("text-red-700");
     expect(html).not.toContain("Pinned to workspace");
   });
 
@@ -122,7 +122,7 @@ describe("ChatMessage pin_widget tool_result branch", () => {
     };
     const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
     expect(html).toContain("Unknown widget_type");
-    expect(html).toContain("text-red-600");
+    expect(html).toContain("text-red-700");
   });
 
   it("collapses recovered pin failures into a muted note", () => {
@@ -151,6 +151,34 @@ describe("ChatMessage pin_widget tool_result branch", () => {
     const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
     expect(html).toContain("Dashboard order updated");
     expect(html).not.toContain("&quot;widget_ids&quot;");
+  });
+});
+
+describe("ChatMessage semantic surfaces (dark mode)", () => {
+  it("assistant bubble uses surface-card not bg-white", () => {
+    const item: MessageItem = {
+      id: "a1",
+      kind: "assistant_text",
+      text: "Hello",
+    };
+    const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
+    expect(html).toContain("bg-surface-card");
+    expect(html).not.toContain("bg-white");
+  });
+
+  it("widget preview card uses semantic border and surface", () => {
+    const item: MessageItem = {
+      id: "tr4b",
+      kind: "tool_result",
+      name: "get_rating_distribution",
+      widgetType: "donut_chart",
+      result: { slices: [{ label: "5 star", value: 4, percent: 80 }] },
+    };
+    const html = renderToStaticMarkup(<ChatMessage item={item} isStreaming={false} onPin={noop} />);
+    expect(html).toContain("border-border");
+    expect(html).toContain("bg-surface-card");
+    expect(html).not.toContain("bg-white");
+    expect(html).not.toContain("border-slate-200");
   });
 });
 

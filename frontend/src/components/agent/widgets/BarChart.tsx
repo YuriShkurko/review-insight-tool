@@ -44,7 +44,7 @@ export function BarChart({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="space-y-2">
-      <div className="h-32 w-full rounded-lg border border-border-subtle bg-gradient-to-b from-surface-card to-surface px-2 pt-2 pb-1">
+      <div className="h-32 w-full rounded-xl border border-border-subtle bg-gradient-to-b from-surface-card to-surface px-2 pt-2 pb-1">
         <svg
           viewBox={`0 0 ${chartW} ${chartH}`}
           className="h-full w-full"

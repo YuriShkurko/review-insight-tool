@@ -5,7 +5,7 @@ focused implementation phase first.
 
 ## Current Baseline
 
-Review Insight already has the core agentic dashboard foundation:
+Business Insight already has the core agentic dashboard foundation:
 
 - sectioned analytics canvas on the business detail page
 - executive summary band
@@ -147,7 +147,7 @@ and add only harmless test IDs if needed for upcoming Playwright coverage.
 
 ### Goal
 
-Turn `/businesses` from a plain list into a premium review intelligence
+Turn `/businesses` from a plain list into a premium business insight
 workspace launcher.
 
 ### User/Demo Value
@@ -161,7 +161,7 @@ business obvious and explain the offline demo story without verbal setup.
 - Replace the narrow list layout with a full-width launcher shell that matches
   the dashboard visual language.
 - Add a top hero band with:
-  - "Your review intelligence workspaces" framing
+  - "Your business insight workspaces" framing
   - short product context
   - primary action area for add/import or offline sample mode
   - small trust/status indicators such as offline mode, sample catalog, and

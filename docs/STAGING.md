@@ -1,6 +1,6 @@
 # Staging / demo deployment (Railway)
 
-This document describes a **manual** way to run Review Insight Tool on [Railway](https://railway.app) for staging or demos. It does **not** set up CI/CD or automated deploys.
+This document describes a **manual** way to run Business Insight on [Railway](https://railway.app) for staging or demos. It does **not** set up CI/CD or automated deploys.
 
 ## Why Railway (recommended for solo projects)
 

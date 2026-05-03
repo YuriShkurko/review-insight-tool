@@ -1,65 +1,265 @@
----
+Next task: create a new Scribe plan artifact for the remaining Business Insight UI/product behavior fixes.
 
-Codex report - CI/local parity after Playwright E2E
+Important:
+DO NOT IMPLEMENT ANY CODE CHANGES.
+This is planning only.
 
-Implemented CI/local parity improvements.
+Do not edit frontend/backend source files.
+Do not modify tests.
+Do not change package files.
+Do not run formatters.
+Do not fix the bugs yet.
 
-1. CI/Local Mismatch Found
-- CI did not run Playwright E2E.
-- `make validate` matched only non-browser CI, but README wording did not make the separate E2E lane clear enough.
-- Frontend Prettier checks did not cover `frontend/e2e/**` or `playwright.config.ts`.
-- Local `make test-e2e-servers` inherited `DATABASE_URL` from `backend/.env`; in this workspace that pointed at Railway. Fixed so E2E defaults to local Postgres and does not use a real OpenAI key from `.env`.
+The only allowed output/change is:
+- create a new Scribe plan artifact
+- if Scribe is unavailable, create/update the repo fallback planning document and report the path
 
-2. Targets/Scripts Changed
-- Added `make quick`: `lint` + backend unit tests.
-- Clarified `make validate` / `make ci-local`: non-browser CI mirror.
-- Hardened `make test-e2e-servers`:
-  - `E2E_DATABASE_URL ?= postgresql://postgres:postgres@localhost:5432/review_insight`
-  - `E2E_OPENAI_API_KEY ?= change-me-e2e`
-  - backend config clears that placeholder, confirmed with `False scripted True mock`.
-- Expanded frontend Prettier scripts to include `e2e/**/*` and `playwright.config.ts`.
+Goal:
+Create a concrete implementation plan for fixing three remaining visible issues:
+1. money_flow still renders as generic Ranking / horizontal bar
+2. presentation mode is cleaner but still feels sparse/empty and the default generated dashboard is dull
+3. /businesses dark mode has invisible or near-invisible business card text
 
-3. Playwright In CI
-Yes. Added a dedicated `playwright` job in `.github/workflows/ci.yml`:
-- Needs backend/frontend jobs.
-- Starts Postgres 16 service.
-- Installs backend/frontend deps.
-- Caches `~/.cache/ms-playwright`.
-- Installs Chromium with deps.
-- Runs Alembic migrations.
-- Starts backend with `TESTING=true`, `LLM_PROVIDER=scripted`, `REVIEW_PROVIDER=mock`, `OPENAI_API_KEY=""`.
-- Starts frontend with `NEXT_PUBLIC_API_URL=http://localhost:8000`.
-- Runs `npm run test:e2e`.
-- Uploads Playwright reports, test results, and server logs on failure.
+Context:
+The previous implementation reports claimed fixes, but screenshots show the product behavior is still wrong:
+- money flow requests still create “Financial Flow Overview” or “Money Flow Overview” with eyebrow “Ranking”
+- the visible widget is still horizontal bars for Revenue, COGS, Gross Profit, Operating Expenses, Net Profit
+- presentation mode has less edit chrome, but still has lots of empty space and low-density content
+- the ready/default dashboard does not reliably use the strongest Business Insight widgets
+- /businesses dark mode makes business card data disappear because of text contrast/token issues
 
-4. README Updates
-Added a clear Before Push section:
-- `make quick`
-- `make validate`
-- optional/local E2E via `make test-e2e-servers` + `make test-e2e-ui`
+This plan must be grounded in the repo, not generic advice.
 
-Also updated the Playwright and CI sections to say E2E now runs in CI, and documented local E2E DB/key safety.
+Planning workflow:
+1. Read CLAUDE.md and follow repo workflow.
+2. Use locus/scan_project to inspect:
+   - backend/app/agent/tools.py
+   - backend/app/agent/executor.py
+   - backend/app/agent/system_prompt.py
+   - widget type compatibility / TOOL_WIDGET_TYPES / WIDGET_TYPES / DATA_TOOL_NAMES
+   - get_financial_flow
+   - pin_widget
+   - create_custom_chart_data
+   - frontend WidgetRenderer
+   - MoneyFlow renderer
+   - workspace blackboard event handling
+   - DB/widget persistence model/schema
+   - dashboard section classification
+   - SuggestedPrompts / quick actions / build demo dashboard prompt
+   - /businesses page
+   - BusinessCard dark mode styling
+   - presentation mode layout
+   - existing tests around agent tools, widgets, business launcher, presentation mode
+3. Use locus/get_impact for the likely files that would be touched later.
+4. Create a new Scribe plan artifact, not just a note.
+5. Stop after saving the plan artifact.
 
-5. Verification Output
-`make validate` passed:
-- Ruff check: passed
-- Ruff format: `102 files already formatted`
-- ESLint: passed
-- Prettier: `All matched files use Prettier code style!`
-- Backend unit tests: `248 passed in 13.02s`
-- Backend integration tests: `46 passed in 21.97s`
-- Next build: compiled successfully
-- Final: `✓ validate complete.`
+Scribe artifact requirements:
+Create a structured Scribe plan/spec artifact.
 
-`npm.cmd run test:e2e` passed:
-- `Running 7 tests using 1 worker`
-- `7 passed (35.2s)`
+Suggested title:
+Remaining Business Insight demo behavior fixes
 
-Also ran:
-- `git diff --check`: clean
-- local E2E config check: `False scripted True mock`
+Suggested type:
+Plan / implementation plan / spec, whichever Scribe supports best.
 
-6. Remaining Limitations
-- CI Playwright has not run on GitHub yet; YAML is implemented locally but needs the next push/PR to prove the hosted runner path.
-- Local Playwright still expects a disposable Postgres at `E2E_DATABASE_URL`; I stopped the Docker DB after verification.
-- Mobile Playwright coverage, drag/drop reorder, and streaming-mid-cancel remain out of scope for this task.
+Suggested status:
+Planned / not started.
+
+Purpose:
+Plan the final visible behavior fixes before the next implementation pass.
+
+Out of scope:
+- no implementation in this task
+- no broad redesign
+- no unrelated agent intelligence
+- no AWS
+- no SSL
+- no Grafana
+- no soak testing
+- no chart library migration unless the plan proves it is necessary
+
+The plan artifact must include the following sections:
+
+1. Current visible failures
+
+Document the current screenshot-level failures:
+- money_flow still appears as Ranking / horizontal bar
+- agent still uses generic financial bars instead of MoneyFlow / Profit Bridge
+- presentation mode still feels sparse/empty
+- default generated dashboard is dull and not Business Insight focused enough
+- /businesses dark mode has unreadable/invisible card text
+
+2. Investigation plan for money_flow
+
+Plan how to trace the full live path:
+1. user prompt
+2. LLM/tool calls
+3. get_financial_flow output
+4. pin_widget arguments
+5. source_tool
+6. widget_type requested
+7. _coerce_pin_widget_arguments result
+8. stored widget row/payload
+9. SSE workspace_event payload
+10. frontend reducer/blackboard payload
+11. WidgetRenderer branch
+12. final component rendered
+
+The plan must explicitly say that success requires proving:
+- stored widget has widget_type: money_flow
+- source_tool is get_financial_flow
+- WidgetRenderer renders MoneyFlow
+- visible eyebrow says Money Flow / Profit Bridge, not Ranking
+
+3. Planned money_flow fix
+
+Plan possible fixes depending on what investigation finds:
+- get_financial_flow compatibility with money_flow
+- pin_widget validation/coercion behavior
+- TOOL_WIDGET_TYPES / WIDGET_TYPES / DATA_TOOL_NAMES changes
+- preventing generic horizontal_bar_chart/ranking for financial-flow intent
+- create_custom_chart_data restrictions for money-flow prompts
+- WidgetRenderer mapping
+- MoneyFlow payload normalization
+- system prompt/tool description updates only as supporting changes, not the main proof
+
+Acceptance criteria:
+- manual prompt “show me how money flows in the business” creates a MoneyFlow / Profit Bridge widget
+- manual prompt “show me the profit bridge” does the same
+- manual prompt mentioning get_financial_flow does not create Ranking
+- widget does not say Ranking
+- refresh preserves it
+
+Tests to plan:
+- backend unit: get_financial_flow can pin money_flow
+- backend integration/scripted provider: money-flow prompt pins widget_type=money_flow
+- frontend unit: WidgetRenderer renders MoneyFlow for money_flow
+- frontend unit: money_flow does not display Ranking
+- Playwright if feasible: money-flow prompt creates MoneyFlow/Profit Bridge
+
+4. Investigation plan for default dashboard / presentation sparsity
+
+Plan how to inspect:
+- quick action prompts
+- SuggestedPrompts
+- system_prompt dashboard-building guidance
+- scripted provider fixtures if any
+- dashboard section classifier
+- presentation mode layout
+- default generated widget set
+- widget density and section packing
+
+5. Planned default dashboard / presentation improvements
+
+Plan changes so the default demo dashboard becomes Business Insight focused.
+
+Recommended default composition:
+1. Business Health Score
+2. Review Trend / Momentum
+3. Top Issues
+4. Signal Timeline
+5. Money Flow / Profit Bridge
+6. Action Plan
+7. Recent Reviews / Evidence only if useful and compact
+
+Plan should address:
+- how to update ready prompt / quick action guidance
+- how to prevent duplicate/generic low-value charts
+- how presentation mode should prioritize dense report-like layout
+- how single-widget sections should avoid giant empty spaces
+- how evidence/reviews should be compact and lower priority
+- how action plan should remain readable
+
+Acceptance criteria:
+- fresh demo dashboard feels business-oriented, not only review-oriented
+- presentation mode looks denser and more report-like
+- MoneyFlow appears when business/demo signals are available
+- no huge blank section bodies
+- no duplicate generic financial bars
+
+Tests to plan:
+- prompt/system prompt test for Business Insight default dashboard guidance
+- scripted provider/agent fixture update if available
+- Playwright presentation/dashboard test if feasible
+
+6. Investigation plan for /businesses dark mode contrast
+
+Plan how to inspect:
+- /businesses page root/theme classes
+- BusinessCard
+- text token usage
+- rating/review stat boxes
+- demo-ready box
+- recommended chip
+- delete/open buttons
+- icons
+- hover/focus/selected states
+
+7. Planned /businesses dark mode fix
+
+Plan changes:
+- replace light-mode-only text utilities with semantic text tokens or dark variants
+- ensure title, rating, reviews, updated text, delete, chip, demo-ready, and icons are readable
+- avoid text-white on white/light cards or muted text with too-low opacity
+- preserve light mode appearance
+
+Acceptance criteria:
+- /businesses cards readable in dark mode
+- rating/review values visible
+- business title visible
+- labels visible
+- demo-ready panel visible
+- buttons/chips/icons visible
+
+Tests to plan:
+- component/class tests if existing pattern supports it
+- manual screenshot check required
+
+8. Files likely to change during implementation
+
+List likely files after inspection, grouped by:
+- backend agent/tool files
+- frontend widget/rendering files
+- dashboard/presentation files
+- /businesses files
+- tests
+- docs/Scribe
+
+9. Risks and tradeoffs
+
+Include:
+- LLM may still choose wrong tool unless backend validation enforces widget compatibility
+- coercing widget types can hide bad agent behavior if not logged/tested
+- presentation mode can diverge too far from edit mode
+- dark mode token fixes may affect light mode
+- tests may pass while visual behavior remains wrong, so manual screenshot checks are required
+
+10. Validation plan for implementation phase
+
+Include:
+- backend agent/tool tests
+- frontend widget tests
+- /businesses dark mode checks
+- Playwright dashboard/presentation/money-flow if feasible
+- typecheck/lint/prettier
+- make validate if feasible
+- required manual screenshot verification
+
+11. Final implementation prompt draft
+
+Include a short draft prompt for the next implementation step, based on this plan.
+
+Important:
+The plan artifact must explicitly say that implementation is deferred and no code was changed in this planning task.
+
+After creating the Scribe plan artifact:
+Return only:
+1. Scribe artifact id/name/link if available
+2. artifact title
+3. artifact status
+4. short summary of the plan
+5. recommended first implementation step
+6. likely files to change
+7. risks/unknowns
+8. confirmation that no source implementation was done

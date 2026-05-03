@@ -18,6 +18,7 @@ from app.agent.tools import (
     TOOL_WIDGET_TYPES,
     execute_tool,
     get_active_tool_definitions,
+    pin_rejects_money_flow_bar_masquerade,
 )
 from app.llm import get_llm_provider
 from app.models.business import Business
@@ -277,6 +278,40 @@ async def run_agent(
                             "allowed_widget_types": sorted(compatible),
                             "available_source_tools": available_sources,
                         }
+                        widget_type_hint = TOOL_WIDGET_TYPES.get(tc.name)
+                        yield _sse(
+                            "tool_result",
+                            {"name": tc.name, "widget_type": widget_type_hint, "result": result},
+                        )
+                        tool_msg = {
+                            "role": "tool",
+                            "tool_call_id": tc.id,
+                            "content": json.dumps(result),
+                        }
+                        history.append(tool_msg)
+                        new_messages.append(tool_msg)
+                        failed_pin_attempts += 1
+                        if failed_pin_attempts >= MAX_FAILED_PIN_ATTEMPTS:
+                            abort_reason = _pin_abort_reason()
+                            break
+                        continue
+
+                    probe_payload = args.get("data")
+                    if not isinstance(probe_payload, dict) or len(probe_payload) == 0:
+                        probe_payload = None
+                        if isinstance(requested_source, str) and requested_source in tool_results:
+                            cand = tool_results[requested_source]
+                            if isinstance(cand, dict) and len(cand) > 0:
+                                probe_payload = cand
+                    pin_mf_block = pin_rejects_money_flow_bar_masquerade(
+                        requested_source if isinstance(requested_source, str) else None,
+                        requested_widget,
+                        probe_payload,
+                    )
+                    if pin_mf_block is not None:
+                        available_sources = sorted(tool_results.keys())
+                        pin_mf_block["available_source_tools"] = available_sources
+                        result = pin_mf_block
                         widget_type_hint = TOOL_WIDGET_TYPES.get(tc.name)
                         yield _sse(
                             "tool_result",

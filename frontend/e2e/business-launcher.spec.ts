@@ -136,7 +136,7 @@ test.describe("business launcher", () => {
 
     await expect(page.getByTestId("business-launcher")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Your review intelligence workspaces" }),
+      page.getByRole("heading", { name: "Your business insight workspaces" }),
     ).toBeVisible();
 
     const firstTile = page.getByTestId("business-tile").first();

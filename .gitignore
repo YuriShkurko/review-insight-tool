@@ -4,6 +4,8 @@ __pycache__/
 *.egg-info/
 venv/
 .venv/
+.pytest_cache/
+backend/tmp_pytest_run/
 
 # Environment
 .env

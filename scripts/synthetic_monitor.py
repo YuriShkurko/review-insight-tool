@@ -39,6 +39,7 @@ STEP_DEPENDENCIES: dict[str, list[str]] = {
 STEP_TIMEOUTS_SECONDS: dict[str, int] = {
     "analyze": 180,
     "analyze_competitor": 180,
+    "comparison_cold": 180,
 }
 
 
@@ -255,12 +256,14 @@ class SyntheticMonitor:
         return comp_biz_id
 
     def check_comparison(self, biz_id: str, label: str = "comparison") -> bool:
+        timeout = STEP_TIMEOUTS_SECONDS.get(label)
         r = self._timed(
             label,
             lambda: self._check(
                 self.client.post(
                     f"/businesses/{biz_id}/competitors/comparison",
                     headers=self._headers(),
+                    **({"timeout": timeout} if timeout is not None else {}),
                 ),
                 200,
             ),

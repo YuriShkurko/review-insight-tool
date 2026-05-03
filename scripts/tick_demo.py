@@ -545,17 +545,23 @@ def main() -> None:
             print(f"  -> business not found, skipping fetch/analyze", flush=True)
             continue
 
-        r = client.post(f"/api/businesses/{biz_id}/fetch-reviews", headers=headers)
-        if r.status_code == 200:
-            print(f"  -> fetch-reviews ok", flush=True)
-        else:
-            print(f"  -> fetch-reviews {r.status_code}: {r.text[:80]}", flush=True)
+        try:
+            r = client.post(f"/api/businesses/{biz_id}/fetch-reviews", headers=headers)
+            if r.status_code == 200:
+                print(f"  -> fetch-reviews ok", flush=True)
+            else:
+                print(f"  -> fetch-reviews {r.status_code}: {r.text[:80]}", flush=True)
+        except Exception as exc:
+            print(f"  -> fetch-reviews error: {exc}", flush=True)
 
-        r = client.post(f"/api/businesses/{biz_id}/analyze", headers=headers)
-        if r.status_code == 200:
-            print(f"  -> analyze ok", flush=True)
-        else:
-            print(f"  -> analyze skipped: {r.status_code} {r.text[:80]}", flush=True)
+        try:
+            r = client.post(f"/api/businesses/{biz_id}/analyze", headers=headers, timeout=180)
+            if r.status_code == 200:
+                print(f"  -> analyze ok", flush=True)
+            else:
+                print(f"  -> analyze skipped: {r.status_code} {r.text[:80]}", flush=True)
+        except Exception as exc:
+            print(f"  -> analyze error: {exc}", flush=True)
 
     print(f"\n{tag}Tick complete.", flush=True)
 

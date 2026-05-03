@@ -1,0 +1,14 @@
+[
+  {
+    "text": "",
+    "tool_calls": [{"name": "get_opportunities", "arguments": {}}]
+  },
+  {
+    "text": "",
+    "tool_calls": [{"name": "pin_widget", "arguments": {"widget_type": "opportunity_list", "title": "Opportunities", "source_tool": "get_opportunities"}}]
+  },
+  {
+    "text": "Pinned your top opportunities to the dashboard.",
+    "tool_calls": []
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "text": "",
+    "tool_calls": [{"name": "get_sales_summary", "arguments": {}}]
+  },
+  {
+    "text": "",
+    "tool_calls": [{"name": "pin_widget", "arguments": {"widget_type": "sales_summary", "title": "Sales Summary", "source_tool": "get_sales_summary"}}]
+  },
+  {
+    "text": "Added the sales summary to your dashboard.",
+    "tool_calls": []
+  }
+]

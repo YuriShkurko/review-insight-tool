@@ -15,9 +15,9 @@ from app.agent.guardrails import Intent, classify_intent
 from app.agent.system_prompt import build_system_prompt
 from app.agent.tools import (
     TOOL_COMPATIBLE_WIDGETS,
-    TOOL_DEFINITIONS,
     TOOL_WIDGET_TYPES,
     execute_tool,
+    get_active_tool_definitions,
 )
 from app.llm import get_llm_provider
 from app.models.business import Business
@@ -214,7 +214,7 @@ async def run_agent(
             text, tool_calls = await asyncio.to_thread(
                 provider.complete_with_tools,
                 llm_messages,
-                TOOL_DEFINITIONS,
+                get_active_tool_definitions(),
             )
         except Exception as exc:
             logger.error("op=agent_llm error=%s", exc)

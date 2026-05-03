@@ -1,0 +1,14 @@
+[
+  {
+    "text": "",
+    "tool_calls": [{"name": "get_signal_timeline", "arguments": {}}]
+  },
+  {
+    "text": "",
+    "tool_calls": [{"name": "pin_widget", "arguments": {"widget_type": "signal_timeline", "title": "Signal Timeline", "source_tool": "get_signal_timeline"}}]
+  },
+  {
+    "text": "Pinned the signal timeline to your dashboard.",
+    "tool_calls": []
+  }
+]

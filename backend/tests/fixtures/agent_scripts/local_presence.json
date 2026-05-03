@@ -1,0 +1,14 @@
+[
+  {
+    "text": "",
+    "tool_calls": [{"name": "get_local_presence_summary", "arguments": {}}]
+  },
+  {
+    "text": "",
+    "tool_calls": [{"name": "pin_widget", "arguments": {"widget_type": "local_presence_card", "title": "Local Presence", "source_tool": "get_local_presence_summary"}}]
+  },
+  {
+    "text": "Added the local presence card to your dashboard.",
+    "tool_calls": []
+  }
+]

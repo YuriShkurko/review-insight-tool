@@ -1,68 +1,365 @@
-# Review Insight Tool
+# Business Insight
 
-An AI-powered review analysis platform that helps small business owners understand what their customers really think — and what to do about it.
+Business Insight is an AI business copilot for local SMBs. It starts with Google Maps reviews, then combines reputation, competitor context, and deterministic demo business signals into a live dashboard that explains what is happening, why it matters, and what to do next.
 
-Paste a Google Maps link, fetch reviews, and get tailored insights: top complaints, top praise, action items, risk areas, and a recommended focus — all customized to your business type.
+The project began as a review analysis tool and was deliberately expanded into a broader business workspace: an owner can import a business, fetch or load reviews, run AI analysis, compare competitors, ask a natural-language agent for help, and persist useful answers as dashboard widgets.
+
+The important engineering idea is simple: the agent is not a loose chat box. It is a tool-driven system with typed backend tools, widget compatibility checks, feature flags, deterministic test providers, persisted workspace state, and production deployment/observability paths.
 
 ## Table of Contents
 
-- [Why This Exists](#why-this-exists)
-- [Features](#features)
-- [Quick Start](#quick-start)
-- [Screenshots](#screenshots)
-- [Usage](#usage)
+- [What It Does](#what-it-does)
+- [Why It Exists](#why-it-exists)
+- [Demo Status](#demo-status)
+- [Product Walkthrough](#product-walkthrough)
 - [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Review Providers](#review-providers)
-- [API](#api)
+- [Agent Design](#agent-design)
+- [Business Insight Modules](#business-insight-modules)
+- [Data Sources](#data-sources)
+- [Quality Bar](#quality-bar)
+- [Quick Start](#quick-start)
 - [Configuration](#configuration)
-- [Project Structure](#project-structure)
-- [Development](#development)
-- [Development automation](docs/DEVELOPMENT.md)
-- [Debug event trail](docs/DEVELOPMENT.md#debug-event-trail)
-- [Staging / demo deployment](docs/STAGING.md)
-- [Demo runbook](docs/DEMO_RUNBOOK.md)
-- [Benchmark](#benchmark)
+- [API Surface](#api-surface)
 - [Testing](#testing)
-- [Specification](#specification)
+- [Project Structure](#project-structure)
+- [Deployment and Operations](#deployment-and-operations)
+- [Screenshots](#screenshots)
 - [Roadmap](#roadmap)
 - [License](#license)
 
-## Why This Exists
+## What It Does
 
-Small business owners receive hundreds of reviews but rarely have time to read them all, spot patterns, or turn feedback into action.
+Business Insight gives a local business owner a single workspace for customer voice and business diagnostics:
 
-Review Insight Tool solves this by:
+- Import or create businesses from Google Maps / offline sample data.
+- Fetch and store reviews through a pluggable provider layer.
+- Generate structured AI analysis: complaints, praise, action items, risks, recommended focus.
+- Compare the business against linked competitors.
+- Ask an AI copilot natural-language questions about reviews, trends, issues, opportunities, and next actions.
+- Pin the agent's useful outputs as persistent dashboard widgets.
+- Build a dashboard with health score, signal timeline, review trends, top issues, evidence, opportunities, action plan, demo sales, operations, local presence, social signal, and money-flow widgets.
+- Run deterministic local/CI tests without live LLM calls.
 
-- **Aggregating reviews** from Google Maps into a single view
-- **Surfacing patterns** — what customers love and what frustrates them
-- **Generating actionable recommendations** tailored to each business type
-- **Saving hours** of manual review reading with AI-powered analysis
+## Why It Exists
 
-## Features
+Small business owners can receive hundreds of reviews but rarely have time to read them, compare competitors, spot operational patterns, and decide what to do next.
 
-- **Add a business** — paste a Google Maps link and select your business type
-- **Fetch reviews** — pull real customer reviews with one click
-- **Get AI analysis** — receive a consultant-style assessment with complaints, praise, action items, risk areas, and a recommended focus
-- **Business-type-aware insights** — a restaurant gets different analysis than a gym or salon
-- **Clean dashboard** — see average rating, review count, and all insights in one view
-- **Secure access** — each user sees only their own businesses and data
-- **Fresh data** — refreshing reviews replaces the old set and clears stale analysis automatically
-- **Competitor comparison (V2)** — link up to 3 competitor businesses, run analysis on them, and generate an AI comparison (strengths, weaknesses, opportunities)
-- **Polyglot persistence (V3)** — optional MongoDB layer for comparison caching (4.2x speedup), versioned analysis history, and raw API response archival. Graceful no-op when unconfigured. See [benchmark results](docs/BENCHMARK.md)
-- **Production observability (V4)** — OpenTelemetry traces and metrics exported to Grafana Cloud. RED dashboard (request rate, error rate, P95 latency), business metrics (reviews fetched, analyses run, LLM latency/errors, cache hit ratio). Synthetic monitor runs every 30 minutes via GitHub Actions and pings Telegram on failure. Fully no-op when `OTEL_EXPORTER_OTLP_ENDPOINT` is unset.
-- **Living demo world (V5)** — persistent demo environment that runs autonomously 24/7. Three businesses with a 14-day narrative arc (craft beer festival → quiet week → bad keg incident → recovery), sine-wave review volume with weekly rhythm, optional LLM-burst reviews for dramatic arc events. Tick worker runs every 30 min via GitHub Actions. End-of-cycle soak report sent to Telegram with human-readable findings.
-- **Agent dashboard builder (V7)** — business detail page evolves into a chat-driven command center. The agent can answer natural-language questions, generate chart-ready review trends, preview cards in the chat, and add useful results to a persistent dashboard canvas. Dashboard-building prompts can proactively pin widgets without requiring a separate click. Works with OpenAI or OpenRouter (same SDK, configurable `base_url`). No LLM key needed — mock path remains.
-- **Agent safety + stability (V8)** — intent classification routes each message to the right flow and blocks off-topic or injection attempts before they reach the LLM. System prompt enforces an explicit data-trust boundary so malicious review text cannot override agent behaviour. Tool spinner clears correctly after streaming ends; optimistic drag-reorder self-corrects on server refresh; `pin_widget` callback guarded by `result.pinned === true`. Synthetic monitor picks target vs competitor place IDs deterministically (`_pick_place_id`) so a run never treats the main business as its own competitor.
-- **Agent workspace + charts** — `get_rating_distribution` returns star-rating counts for a `bar_chart` widget; `pin_widget` coerces tool arguments so extra model-supplied JSON keys no longer break pinning; system prompt documents tool→`widget_type` mapping; pinned `get_top_issues` data renders via `issues` in the workspace summary card.
-- **Agent workspace blackboard (V9)** — dashboard widget state now flows through a `WorkspaceBlackboardProvider` reducer instead of prop-drilled refetch callbacks. Backend `pin_widget` returns the authoritative widget payload and emits a `workspace_event` SSE after commit; frontend applies `WIDGET_ADDED` immediately, deduplicates by id, and still reloads on stream completion as a reconciliation pass. Empty or unsupported widget data renders explicit fallbacks instead of blank cards, with regression tests covering the pin round trip, reducer actions, SSE dispatch, and widget fallbacks.
-- **Widget state parity + chart interactions (V10)** — dashboard widget rendering is now consistent between the automatic agent-pin path and the manual "+ Dashboard" path. `pin_widget` requires a `source_tool` parameter (the name of the preceding data tool); the executor resolves the exact tool result from a per-tool registry keyed by tool name, eliminating the "No data to show" failure when the LLM dropped the `data` payload. Drag/drop reorder now persists correctly — `WIDGET_REORDERED` updates `position` fields in the reducer so `sort-by-position` in the workspace reflects the dropped order immediately and after refresh. Chart widgets (line, bar, donut) support click/tap to show a detail panel with label, value, and percentage — works on desktop and mobile without relying on SVG hover-only tooltips.
-- **Agent dashboard demo polish (V11)** — the demo flow now starts from a premium offline sample catalog, then moves into a dashboard-first workspace with quick actions, presentation mode, narrative callouts, subtle motion, assistant status polish, and a hero/supporting widget layout. Agent-driven reorder is explicit: `get_workspace` exposes current widget IDs and `set_dashboard_order` persists an exact final order, including after duplicate/remove flows. Quick actions use supported tool/widget pairings, and repeated failed `pin_widget` attempts are capped so a bad live-model recovery cannot loop through many OpenAI calls. See the [demo runbook](docs/DEMO_RUNBOOK.md) for smoke/reset/teardown guidance.
-- **Offline demo mode** — bundled dataset of 495 real reviews across 8 businesses for local demos, smoke tests, and CI — no external API keys needed for review fetching. When `REVIEW_PROVIDER=offline`, **adding a business from a Google Maps link or free-form place ID is disabled** (`POST /api/businesses` → 403); use the **sandbox sample catalog** in the UI (`POST /api/sandbox/import`). **`GET /api/bootstrap`** (no auth) returns `{ "review_provider": "..." }` so the frontend can hide the form and match server mode.
+Most dashboards show charts. Business Insight tries to do more:
+
+- **Explain** what changed, not just show that a metric moved.
+- **Connect evidence** from reviews, competitors, and business signals.
+- **Recommend action** with owner, effort, impact, and metric-to-watch fields.
+- **Preserve context** by letting the agent build and update a durable workspace.
+- **Disclose uncertainty** when data is sparse or demo-only.
+
+## Demo Status
+
+The repo is in the middle of the public transition from **Review Insight Tool** to **Business Insight**.
+
+Implemented in the current working tree:
+
+| Phase   | Status    | What changed                                                                                                                                      |
+| ------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 1 | Done      | Public rebrand to Business Insight in app copy, docs, README direction, and agent framing. Internal DB names/routes stay unchanged for stability. |
+| Phase 2 | Done      | Computed-on-demand `get_business_health` tool and `health_score` widget.                                                                          |
+| Phase 3 | Done      | `get_signal_timeline` tool and `signal_timeline` widget for "what changed" stories.                                                               |
+| Phase 4 | Done      | Deterministic demo signals for sales, operations, local presence, and social signal widgets.                                                      |
+| Phase 5 | Done      | Evidence-backed `get_opportunities` and `get_action_plan` tools/widgets.                                                                          |
+| Phase 6 | Not built | Real integrations such as Google Business Profile, POS, or social APIs are intentionally deferred until the demo signal contracts prove useful.   |
+
+Outstanding before treating this as fully shipped:
+
+- Commit and push the Phase 1-5 working-tree changes.
+- Run the expanded Playwright suite for the new Business Insight tool flows.
+- Refresh screenshots after the rebrand.
+- Complete any manual deployment checks required by the hosting environment.
+
+This is intentional: the product proves the multi-signal experience first with deterministic/offline providers, then real integrations can replace those providers without changing widget contracts.
+
+## Product Walkthrough
+
+1. **Create or import a business**
+   - In normal mode, paste a Google Maps URL or place ID.
+   - In offline demo mode, import a bundled sample business from the sandbox catalog.
+
+2. **Fetch reviews**
+   - Provider can be `mock`, `offline`, `outscraper`, or `simulation`.
+   - Refreshing reviews replaces stale review rows and clears stale analysis.
+
+3. **Run AI analysis**
+   - Analysis produces structured fields used by the dashboard and agent: complaints, praise, actions, risks, summary, and recommended focus.
+
+4. **Compare competitors**
+   - Link competitor businesses, analyze them, then generate a comparison from stored analysis snapshots.
+
+5. **Use the AI copilot**
+   - Ask: "What changed this week?", "Build a dashboard", "What should we do next?", "Show money flow", "What are the top issues?"
+   - The agent calls backend tools, streams progress over SSE, and can pin results to the workspace.
+
+6. **Present the dashboard**
+   - Widgets persist by business/user.
+   - Drag/reorder/remove flows are persisted.
+   - Presentation mode turns the workspace into a cleaner demo/readout surface.
+
+## Architecture
+
+### System Overview
+
+```mermaid
+flowchart TB
+    User[Business owner] --> Web[Next.js / React frontend]
+    Web --> API[FastAPI backend]
+
+    API --> Auth[JWT auth and ownership checks]
+    API --> Services[Domain services]
+    API --> Agent[Agent executor]
+
+    Services --> Reviews[Review provider interface]
+    Reviews --> Mock[Mock provider]
+    Reviews --> Offline[Offline review snapshots]
+    Reviews --> Outscraper[Outscraper / Google Maps reviews]
+    Reviews --> Simulation[Living demo simulation]
+
+    Services --> Postgres[(PostgreSQL)]
+    Services --> Mongo[(MongoDB optional cache/history)]
+    Services --> LLM[OpenAI / OpenRouter]
+
+    Agent --> Tools[Typed business tools]
+    Tools --> Postgres
+    Tools --> DemoSignals[Deterministic demo signal providers]
+    Agent --> SSE[SSE stream]
+    SSE --> Web
+    Web --> Workspace[Workspace blackboard reducer]
+    Workspace --> WidgetUI[Persistent dashboard widgets]
+
+    API --> OTEL[OpenTelemetry instrumentation]
+    OTEL --> Grafana[Grafana / OTLP backend]
+```
+
+### Backend Layers
+
+```mermaid
+flowchart LR
+    Routes[Routes] --> Schemas[Pydantic schemas]
+    Routes --> Auth[Auth dependencies]
+    Routes --> Services[Services]
+    Routes --> AgentRoutes[Agent routes]
+
+    Services --> Providers[Provider interfaces]
+    Services --> Models[SQLAlchemy models]
+    Services --> LLM[LLM provider abstraction]
+
+    AgentRoutes --> Executor[Agent executor]
+    Executor --> Guardrails[Intent and tool guardrails]
+    Executor --> ToolRegistry[Tool registry and compatibility table]
+    ToolRegistry --> ToolImpl[Tool implementations]
+    ToolImpl --> Models
+    ToolImpl --> Providers
+
+    Models --> Postgres[(PostgreSQL)]
+    Services --> Mongo[(MongoDB optional)]
+```
+
+| Layer         | Responsibility                                                                                     |
+| ------------- | -------------------------------------------------------------------------------------------------- |
+| Routes        | HTTP boundary, auth enforcement, request/response handling.                                        |
+| Services      | Business logic for reviews, analysis, comparison, dashboard aggregation.                           |
+| Providers     | Replaceable review sources with one normalized output shape.                                       |
+| Agent         | LLM loop, tool execution order, SSE events, pin recovery, workspace mutations.                     |
+| Models        | SQLAlchemy entities for users, businesses, reviews, analyses, competitors, conversations, widgets. |
+| Schemas       | Pydantic contracts for API and workspace payloads.                                                 |
+| Observability | Structured logs, OpenTelemetry, synthetic monitor, debug tooling.                                  |
+
+### Agent and Workspace Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant UI as Next.js UI
+    participant API as FastAPI SSE route
+    participant EX as Agent executor
+    participant LLM as LLM provider
+    participant T as Backend tools
+    participant DB as PostgreSQL
+    participant BB as Workspace blackboard
+
+    U->>UI: Ask business question
+    UI->>API: POST /agent/chat
+    API->>EX: run_agent()
+    EX->>LLM: messages + active tool definitions
+    LLM-->>EX: tool calls
+    EX->>T: execute data tool
+    T->>DB: read reviews / analyses / widgets
+    T-->>EX: structured tool result
+    EX->>T: pin_widget(source_tool, widget_type)
+    T->>DB: persist workspace widget
+    EX-->>UI: SSE workspace_event + text
+    UI->>BB: dispatch WIDGET_ADDED
+    BB-->>UI: render widget immediately
+    UI->>API: reload workspace on completion
+    API->>DB: authoritative widget list
+    API-->>UI: reconciled workspace
+```
+
+### Data Model Snapshot
+
+```mermaid
+erDiagram
+    USERS ||--o{ BUSINESSES : owns
+    BUSINESSES ||--o{ REVIEWS : has
+    BUSINESSES ||--o| ANALYSES : latest
+    BUSINESSES ||--o{ WORKSPACE_WIDGETS : contains
+    BUSINESSES ||--o{ CONVERSATIONS : has
+    USERS ||--o{ WORKSPACE_WIDGETS : owns
+    USERS ||--o{ CONVERSATIONS : owns
+    BUSINESSES ||--o{ COMPETITOR_LINKS : target
+    BUSINESSES ||--o{ COMPETITOR_LINKS : competitor
+
+    USERS {
+        uuid id
+        string email
+        string hashed_password
+    }
+    BUSINESSES {
+        uuid id
+        uuid user_id
+        string place_id
+        string name
+        string business_type
+        float avg_rating
+        int total_reviews
+    }
+    REVIEWS {
+        uuid id
+        uuid business_id
+        string external_id
+        int rating
+        text text
+        datetime published_at
+    }
+    ANALYSES {
+        uuid id
+        uuid business_id
+        json complaints
+        json praise
+        json action_items
+        json risk_areas
+    }
+    WORKSPACE_WIDGETS {
+        uuid id
+        uuid business_id
+        uuid user_id
+        string widget_type
+        json data
+        int position
+    }
+    CONVERSATIONS {
+        uuid id
+        uuid business_id
+        uuid user_id
+        json messages
+    }
+```
+
+## Agent Design
+
+The agent is built to be inspectable and testable.
+
+### Tool Registry
+
+Backend tools are declared in one registry and exposed to the LLM as function-calling tools. The same registry also drives widget compatibility.
+
+Representative tools:
+
+| Tool                         | Output / widget                          |
+| ---------------------------- | ---------------------------------------- |
+| `get_dashboard`              | Business overview and existing analysis. |
+| `query_reviews`              | Review evidence list.                    |
+| `get_review_series`          | Review trend line chart.                 |
+| `get_top_issues`             | Ranked issue chart / issue summary.      |
+| `compare_competitors`        | Competitor comparison.                   |
+| `get_business_health`        | `health_score` widget.                   |
+| `get_signal_timeline`        | `signal_timeline` widget.                |
+| `get_sales_summary`          | `sales_summary` widget.                  |
+| `get_operations_summary`     | `operations_risk` widget.                |
+| `get_local_presence_summary` | `local_presence_card` widget.            |
+| `get_social_signal_summary`  | `social_signal` widget.                  |
+| `get_financial_flow`         | `money_flow` widget.                     |
+| `get_opportunities`          | `opportunity_list` widget.               |
+| `get_action_plan`            | `action_plan` widget.                    |
+
+### Safety and Reliability Decisions
+
+- **Source-tool pinning:** `pin_widget` references the exact tool result that should become a widget.
+- **Compatibility table:** unsupported tool/widget pairs are rejected instead of rendering empty cards.
+- **Money-flow protection:** profit-bridge-shaped custom charts are redirected to the dedicated `money_flow` path.
+- **Cross-turn recovery:** recent successful tool results are rehydrated so a later "yes, use that" turn can still pin the correct data.
+- **Feature-flagged tool exposure:** `BUSINESS_INSIGHT_ENABLED`, `DEMO_SIGNALS_ENABLED`, and `SIGNAL_PROVIDER` control which tools the model can see.
+- **Demo signal disclosure:** synthetic signals return `is_demo`, `source`, `freshness`, `confidence`, and `limitations`.
+- **Deterministic E2E:** scripted LLM fixtures drive the real SSE/tool/workspace path without live model variance.
+
+## Business Insight Modules
+
+Business Insight is organized around product modules, not just charts.
+
+| Module              | What it answers                                            | Current implementation                                                             |
+| ------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Reputation          | Are customers happy? What changed in rating/review volume? | Review ingestion, rating distribution, trends, review series.                      |
+| Customer Experience | What do people praise or complain about?                   | AI analysis, top issues, review insights, representative evidence.                 |
+| Competitors         | How do we compare?                                         | Competitor links, analysis snapshots, comparison generation, optional Mongo cache. |
+| Business Health     | How is the business doing overall?                         | Computed health score with sub-scores, drivers, risks, opportunities, limitations. |
+| Signal Timeline     | What happened recently?                                    | Review-volume/rating/theme event timeline.                                         |
+| Demo Demand         | Did demand/sales move?                                     | Deterministic `sales_summary` demo provider.                                       |
+| Operations          | Is service under pressure?                                 | Deterministic `operations_risk` demo provider plus review evidence.                |
+| Local Presence      | Is the business discoverable and ready?                    | Deterministic `local_presence_card` demo provider.                                 |
+| Social Signal       | Is there external buzz?                                    | Deterministic `social_signal` demo provider.                                       |
+| Growth Actions      | What should we do next?                                    | Opportunity finder and action-plan tools.                                          |
+| Money Flow          | Where does revenue go?                                     | Dedicated financial-flow/profit-bridge widget path.                                |
+
+## Data Sources
+
+### Review Providers
+
+All review providers implement the same interface and return normalized reviews. The rest of the app does not care which provider produced the data.
+
+| Provider     | `REVIEW_PROVIDER` | Use case                                     | External keys                                         |
+| ------------ | ----------------- | -------------------------------------------- | ----------------------------------------------------- |
+| `mock`       | default           | Fast local dev and tests.                    | None                                                  |
+| `offline`    | demo mode         | Bundled realistic review snapshots.          | None for reviews; optional LLM key for live analysis. |
+| `outscraper` | live reviews      | Google Maps review fetch through Outscraper. | `OUTSCRAPER_API_KEY`                                  |
+| `simulation` | living demo world | Reads generated demo reviews from Postgres.  | None for reviews.                                     |
+
+### Demo Signal Providers
+
+The broader Business Insight modules currently use deterministic demo/offline providers. This is a deliberate architecture choice:
+
+- Demo signals are predictable enough for tests and demos.
+- Widgets and tool contracts are stable before OAuth/API work begins.
+- Real integrations can replace demo providers later without changing saved widget types.
+- The agent is required to disclose demo/offline provenance.
+
+## Quality Bar
+
+This project is intentionally structured to show engineering discipline, not just a working demo.
+
+| Area                      | What exists                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------- |
+| Backend tests             | Unit and integration tests with in-memory SQLite where appropriate.                             |
+| Frontend tests            | Vitest component/reducer tests for widgets, dashboard sections, and agent UI behavior.          |
+| Browser E2E               | Playwright specs for high-risk agent/dashboard flows using scripted LLM fixtures.               |
+| CI                        | Backend lint/tests, frontend lint/build, Playwright job.                                        |
+| Deterministic LLM testing | `LLM_PROVIDER=scripted` and `TESTING=true` gate test-only model behavior.                       |
+| Migrations                | Alembic manages schema changes; app startup does not create production tables ad hoc.           |
+| Auth boundaries           | JWT auth plus per-route ownership checks.                                                       |
+| Provider boundaries       | Review providers and signal providers are isolated from routes/UI.                              |
+| Observability             | Structured logs, OpenTelemetry hooks, Grafana dashboards, synthetic monitor, debug MCP tooling. |
+| Failure handling          | Workspace reload recovery, per-row widget serialization guard, clear user-facing error states.  |
 
 ## Quick Start
 
-Requires only [Docker](https://www.docker.com/).
+### Docker Compose
+
+Requires Docker.
 
 ```bash
 git clone https://github.com/YuriShkurko/review-insight-tool.git
@@ -72,755 +369,316 @@ make up
 make db-upgrade
 ```
 
-Open http://localhost:3000 and register an account.
+Open:
 
-> **Default mode (mock):** The app works immediately with generated sample reviews — no API keys needed. To use realistic bundled reviews, switch to [offline demo mode](#offline-demo-mode). To fetch live Google Maps reviews, set `REVIEW_PROVIDER=outscraper` and add your `OUTSCRAPER_API_KEY` and `OPENAI_API_KEY` to `backend/.env`.
+- Frontend: http://localhost:3000
+- Backend docs: http://localhost:8000/docs
 
-<details>
-<summary><strong>Quick start with offline demo (recommended for evaluation)</strong></summary>
+Default `REVIEW_PROVIDER=mock` works without API keys.
 
-The fastest way to see the full product with realistic data:
+### Offline Demo Mode
+
+Offline mode uses bundled review snapshots and the sandbox catalog.
 
 ```bash
-git clone https://github.com/YuriShkurko/review-insight-tool.git
-cd review-insight-tool
-cp backend/.env.example backend/.env
-# Edit backend/.env: set REVIEW_PROVIDER=offline and add your OPENAI_API_KEY
+# In backend/.env
+REVIEW_PROVIDER=offline
+OPENAI_API_KEY=your-key   # optional; without it, sample analysis paths are used
+
 make up
 make db-upgrade
 make seed-offline
 ```
 
-Log in as `demo@example.com` / `demo1234`, then fetch reviews and run analysis for each business.
+Then log in as:
 
-</details>
+```text
+demo@example.com / demo1234
+```
 
-<details>
-<summary><strong>Local development setup (without Docker Compose)</strong></summary>
+In offline mode, `POST /api/businesses` is intentionally blocked. Use the sandbox catalog import flow so demos remain repeatable.
+
+### Local Development Without Docker
 
 Requires Python 3.11+, Node.js 18+, and PostgreSQL 16.
 
-**1. Start PostgreSQL**
-
-Use a local PostgreSQL installation, or start one quickly with Docker:
-
 ```bash
-docker run --name review-insight-db \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=review_insight \
-  -p 5432:5432 \
+# Terminal 1: database, for example with Docker
+docker run --name review-insight-db ^
+  -e POSTGRES_PASSWORD=postgres ^
+  -e POSTGRES_DB=review_insight ^
+  -p 5432:5432 ^
   -d postgres:16
 ```
 
-**2. Backend**
-
-From the repo root. Use the activation line for your OS:
-
 ```bash
+# Terminal 2: backend
 cd backend
 python -m venv venv
-venv\Scripts\activate       # Windows (CMD or PowerShell)
-# source venv/bin/activate  # macOS / Linux
-
+venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
 alembic upgrade head
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-**3. Frontend**
-
 ```bash
+# Terminal 3: frontend
 cd frontend
 npm install
 cp .env.local.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3000. Backend API docs at http://localhost:8000/docs.
-
-</details>
-
-<details>
-<summary><strong>Mobile / LAN access (test on a phone)</strong></summary>
-
-To open the dev app from a phone on the same Wi-Fi network:
+### LAN / Mobile Testing
 
 ```bash
 make dev-mobile
 ```
 
-This binds the backend to `0.0.0.0:8000` and the frontend to `0.0.0.0:3000`. Find your machine's LAN IP (`ipconfig` on Windows, `ifconfig` / `ip addr` on macOS/Linux), then open `http://<your-LAN-IP>:3000` from the phone's browser. The frontend's `getApiBaseUrl()` automatically rewrites `localhost:8000` → the page host, so API calls go to `http://<your-LAN-IP>:8000` without any env changes.
-
-The backend's CORS middleware accepts private RFC1918 ranges (`10.x`, `192.168.x`, `172.16-31.x`) by default in dev. Production still relies on explicit `CORS_ORIGINS`.
-
-</details>
-
-## Screenshots
-
-1. Login  
-   ![Login](docs/screenshots/01-login.png)
-
-2. Business List  
-   ![Business List](docs/screenshots/02-business-list.png)
-
-3. Dashboard Header  
-   ![Dashboard Header](docs/screenshots/03-dashboard-header.png)
-
-4. Dashboard Insights  
-   ![Dashboard Insights](docs/screenshots/04-dashboard-insights.png)
-
-5. Competitors  
-   ![Competitors](docs/screenshots/05-competitors.png)
-
-6. Comparison  
-   ![Comparison](docs/screenshots/06-comparison.png)
-
-7. Reviews  
-   ![Reviews](docs/screenshots/07-reviews.png)
-
-8. Debug Panel Events  
-   ![Debug Panel Events](docs/screenshots/08-debug-panel-events.png)
-
-9. Debug Selector Highlight  
-   ![Debug Selector Highlight](docs/screenshots/09-debug-selector-highlight.png)
-
-10. Debug Selector Tab  
-    ![Debug Selector Tab](docs/screenshots/10-debug-selector-tab.png)
-
-11. Trace ID Header (Network)  
-    ![Trace ID Header](docs/screenshots/11-trace-id-network.png)
-
-## Usage
-
-1. **Register** — create an account at `/register`
-2. **Add a business** — paste a Google Maps URL, select the business type
-3. **Fetch reviews** — click "Fetch Reviews" (header button) to pull customer reviews
-4. **Run analysis** — click "Analyze" (header button) to run AI analysis
-5. **Chat with the agent** — use the assistant or the command bar to ask anything: "What are customers complaining about?", "Graph review volume for the last 3 days", "Show positives", "How do I compare to competitors?"
-6. **Build and present a dashboard** — click "Add to dashboard" on an agent result, ask the agent to build/customize the dashboard for you, or use quick actions such as **Build demo dashboard**, **Show top issues**, **Show positives**, **Clean Layout**, and **Present**. Pinned cards and charts persist in the dashboard canvas across sessions, and agent-pinned widgets appear immediately through the workspace blackboard event path.
-
-> **Tip:** Use **Share → Copy link** from the Google Maps business info panel. Search-bar URLs may not work.
-
----
-
-## Architecture
-
-```mermaid
-graph TB
-    U[User] --> F[Frontend Next.js]
-    F --> API[Backend FastAPI]
-
-    API --> R[Routes]
-    R --> S[Services]
-    S --> P[Review Providers: mock / offline / outscraper]
-    S --> LLM[OpenAI]
-    S --> DB[(PostgreSQL)]
-    S --> MDB[(MongoDB - optional)]
-
-    F --> DT[Debug Trail and Selector]
-    DT --> UIS[Debug UI Snapshot API]
-    UIS --> API
-
-    API --> TM[Trace Middleware and Trace Context]
-    TM --> DIP[Debug Dipstick Tools]
-    MCP[Cursor MCP Client] --> MCPDBG[review-insight-debug MCP server]
-    MCPDBG --> DIP
-    DIP --> TM
-```
-
-The **Review Provider Layer** separates external review sources from core application logic, so adding a new provider (Yelp, TripAdvisor, etc.) requires only a new provider class and factory registration — no changes to routes, services, or the frontend.
-
-**Backend layers:**
-
-| Layer | Responsibility |
-|-------|---------------|
-| Routes | HTTP handlers, input validation, auth enforcement |
-| Services | Business logic — place resolution, review ingestion, AI analysis, dashboard |
-| Providers | Pluggable review source abstraction |
-| Mongo | Optional speed layer — comparison cache, analysis history, raw responses |
-| Models | SQLAlchemy ORM — User, Business, Review, Analysis |
-| Schemas | Pydantic request/response validation |
-
-**Frontend layers:**
-
-| Layer | Responsibility |
-|-------|---------------|
-| Pages | Next.js App Router pages with client-side data fetching |
-| Components | Reusable UI — DashboardView, ReviewList, InsightList; `agent/` tree for chat + dashboard canvas widgets |
-| Lib | API client, auth context, TypeScript types, `useAgentChat` SSE hook |
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Backend | Python 3.11+, FastAPI, SQLAlchemy 2.0, Pydantic |
-| Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4 |
-| Database | PostgreSQL 16, Alembic migrations, MongoDB (optional — Atlas or local) |
-| AI | OpenAI GPT-4o-mini (analysis/comparison) + pluggable agent LLM via provider abstraction (OpenAI or OpenRouter) |
-| Auth | JWT (PyJWT), bcrypt |
-| Review providers | Mock (built-in), Offline (bundled real reviews), Outscraper (live) |
-| Infrastructure | Docker, Docker Compose, AWS ECS Fargate, ECR, ALB, SSM |
-
-## Review Providers
-
-The app uses a pluggable provider architecture for fetching reviews. All providers implement the same `ReviewProvider` interface and return `NormalizedReview` objects, so the rest of the app (analysis, comparison, dashboard) works identically regardless of source.
-
-| Provider | `REVIEW_PROVIDER=` | What it does | API keys needed |
-|----------|-------------------|--------------|-----------------|
-| **Mock** | `mock` | Generates random reviews seeded by place ID | None |
-| **Offline** | `offline` | Loads real review snapshots from `backend/data/offline/` | None (reviews); `OPENAI_API_KEY` for analysis |
-| **Outscraper** | `outscraper` | Fetches live Google Maps reviews via Outscraper REST API | `OUTSCRAPER_API_KEY` + `OPENAI_API_KEY` |
-| **Simulation** | `simulation` | Reads from `sim_reviews` Postgres table (living demo world). Falls back to Mock for unknown place IDs so CI smoke tests are unaffected. | None (reviews); `OPENAI_API_KEY` for analysis |
-
-Set the provider in `backend/.env` via the `REVIEW_PROVIDER` variable. Default is `mock`.
-
-## API
-
-All endpoints are prefixed with `/api`. Protected endpoints require a `Bearer` token.
-
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/api/bootstrap` | GET | No | Client hints: `review_provider` (`mock`, `offline`, `outscraper`, `simulation`) |
-| `/api/sandbox/catalog` | GET | Yes | Offline manifest catalog (`REVIEW_PROVIDER=offline` only) |
-| `/api/sandbox/import` | POST | Yes | Import a sample business from the catalog (`REVIEW_PROVIDER=offline` only) |
-| `/api/sandbox/reset` | POST | Yes | Remove offline sample businesses for the current user (`REVIEW_PROVIDER=offline` only) |
-| `/api/auth/register` | POST | No | Create account |
-| `/api/auth/login` | POST | No | Sign in, receive token |
-| `/api/auth/me` | GET | Yes | Current user info |
-| `/api/businesses` | POST | Yes | Add business from Maps URL or place ID (returns **403** when `REVIEW_PROVIDER=offline` — use `/api/sandbox/import`) |
-| `/api/businesses` | GET | Yes | List businesses |
-| `/api/businesses/{id}` | GET | Yes | Get business details |
-| `/api/businesses/{id}` | DELETE | Yes | Delete business (cascades) |
-| `/api/businesses/{id}/fetch-reviews` | POST | Yes | Fetch / replace reviews |
-| `/api/businesses/{id}/reviews` | GET | Yes | List reviews |
-| `/api/businesses/{id}/analyze` | POST | Yes | Run AI analysis |
-| `/api/businesses/{id}/dashboard` | GET | Yes | Dashboard data |
-| `/api/businesses/{id}/competitors` | POST | Yes | Link a competitor |
-| `/api/businesses/{id}/competitors` | GET | Yes | List linked competitors |
-| `/api/businesses/{id}/competitors/{cid}` | DELETE | Yes | Remove a competitor link |
-| `/api/businesses/{id}/competitors/comparison` | POST | Yes | Generate AI comparison |
-| `/api/businesses/{id}/agent/chat` | POST | Yes | Chat with AI agent (SSE stream) |
-| `/api/businesses/{id}/agent/workspace` | GET | Yes | List pinned dashboard widgets |
-| `/api/businesses/{id}/agent/workspace` | POST | Yes | Pin a widget directly |
-| `/api/businesses/{id}/agent/workspace/reorder` | PATCH | Yes | Persist an exact pinned-widget order |
-| `/api/businesses/{id}/agent/workspace/{wid}` | DELETE | Yes | Remove a pinned widget |
-| `/api/businesses/{id}/agent/conversations` | GET | Yes | List past conversations |
-
-Interactive docs: http://localhost:8000/docs
+This binds backend and frontend to `0.0.0.0`. Open `http://<your-LAN-IP>:3000` from a phone on the same Wi-Fi.
 
 ## Configuration
 
-### Backend (`backend/.env`)
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5432/review_insight` |
-| `REVIEW_PROVIDER` | Review source: `mock`, `offline`, `outscraper`, or `simulation` | `mock` |
-| `OUTSCRAPER_API_KEY` | Outscraper API key (required for real reviews) | — |
-| `OUTSCRAPER_REVIEWS_LIMIT` | Max reviews per fetch | `100` |
-| `OUTSCRAPER_SORT` | Order: `newest`, `most_relevant`, `highest_rating`, `lowest_rating` | `newest` |
-| `OUTSCRAPER_CUTOFF` | Optional Unix timestamp — only reviews newer than this (empty = all). Offset pagination not supported by API. | — |
-| `OPENAI_API_KEY` | OpenAI API key (blank = sample analysis) | — |
-| `GOOGLE_PLACES_API_KEY` | Google Places API key (blank = extract name from URL) | — |
-| `JWT_SECRET_KEY` | Secret for signing tokens | `change-me-in-production` |
-| `JWT_EXPIRE_MINUTES` | Token expiry in minutes | `1440` |
-| `MONGO_URI` | MongoDB connection string (empty = MongoDB features disabled) | — |
-| `MONGO_DB_NAME` | MongoDB database name | `review_insight` |
-| `COMPARISON_CACHE_TTL_HOURS` | Comparison cache TTL in hours | `24` |
-| `RAW_RESPONSE_TTL_DAYS` | Raw API response retention in days | `30` |
-| `LLM_PROVIDER` | LLM provider for agent chat: `openai` or `openrouter` | `openai` |
-| `LLM_MODEL` | Model for analysis/comparison calls | `gpt-4o-mini` |
-| `LLM_AGENT_MODEL` | Model for agent chat calls | `gpt-4o-mini` |
-| `OPENROUTER_API_KEY` | OpenRouter API key (if `LLM_PROVIDER=openrouter`) | — |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector endpoint (e.g. Grafana Cloud) — empty disables OTEL | — |
-| `OTEL_EXPORTER_OTLP_HEADERS` | Auth header for OTLP endpoint (e.g. `Authorization=Basic <token>`) | — |
-| `GIT_SHA` | Git commit SHA baked into OTEL service resource attributes | `dev` |
-| `DEPLOY_ENV` | Deployment environment tag in OTEL resource attributes | `production` |
-
-### Frontend (`frontend/.env.local`)
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_API_URL` | Backend base URL | `http://localhost:8000` |
-
-## Project Structure
-
-```
-├── backend/
-│   ├── app/
-│   │   ├── main.py              # FastAPI entry point
-│   │   ├── config.py            # Pydantic settings
-│   │   ├── database.py          # SQLAlchemy engine and session
-│   │   ├── mongo.py             # MongoDB client (optional polyglot layer)
-│   │   ├── observability.py     # OpenTelemetry init + business metric instruments
-│   │   ├── auth.py              # JWT + bcrypt utilities
-│   │   ├── models/              # ORM models
-│   │   ├── schemas/             # Request/response schemas
-│   │   ├── routes/              # API route handlers
-│   │   ├── services/            # Business logic
-│   │   ├── providers/           # Review source providers
-│   │   ├── agent/               # Agent executor, tools, system prompt, context window
-│   │   ├── llm/                 # LLM provider abstraction (OpenAI / OpenRouter)
-│   │   └── mock/                # Sample data generators
-│   ├── data/offline/            # Offline demo dataset (JSON)
-│   ├── scripts/                 # Utility scripts (seed, etc.)
-│   ├── alembic/                 # Database migration scripts
-│   ├── alembic.ini              # Alembic configuration
-│   ├── tests/                   # pytest suite
-│   ├── Dockerfile
-│   ├── docker-entrypoint.sh     # Alembic then uvicorn (production / Railway)
-│   ├── requirements.txt
-│   └── .env.example
-│
-├── frontend/
-│   ├── src/
-│   │   ├── app/                 # Next.js pages
-│   │   ├── components/          # React components; agent/ for chat+workspace UI
-│   │   └── lib/                 # API client, auth, types, useAgentChat hook
-│   ├── Dockerfile               # Local dev (docker-compose)
-│   ├── Dockerfile.prod          # Production build for PaaS (e.g. Railway)
-│   ├── package.json
-│   └── .env.local.example
-│
-├── docs/
-│   ├── screenshots/             # README screenshots
-│   ├── BUG_HUNT.md              # Bug hunt test plan
-│   ├── BUG_HUNT_LOG.md          # Bug hunt findings log
-│   ├── SPEC.md                  # System specification
-│   ├── STAGING.md               # Staging / demo deployment notes
-│   └── DEVELOPMENT.md           # CI, Makefile automation, debug event trail
-│
-├── scripts/
-│   ├── synthetic_monitor.py     # Full-flow synthetic health check (used by CI)
-│   ├── seed_demo.py             # Idempotent demo world seed (businesses + reviews + analysis)
-│   ├── tick_demo.py             # Living demo world tick worker (sine wave + arc modulation)
-│   └── demo_report.py           # 14-day soak report — DB + GitHub Actions API → Telegram
-│
-├── .github/
-│   └── workflows/
-│       ├── ci.yml               # Push/PR: lint, tests, frontend build
-│       ├── cd.yml               # Deploy to AWS ECS + post-deploy smoke test
-│       ├── synthetic.yml        # Synthetic monitor cron (every 30 min)
-│       ├── demo-tick.yml        # Living demo world tick (every 30 min)
-│       └── demo-report.yml      # Soak report (weekly + end-of-cycle)
-│
-├── docker-compose.yml           # Full-stack Docker setup
-├── Makefile                     # Developer shortcuts
-└── README.md
-```
-
-## Development
-
-For a **remote staging/demo** on Railway (PostgreSQL, `PORT`, `CORS_ORIGINS`, build-time `NEXT_PUBLIC_API_URL`, migrate-on-start), see **[docs/STAGING.md](docs/STAGING.md)**.
-
-**CI and local automation** (what runs on GitHub vs `make validate`): **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
-
-**Debug event trail** (debug-only floating panel for inspecting API calls, state transitions, and user actions): **[docs/DEVELOPMENT.md#debug-event-trail](docs/DEVELOPMENT.md#debug-event-trail)**.
-
-### Before Push
-
-Use these commands from the repo root:
-
-```bash
-# Fast checks while iterating: lint/format + backend unit tests
-make quick
-
-# Full non-browser validation, matching the backend/frontend CI jobs
-make validate
-
-# Optional locally, and required before agent/dashboard changes:
-# Terminal 1
-make test-e2e-servers
-
-# Terminal 2
-make test-e2e-ui
-```
-
-`make ci-local` is an alias for `make validate`. It intentionally does not start
-browser E2E servers; Playwright runs as a separate GitHub Actions job and can be
-run locally with the two E2E commands above.
-
-Local Playwright uses `E2E_DATABASE_URL` and defaults to
-`postgresql://postgres:postgres@localhost:5432/review_insight`, so it will not
-inherit a staging/production `DATABASE_URL` from `backend/.env`. It also sets
-`OPENAI_API_KEY=change-me-e2e`, which the backend config treats as an empty
-placeholder, so a real key in `backend/.env` is not used by the E2E server.
-
-### Makefile commands
-
-| Command | Description |
-|---------|-------------|
-| `make up` | Start full stack with Docker Compose |
-| `make down` | Stop the stack |
-| `make logs` | Follow container logs |
-| `make backend` | Start backend locally (no Docker) |
-| `make frontend` | Start frontend locally (no Docker) |
-| `make dev` | Start both locally (Windows) |
-| `make dev-mobile` | Start both bound to `0.0.0.0` so a phone on the same Wi-Fi can hit the dev box |
-| `make quick` | Fast local checks: `lint` + backend unit tests |
-| `make validate` | Same non-browser checks as GitHub Actions: `lint` + unit tests + integration tests + `npm run build` (frontend) |
-| `make ci-local` | Alias for `make validate` |
-| `make test` | Run backend unit tests |
-| `make test-integration` | Run backend integration tests (in-memory SQLite) |
-| `make test-e2e` | Run E2E tests (requires `make up` and `make db-upgrade`) |
-| `make test-e2e-servers` | Start backend + frontend in deterministic Playwright mode |
-| `make test-e2e-ui` | Run the Playwright browser E2E suite |
-| `make lint` | Run linters (ruff + eslint + prettier checks) |
-| `make frontend-build` | `npm run build` in `frontend/` only |
-| `make db-upgrade` | Apply Alembic migrations to head (via Docker Compose `exec`) |
-| `make db-upgrade-local` | Apply migrations with local `alembic` (`backend/.env` `DATABASE_URL`) |
-| `make db-downgrade` | Roll back one migration |
-| `make db-current` | Show current Alembic revision |
-| `make db-history` | Show migration history |
-| `make db-revision` | Autogenerate migration: `make db-revision msg="describe change"` |
-| `make db-stamp-head` | Stamp DB at head without running SQL (one-time for legacy DBs) |
-| `make db-reset` | Drop all tables + `alembic_version` (escape hatch; then run `make db-upgrade`) |
-| `make seed-offline` | Seed offline demo data (Docker Compose `exec` backend) |
-| `make seed-offline-local` | Same seed using local Python (`backend/.env` database) |
-| `make clean` | Remove build artifacts and caches |
-
-### Database migrations
-
-Schema changes are managed with **Alembic** (not `create_all` at app startup). The **production Docker image** runs `alembic upgrade head` in `docker-entrypoint.sh` before uvicorn (PaaS-friendly). Local **`make up`** still benefits from running **`make db-upgrade`** when you change migrations without rebuilding the image.
-
-**First-time / fresh database**
-
-1. Start Postgres (e.g. `make up`).
-2. Apply migrations: `make db-upgrade` (Docker) or `cd backend && alembic upgrade head` (local).
-
-**If `make db-upgrade` fails with `DuplicateTable` / `relation "users" already exists`**
-
-Your Postgres volume still has tables from the old `create_all`-on-startup behavior, but Alembic has never recorded a revision. **Do not** keep re-running `upgrade` — run **once**:
-
-```bash
-make db-stamp-head
-```
-
-That writes `alembic_version` at `head` without re-creating tables. After that, `make db-upgrade` is a no-op until new migrations ship.
-
-**Typical schema change**
-
-1. Edit SQLAlchemy models under `backend/app/models/`.
-2. Generate a revision: `make db-revision msg="add column foo"` (review the generated file under `backend/alembic/versions/`).
-3. Apply: `make db-upgrade`.
-4. Run tests and smoke the app to confirm existing data still works.
-
-**Existing database from the pre-Alembic era** (tables already match current models, no `alembic_version` table)
-
-Run once so Alembic does not try to recreate tables:
-
-```bash
-make db-stamp-head
-```
-
-**Escape hatch** (broken or divergent schema): `make db-reset` then `make db-upgrade` (destroys all data).
-
-Integration tests still use `create_all` on an in-memory SQLite database only — production and Docker Postgres always use migrations.
-
-### Offline demo mode
-
-The app ships with a bundled dataset of **495 real reviews** across **8 businesses** so you can run the full product flow — including competitor comparison — without needing an Outscraper API key.
-
-#### Why it exists
-
-- **Demos**: Show the full product to reviewers, friends, or interviewers with realistic data
-- **Smoke tests**: Validate the complete fetch → analyze → compare pipeline locally
-- **CI**: Push/PR workflows run lint, tests, and frontend build (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md))
-
-#### How to enable
-
-```bash
-# 1. Start the stack
-make up
-
-# 2. Apply database migrations
-make db-upgrade
-
-# 3. Set the provider to offline in backend/.env
-#    REVIEW_PROVIDER=offline
-#    OPENAI_API_KEY=<your key>   ← still needed for AI analysis
-
-# 4. Seed the database with demo businesses and competitor links
-make seed-offline
-
-# 5. Log in as demo@example.com / demo1234
-# 6. Fetch reviews and run analysis for each business
-# 7. Generate a comparison from the business detail page
-```
-
-> **Note:** Offline mode provides reviews without an external API, but AI analysis still requires an `OPENAI_API_KEY`. Without one, the app falls back to sample analysis data.
-
-#### Web app behaviour when `offline`
-
-- The businesses list page **hides** the Google Maps / place ID form and shows a short notice pointing to the sample catalog.
-- **`POST /api/businesses`** is rejected with **403** (use **`POST /api/sandbox/import`** from the catalog instead).
-- The frontend reads **`GET /api/bootstrap`** so it does not need a separate build-time flag to detect offline mode.
-- The sandbox catalog groups realistic sample businesses into demo scenarios, separates main businesses from competitors, and turns imported samples into visible "Open workspace" actions.
-- For repeatable demos, use [docs/DEMO_RUNBOOK.md](docs/DEMO_RUNBOOK.md) for pre-demo checks, browser smoke tests, safe reset steps, AWS smoke checks, and cost-aware teardown.
-
-#### What's included
-
-The seed script creates a demo user and populates two scenarios:
-
-| Scenario | Main business | Competitors | Reviews |
-|----------|--------------|-------------|---------|
-| **Bar** | Lager & Ale (Rothschild, TLV) | Lager & Ale (Ra'anana), Lager & Ale (Herzliya), Beer Garden | 100 + 100 + 100 + 33 |
-| **Retail** | Rami Levy (Ariel) | Lala Market | 33 + 33 |
-
-An additional standalone business (Lager & Ale branch, 63 reviews) and Shupersal Deal Ariel (33 reviews) are also seeded.
-
-#### Review providers
-
-| Provider | Reviews source | Needs API key | Best for |
-|----------|---------------|---------------|----------|
-| `mock` | Random generated reviews | No | Quick dev, unit tests |
-| `offline` | Bundled real review snapshots (JSON files) | No (reviews only) | Demos, smoke tests, CI |
-| `outscraper` | Live Google Maps reviews | Yes (`OUTSCRAPER_API_KEY`) | Production use |
-
-All three providers produce the same `NormalizedReview` shape, so the rest of the app (analysis, comparison, dashboard) works identically regardless of provider.
-
-#### Extending the dataset
-
-The dataset lives in `backend/data/offline/`. To add a new business:
-
-1. Create a JSON file with reviews (array of `{author, rating, text, published_at}`)
-2. Add an entry to `manifest.json` pointing to the file
-3. Re-run `make seed-offline`
-
-### Observability
-
-**Structured logs** — all key operations emit `op=<name> duration_ms=<ms> success=<bool>` structured fields. External calls (review providers, LLM) have timeouts and payload limits to fail fast.
-
-**OpenTelemetry (production)** — when `OTEL_EXPORTER_OTLP_ENDPOINT` is set, the backend ships traces, metrics, and auto-instrumented spans to any OTLP-compatible backend (Grafana Cloud, Jaeger, etc.). Fully no-op in local dev when the env var is unset.
-
-| Signal | What's captured |
-|--------|----------------|
-| Traces | Every HTTP request auto-instrumented via FastAPI + SQLAlchemy + httpx instrumentors |
-| `reviews.fetched` | Total reviews fetched per provider call |
-| `analyses.run` | Successful AI analysis completions |
-| `llm.latency_ms` | End-to-end OpenAI call latency (histogram) |
-| `llm.errors` | LLM call failures (timeouts, API errors) |
-| `llm.parse_failures` | Responses where OpenAI returned invalid JSON |
-| `comparisons.run` | Comparison completions (cache miss path) |
-| `comparisons.cache_hits` | MongoDB cache hits (skipped LLM call) |
-| `comparisons.cache_misses` | Cache misses (LLM call needed) |
-
-**Synthetic monitor** — `scripts/synthetic_monitor.py` exercises the full user flow (register → create business → fetch → analyze → dashboard → competitor → comparison × 2 → cleanup) and exits non-zero on any failure. Runs every 30 minutes via `.github/workflows/synthetic.yml` and fires a Telegram alert on failure.
-
-To run manually against a live deployment:
-
-```bash
-MONITOR_BASE_URL=https://your-backend.example.com python scripts/synthetic_monitor.py
-```
-
-**Living demo world** — a persistent demo environment running autonomously on the hosted deployment. Three craft beer bars in Tel Aviv evolve over time via a three-layer modulation system:
-
-| Layer | What it does |
-|-------|-------------|
-| Sine wave | Daily volume rhythm with phase offsets — bars peak at different times |
-| Weekly schedule | Friday night rush (2.8×), Sunday Beer Garden brunch (3.2×), Thursday buildup, Monday dip |
-| 14-day narrative arc | Festival weekend → quiet week → bad keg incident at Tap Room (rating crashes) → recovery arc → wind-down → repeat |
-
-The tick worker (`demo-tick.yml`) injects new reviews every 30 minutes and calls fetch-reviews + analyze. For arc "burst" moments, reviews are generated via `gpt-4o-mini` if `OPENAI_API_KEY` is set; otherwise falls back to the hand-authored template bank.
-
-A soak report runs weekly and at end-of-cycle, querying the DB and GitHub Actions history to produce a human-readable Telegram summary of what the story arc produced and how the system held up.
-
-Demo login (hosted):
-- **URL:** the ALB public DNS (see GitHub → Settings → Variables → `BACKEND_PUBLIC_URL`)
-- **Email:** `demo@review-insight.app`
-- **Password:** `DemoWorld2026!`
-
-To seed or re-seed the demo world manually:
-
-```bash
-DATABASE_URL=... DEMO_API_URL=http://... python scripts/seed_demo.py
-```
-
-To run a tick manually:
-
-```bash
-DATABASE_URL=... DEMO_API_URL=http://... python scripts/tick_demo.py --dry-run
-DATABASE_URL=... DEMO_API_URL=http://... python scripts/tick_demo.py --show-arc
-```
-
-### Database reset (escape hatch)
-
-If the database is corrupted or out of sync with migrations, drop everything and reapply:
-
-```bash
-make db-reset
-make db-upgrade
-```
-
-Then re-seed if needed (`make seed-offline`) and re-register users.
-
-## Benchmark
-
-The polyglot persistence layer was benchmarked on AWS ECS Fargate (Postgres-only vs Postgres + MongoDB Atlas M0).
-
-| Operation | Postgres-only | + MongoDB | Change |
-|-----------|--------------|-----------|--------|
-| Comparison (cold) | 5,797 ms | 5,190 ms | same (LLM-bound) |
-| Comparison (cache hit) | 5,049 ms | 1,235 ms | **4.2x faster** |
-| Analysis history query | N/A | 575 ms | **new capability** |
-
-```
-Comparison latency (ms) — lower is better
-
-Postgres-only (every call hits LLM):
-  cold     |████████████████████████████████████████████████████| 5,797 ms
-  "cached" |████████████████████████████████████████████████    | 5,049 ms
-
-Postgres + MongoDB (cache hit skips LLM):
-  cold     |████████████████████████████████████████████████    | 5,190 ms
-  cached   |██████████                                         | 1,235 ms  ← 4.2x faster
-```
-
-Cache hits skip the OpenAI LLM call entirely and serve a MongoDB document instead. All MongoDB features gracefully no-op when `MONGO_URI` is unset.
-
-Full results: [docs/BENCHMARK.md](docs/BENCHMARK.md)
-
-```bash
-make benchmark   # run against a live backend
-```
+### Backend
+
+| Variable                   | Default         | Purpose                                                 |
+| -------------------------- | --------------- | ------------------------------------------------------- |
+| `DATABASE_URL`             | local Postgres  | SQL database.                                           |
+| `REVIEW_PROVIDER`          | `mock`          | `mock`, `offline`, `outscraper`, or `simulation`.       |
+| `OPENAI_API_KEY`           | empty           | Analysis and OpenAI agent calls.                        |
+| `LLM_PROVIDER`             | `openai`        | `openai`, `openrouter`, or test-only `scripted`.        |
+| `LLM_MODEL`                | `gpt-4o-mini`   | Analysis/comparison model.                              |
+| `LLM_AGENT_MODEL`          | `gpt-4o-mini`   | Agent model.                                            |
+| `OPENROUTER_API_KEY`       | empty           | Used when `LLM_PROVIDER=openrouter`.                    |
+| `OUTSCRAPER_API_KEY`       | empty           | Live Google Maps review provider.                       |
+| `GOOGLE_PLACES_API_KEY`    | empty           | Optional place lookup.                                  |
+| `JWT_SECRET_KEY`           | dev placeholder | JWT signing key.                                        |
+| `MONGO_URI`                | empty           | Optional comparison cache/history/raw response storage. |
+| `BUSINESS_INSIGHT_ENABLED` | `true`          | Exposes broader Business Insight tools.                 |
+| `DEMO_SIGNALS_ENABLED`     | `true`          | Exposes deterministic demo signal tools.                |
+| `SIGNAL_PROVIDER`          | `demo`          | Signal provider family.                                 |
+| `DEBUG_TRACE`              | `false`         | Enables local trace ring/debug UI support.              |
+| `TESTING`                  | `false`         | Gates `/api/test/*` and scripted LLM provider.          |
+
+### Frontend
+
+| Variable                  | Purpose                                            |
+| ------------------------- | -------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`     | Backend base URL, usually `http://localhost:8000`. |
+| `NEXT_PUBLIC_DEBUG_TRAIL` | Enables the browser debug trail panel when set.    |
+
+## API Surface
+
+All app endpoints are under `/api`.
+
+### Core
+
+| Endpoint                             | Method     | Description                                         |
+| ------------------------------------ | ---------- | --------------------------------------------------- |
+| `/api/bootstrap`                     | GET        | Public client hints such as active review provider. |
+| `/api/auth/register`                 | POST       | Register user.                                      |
+| `/api/auth/login`                    | POST       | Login and receive JWT.                              |
+| `/api/auth/me`                       | GET        | Current user.                                       |
+| `/api/businesses`                    | GET/POST   | List or create businesses.                          |
+| `/api/businesses/{id}`               | GET/DELETE | Read or delete a business.                          |
+| `/api/businesses/{id}/fetch-reviews` | POST       | Fetch/replace reviews.                              |
+| `/api/businesses/{id}/reviews`       | GET        | List stored reviews.                                |
+| `/api/businesses/{id}/analyze`       | POST       | Run structured AI analysis.                         |
+| `/api/businesses/{id}/dashboard`     | GET        | Aggregated dashboard view.                          |
+
+### Competitors
+
+| Endpoint                                      | Method   | Description               |
+| --------------------------------------------- | -------- | ------------------------- |
+| `/api/businesses/{id}/competitors`            | GET/POST | List or link competitors. |
+| `/api/businesses/{id}/competitors/{cid}`      | DELETE   | Remove competitor link.   |
+| `/api/businesses/{id}/competitors/comparison` | POST     | Generate AI comparison.   |
+
+### Agent Workspace
+
+| Endpoint                                         | Method | Description                      |
+| ------------------------------------------------ | ------ | -------------------------------- |
+| `/api/businesses/{id}/agent/chat`                | POST   | SSE chat stream with tool calls. |
+| `/api/businesses/{id}/agent/workspace`           | GET    | List persisted widgets.          |
+| `/api/businesses/{id}/agent/workspace`           | POST   | Manually pin widget.             |
+| `/api/businesses/{id}/agent/workspace/reorder`   | PATCH  | Persist exact widget order.      |
+| `/api/businesses/{id}/agent/workspace/{wid}`     | DELETE | Remove widget.                   |
+| `/api/businesses/{id}/agent/conversations`       | GET    | List conversations.              |
+| `/api/businesses/{id}/agent/conversations/{cid}` | GET    | Hydrate one conversation.        |
+
+### Sandbox
+
+| Endpoint               | Method | Description                 |
+| ---------------------- | ------ | --------------------------- |
+| `/api/sandbox/catalog` | GET    | Offline sample catalog.     |
+| `/api/sandbox/import`  | POST   | Import sample business.     |
+| `/api/sandbox/reset`   | POST   | Reset imported sample data. |
 
 ## Testing
 
-Backend tests use **pytest**:
+### Main Commands
 
 ```bash
-make test                # unit tests (no server required)
-make test-integration    # integration tests (in-memory SQLite, no server required)
-make test-e2e            # end-to-end tests (requires running backend via make up)
+make quick              # lint + backend unit tests
+make validate           # lint + backend unit/integration + frontend build
+make test-e2e-servers   # start deterministic backend/frontend for Playwright
+make test-e2e-ui        # run Playwright suite
 ```
 
-### Frontend Playwright E2E (agent + dashboard)
+### What Gets Tested
 
-Deterministic browser-driven coverage for the seven highest-risk agent flows
-(add widget with data, refresh persistence, remove, duplicate, incompatible-chart
-recovery, manual pin from chat, workspace load failure). Lives in `frontend/e2e/`.
+| Lane                | Scope                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------- |
+| Backend unit        | Tool logic, scoring, normalization, guardrails, provider behavior.                                        |
+| Backend integration | Auth/business/review/analysis/competitor/agent flows without live APIs.                                   |
+| Frontend unit       | Widget renderers, dashboard section classifier, blackboard reducer, API helpers.                          |
+| Playwright          | Real browser path for add/persist/remove/duplicate/recover/pin/widget-load flows.                         |
+| Synthetic monitor   | Live deployment smoke path: register, create, fetch, analyze, dashboard, competitor, comparison, cleanup. |
 
-**Local run (two terminals):**
+### Scripted Agent E2E
 
-```bash
-# Terminal 1 — start backend + frontend in deterministic mode
-make test-e2e-servers
+The browser suite does not call a live LLM. Instead:
 
-# Terminal 2 — run the Playwright suite
-make test-e2e-ui
+1. Backend runs with `TESTING=true` and `LLM_PROVIDER=scripted`.
+2. Each Playwright scenario posts a script fixture to `/api/test/agent/script`.
+3. The real `/agent/chat` route runs.
+4. The scripted provider returns deterministic assistant/tool-call turns.
+5. The executor, tools, SSE events, DB writes, frontend reducer, and widget renderer are all exercised.
+
+This is the main reason agent behavior can be regression-tested without model variance.
+
+## Project Structure
+
+```text
+backend/
+  app/
+    agent/          # executor, tool registry, guardrails, system prompt
+    llm/            # OpenAI/OpenRouter/scripted provider abstraction
+    models/         # SQLAlchemy models
+    providers/      # review provider implementations
+    routes/         # FastAPI routers
+    schemas/        # Pydantic request/response contracts
+    services/       # review, analysis, comparison, dashboard logic
+  alembic/          # migrations
+  data/offline/     # bundled demo review snapshots
+  tests/            # unit, integration, e2e, scripted fixtures
+
+frontend/
+  e2e/              # Playwright specs
+  src/
+    app/            # Next.js app routes
+    components/     # UI and agent workspace components
+    lib/            # API client, auth, blackboard, tests, types
+
+docs/               # runbooks, staging, release notes, benchmarks
+infrastructure/     # AWS/ECS scripts and Grafana dashboard JSON
+scripts/            # synthetic monitor, demo ticks, seeding
 ```
 
-`test-e2e-servers` boots the stack with:
+## Deployment and Operations
 
-| Var               | Value      | Why                                                                          |
-|-------------------|------------|------------------------------------------------------------------------------|
-| `DATABASE_URL`    | `$(E2E_DATABASE_URL)` (defaults to local Docker Postgres) | Avoids accidentally running E2E against staging/production data |
-| `TESTING`         | `true`     | Mounts `/api/test/agent/script` + unlocks `LLM_PROVIDER=scripted`            |
-| `LLM_PROVIDER`    | `scripted` | Routes the agent loop through `ScriptedProvider` instead of OpenAI/OpenRouter |
-| `REVIEW_PROVIDER` | `mock`     | Deterministic in-memory review fixtures                                      |
-| `OPENAI_API_KEY`  | `$(E2E_OPENAI_API_KEY)` (defaults to a cleared placeholder) | Defence in depth — avoids using a real key from `backend/.env` |
+### Local / Docker
 
-**How agent responses stay deterministic.** The backend ships an in-process
-`ScriptedProvider` (`backend/app/llm/scripted.py`) selected when
-`LLM_PROVIDER=scripted` AND `TESTING=true`. Each Playwright spec POSTs a
-per-scenario JSON script to `POST /api/test/agent/script`; the provider
-replays the assistant turns (text + tool calls) in order from
-`complete_with_tools`. No network calls, no SDK, no model variance.
-Fixtures live in `backend/tests/fixtures/agent_scripts/`.
+Docker Compose runs:
 
-**How the suite is structured.**
-- One spec per scenario (`agent-add-and-refresh.spec.ts`, etc.) with a fresh
-  user + business per test (`seedUser` helper). Auth bypassed via injected
-  `localStorage` token.
-- Stable `data-testid` selectors only (`agent-input`, `agent-send`,
-  `chat-message`, `workspace-widget`, `widget-title`, `widget-chart`,
-  `widget-empty-state`, `workspace-error-banner`, `workspace-empty-state`,
-  `pin-widget-button`, `remove-widget-button`, `retry-workspace-button`,
-  `dashboard-desktop`/`dashboard-mobile`).
-- Serial execution (`workers: 1`, `fullyParallel: false`) because the
-  ScriptedProvider singleton holds per-test scripts.
+- PostgreSQL 16
+- MongoDB 7
+- FastAPI backend
+- Next.js frontend
 
-**Debugging failures.** Playwright is configured with `trace: retain-on-failure`
-and `screenshot: only-on-failure`. After a red run:
+### AWS Path
 
-```bash
-cd frontend
-npm run test:e2e:report                         # open HTML report
-npx playwright show-trace test-results/<name>/trace.zip   # step-through trace
-```
+Infrastructure scripts support:
 
-The `error-context.md` next to each failing test has the rendered DOM snapshot
-and the failing locator. Backend SSE events are visible in the browser network
-tab when running `npm run test:e2e:ui` (Playwright's interactive mode).
+- ECR image repositories.
+- ECS Fargate backend/frontend services.
+- Application Load Balancer routing.
+- SSM Parameter Store secrets.
+- CloudWatch logs.
+- Cost-aware scale-down/teardown.
 
-**CI status.** GitHub Actions now runs this suite in a dedicated Playwright job
-after the backend and frontend validation jobs pass. The job starts Postgres,
-applies Alembic migrations, boots the backend with `TESTING=true`,
-`LLM_PROVIDER=scripted`, `REVIEW_PROVIDER=mock`, and an empty `OPENAI_API_KEY`,
-boots the frontend against `http://localhost:8000`, runs Chromium with
-`workers: 1`, caches Playwright browsers, and uploads `playwright-report/`,
-`test-results/`, and server logs on failure.
+CD builds SHA-tagged images and updates ECS services after validation.
 
-### Continuous integration
+### Observability
 
-On every push and pull request to `main` / `master`, **GitHub Actions** runs backend lint (`ruff`), backend tests (unit + integration), frontend lint + production build, and the deterministic Playwright agent/dashboard E2E suite. Details: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
+When OTLP variables are configured, the backend exports traces and metrics through OpenTelemetry. When they are unset, observability is a no-op and local development stays simple.
 
-After every deployment, the **synthetic monitor** (`synthetic.yml`) automatically runs the full user-flow check against the live backend. It also runs on a 30-minute cron schedule. Results are uploaded as workflow artifacts. Configure `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` in GitHub repo secrets to receive phone alerts on failure.
+Signals include:
 
-To match CI locally before you push:
+- HTTP request rate/error/latency.
+- Review fetch counts.
+- Analysis/comparison completions.
+- LLM latency/errors/parse failures.
+- Mongo comparison cache hits/misses.
+- Synthetic monitor results.
 
-```bash
-make validate
-```
+Grafana dashboard JSON lives under `infrastructure/grafana/dashboards/`.
 
-### Unit tests
+## Screenshots
 
-| Area | Coverage |
-|------|----------|
-| Provider normalization | Mock data shape, determinism, field validation, source tagging |
-| Analysis normalization | Insight coercion, string normalization, missing-field defaults |
-| Prompt generation | Business-type-specific prompts for all 8 types + generic fallback |
-| Schema validation | Dashboard response shape, analysis fields, business type enum |
-| URL parsing | Google Maps URL formats, short-link resolution, place ID extraction |
+These screenshots are from earlier product states and should be refreshed after the Business Insight rebrand is pushed.
 
-### Integration tests
+1. Login
+   ![Login](docs/screenshots/01-login.png)
 
-Backend integration tests (`tests/integration/`) use an in-memory SQLite database and mock providers to test multi-layer flows without external dependencies:
+2. Business List
+   ![Business List](docs/screenshots/02-business-list.png)
 
-- Full business + review + analysis lifecycle
-- Refresh clears stale analysis
-- Competitor link flow and duplicate/self-link protections
-- Competitor promotion (competitor-only → regular business)
+3. Dashboard Header
+   ![Dashboard Header](docs/screenshots/03-dashboard-header.png)
 
-### End-to-end test
+4. Dashboard Insights
+   ![Dashboard Insights](docs/screenshots/04-dashboard-insights.png)
 
-A single E2E test (`tests/e2e/test_full_flow.py`) verifies the full core workflow against a running backend:
+5. Competitors
+   ![Competitors](docs/screenshots/05-competitors.png)
 
-1. Register a user
-2. Create a business
-3. Fetch reviews
-4. Run analysis
-5. Validate dashboard contains all expected fields
-6. Verify that refreshing reviews clears stale analysis
+6. Comparison
+   ![Comparison](docs/screenshots/06-comparison.png)
 
-## Specification
+7. Reviews
+   ![Reviews](docs/screenshots/07-reviews.png)
 
-For detailed system behavior, user flows, analysis output shapes, and known limitations, see [docs/SPEC.md](docs/SPEC.md).
+8. Debug Panel Events
+   ![Debug Panel Events](docs/screenshots/08-debug-panel-events.png)
 
 ## Roadmap
 
-- [x] Competitor comparison — side-by-side insights against linked competitor businesses
-- [ ] Additional review providers — Yelp, TripAdvisor, App Store, Play Store
-- [x] Database migrations — Alembic for safe schema evolution
-- [x] Delete businesses
-- [x] Offline demo dataset
-- [ ] Secure auth — refresh tokens, httpOnly cookies
-- [ ] Background jobs — Celery/Redis for async review fetching
-- [ ] Export reports — PDF/CSV
-- [x] CI/CD pipeline — GitHub Actions CI (lint + tests + build) + CD (ECS deploy) + synthetic monitor (every 30 min)
-- [x] Living demo world — autonomous 14-day narrative arc, sine-wave + weekly modulation, LLM burst reviews, soak report
-- [x] Agent dashboard builder — chat command center with tool calls, SSE streaming, chart-ready trends, persistent dashboard canvas widgets, and blackboard-backed pin reliability
+Done:
+
+- Review ingestion provider architecture.
+- AI review analysis.
+- Competitor comparison.
+- Persistent agent workspace.
+- Agent-pinned widgets with SSE workspace events.
+- Widget compatibility and pin recovery.
+- Deterministic Playwright harness for agent/dashboard flows.
+- Business Insight rebrand.
+- Business health score.
+- Signal timeline.
+- Deterministic demo signals.
+- Opportunity finder and action plan.
+- Observability and synthetic monitoring paths.
+
+Next:
+
+- Commit/push Phase 1-5 Business Insight changes.
+- Run expanded Playwright suite for new Business Insight tools.
+- Refresh screenshots and demo recording.
+- Finish Phase 6 manual decisions around real integrations.
+- Add real integration candidates only after demo provider contracts are proven:
+  - Google Business Profile / local presence.
+  - POS-style sales data.
+  - Social/content mentions.
+  - Additional review providers such as Yelp or TripAdvisor, subject to API/legal constraints.
+
+Not planned immediately:
+
+- Renaming internal DB names/routes/packages.
+- Building generic enterprise BI.
+- Adding real integrations before the multi-signal UX is validated.
+- Requiring live LLM/API calls in deterministic tests.
 
 ## License
 

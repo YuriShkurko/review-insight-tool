@@ -6,6 +6,11 @@ import { TrendIndicator } from "./widgets/TrendIndicator";
 import { DonutChart } from "./widgets/DonutChart";
 import { HorizontalBarChart } from "./widgets/HorizontalBarChart";
 import { ComparisonChart } from "./widgets/ComparisonChart";
+import { HealthScore } from "./widgets/HealthScore";
+import { SignalTimeline } from "./widgets/SignalTimeline";
+import { SignalSummary } from "./widgets/SignalSummary";
+import { ActionPlan } from "./widgets/ActionPlan";
+import { MoneyFlow } from "./widgets/MoneyFlow";
 
 type ReviewRow = {
   id: string;
@@ -211,10 +216,24 @@ export function WidgetRenderer({
       return <HorizontalBarChart data={data} />;
     case "comparison_chart":
       return <ComparisonChart data={data} />;
+    case "health_score":
+      return <HealthScore data={data} />;
+    case "signal_timeline":
+      return <SignalTimeline data={data} />;
+    case "sales_summary":
+    case "operations_risk":
+    case "local_presence_card":
+    case "social_signal":
+      return <SignalSummary widgetType={widgetType} data={data} />;
+    case "opportunity_list":
+    case "action_plan":
+      return <ActionPlan widgetType={widgetType} data={data} />;
     case "review_list":
       return <ReviewListWidget data={data} />;
     case "comparison_card":
       return <ComparisonWidget data={data} />;
+    case "money_flow":
+      return <MoneyFlow data={data} />;
     default:
       return (
         <p className="text-xs text-text-muted italic">

@@ -47,8 +47,8 @@ function SampleBusinessCard({
             : "sandbox-standalone-business"
       }
       data-place-id={row.place_id}
-      className={`flex h-full flex-col rounded-lg border bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
-        featured ? "border-brand/30 ring-2 ring-brand/10" : "border-slate-200"
+      className={`flex h-full flex-col rounded-lg border bg-surface-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+        featured ? "border-brand/30 ring-2 ring-brand/10" : "border-border"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -58,7 +58,7 @@ function SampleBusinessCard({
               className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                 role === "main"
                   ? "border-brand/20 bg-brand-light text-brand"
-                  : "border-slate-200 bg-slate-50 text-slate-500"
+                  : "border-border-subtle bg-surface text-text-muted"
               }`}
             >
               {roleLabel}
@@ -86,13 +86,13 @@ function SampleBusinessCard({
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <div className="rounded-lg border border-border-subtle bg-surface px-3 py-2">
           <p className="font-medium uppercase tracking-wider text-text-muted">Reviews</p>
           <p className="mt-1 text-sm font-semibold text-text-primary">
             {row.review_count.toLocaleString()}
           </p>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <div className="rounded-lg border border-border-subtle bg-surface px-3 py-2">
           <p className="font-medium uppercase tracking-wider text-text-muted">Type</p>
           <p className="mt-1 truncate text-sm font-semibold capitalize text-text-primary">
             {formatBusinessType(row.business_type)}
@@ -162,13 +162,13 @@ export default function SandboxCatalog({
             build the AI workspace with deterministic local JSON instead of live Google data.
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-secondary">
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+            <span className="rounded-full border border-border-subtle bg-surface px-3 py-1 text-text-secondary">
               {totalScenarios} scenario{totalScenarios !== 1 ? "s" : ""}
             </span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+            <span className="rounded-full border border-border-subtle bg-surface px-3 py-1 text-text-secondary">
               {totalSamples} sample{totalSamples !== 1 ? "s" : ""}
             </span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+            <span className="rounded-full border border-border-subtle bg-surface px-3 py-1 text-text-secondary">
               Local demo data
             </span>
           </div>
@@ -179,7 +179,7 @@ export default function SandboxCatalog({
             disabled={resetBusy}
             onClick={() => onResetSandbox()}
             data-testid="sandbox-reset-action"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-text-muted transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+            className="rounded-lg border border-border bg-surface-card px-3 py-2 text-xs font-medium text-text-secondary transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger disabled:opacity-50 dark:hover:border-danger/50"
           >
             {resetBusy ? "Resetting..." : "Reset offline samples"}
           </button>
@@ -192,9 +192,9 @@ export default function SandboxCatalog({
             key={scenario.id}
             data-testid="sandbox-scenario-card"
             data-scenario-id={scenario.id}
-            className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80"
+            className="overflow-hidden rounded-xl border border-border bg-surface"
           >
-            <div className="border-b border-slate-200 bg-white px-4 py-4 sm:px-5">
+            <div className="border-b border-border bg-surface-card px-4 py-4 sm:px-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-semibold text-text-primary">
@@ -204,7 +204,7 @@ export default function SandboxCatalog({
                     {scenario.description}
                   </p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-right">
+                <div className="rounded-lg border border-border-subtle bg-surface px-3 py-2 text-right">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
                     Curated reviews
                   </p>
@@ -250,7 +250,7 @@ export default function SandboxCatalog({
         ))}
 
         {catalog.standalone.length > 0 && (
-          <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+          <section className="rounded-xl border border-border bg-surface-card p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold text-text-primary">More samples</h3>
@@ -258,7 +258,7 @@ export default function SandboxCatalog({
                   Extra businesses you can launch on their own or use for alternate demos.
                 </p>
               </div>
-              <p className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-text-secondary">
+              <p className="rounded-full border border-border-subtle bg-surface px-3 py-1 text-xs text-text-secondary">
                 {catalog.standalone.length} standalone
               </p>
             </div>
@@ -284,15 +284,15 @@ export default function SandboxCatalog({
     return (
       <details
         data-testid="sandbox-catalog"
-        className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+        className="rounded-xl border border-border bg-surface-card p-4 shadow-sm"
       >
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-text-primary">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-text-primary [&::-webkit-details-marker]:hidden">
           <span>Browse offline demo samples</span>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-text-muted">
+          <span className="rounded-full border border-border-subtle bg-surface px-2 py-0.5 text-xs font-medium text-text-secondary">
             {totalSamples} samples
           </span>
         </summary>
-        <div className="mt-4 border-t border-slate-100 pt-4">{inner}</div>
+        <div className="mt-4 border-t border-border-subtle pt-4">{inner}</div>
       </details>
     );
   }
@@ -300,7 +300,7 @@ export default function SandboxCatalog({
   return (
     <section
       data-testid="sandbox-catalog"
-      className="rounded-xl border border-blue-200 bg-white p-5 shadow-sm sm:p-6"
+      className="rounded-xl border border-border bg-surface-card p-5 shadow-sm sm:p-6"
     >
       {inner}
     </section>

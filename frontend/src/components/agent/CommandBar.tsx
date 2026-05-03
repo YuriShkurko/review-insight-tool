@@ -3,9 +3,9 @@
 const AGENT_COMMANDS = [
   {
     id: "build-demo-dashboard",
-    label: "Build demo dashboard",
+    label: "Build business dashboard",
     prompt:
-      "Build a concise demo dashboard with the strongest rating, trend, issue, evidence, and action widgets. Clear stale clutter first if needed.",
+      "Clear the dashboard if needed, then build a Business Insight demo dashboard. Include: (1) business health score via get_business_health → health_score, (2) review trend over 30 days via get_review_series → line_chart, (3) top issues via get_top_issues → horizontal_bar_chart, (4) signal timeline via get_signal_timeline → signal_timeline, (5) money flow / profit bridge via get_financial_flow → money_flow, (6) action plan via get_action_plan → action_plan. Add a review evidence widget (query_reviews → review_list) if useful. Do not use create_custom_chart_data for profit-bridge or money-flow charts.",
   },
   {
     id: "show-top-issues",
@@ -27,7 +27,7 @@ const AGENT_COMMANDS = [
     id: "clear-and-rebuild",
     label: "Clear and rebuild",
     prompt:
-      "Clear the current dashboard, then rebuild a clean demo-ready dashboard with the most important widgets.",
+      "Clear the current dashboard, then rebuild a clean demo-ready Business Insight dashboard. Include: get_business_health → health_score, get_signal_timeline → signal_timeline, get_financial_flow → money_flow, get_action_plan → action_plan, get_review_series (past_30d) → line_chart, get_top_issues → horizontal_bar_chart, and query_reviews → review_list for evidence. Use each data tool before pin_widget.",
   },
 ] as const;
 

@@ -312,7 +312,7 @@ function BusinessDetailContent({
                 })}
               </h1>
               <p className="hidden text-xs text-white/45 sm:block">
-                AI-assisted customer voice workspace
+                AI-assisted business insight workspace
               </p>
             </div>
             {dashboard.business_type && dashboard.business_type !== "other" && (
@@ -383,7 +383,7 @@ function BusinessDetailContent({
           type="button"
           onClick={() => setActiveTab("workspace")}
           className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "workspace" ? "bg-white text-[#111827]" : "text-white/55"
+            activeTab === "workspace" ? "bg-surface-card text-text-primary" : "text-white/55"
           }`}
         >
           Dashboard{state.widgets.length > 0 ? ` (${state.widgets.length})` : ""}
@@ -392,7 +392,7 @@ function BusinessDetailContent({
           type="button"
           onClick={() => setActiveTab("chat")}
           className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
-            activeTab === "chat" ? "bg-white text-[#111827]" : "text-white/55"
+            activeTab === "chat" ? "bg-surface-card text-text-primary" : "text-white/55"
           }`}
         >
           Assistant
@@ -401,7 +401,7 @@ function BusinessDetailContent({
 
       <div
         data-testid="dashboard-desktop"
-        className="relative hidden flex-1 overflow-hidden bg-[#f6f7fb] lg:flex lg:flex-col"
+        className="relative hidden flex-1 overflow-hidden bg-surface lg:flex lg:flex-col"
       >
         {/* Keep workspace chrome clear of the fixed assistant panel (same width as aside: right-5 + w). */}
         <div
@@ -424,7 +424,7 @@ function BusinessDetailContent({
         {!presentationMode && !chatCollapsed ? (
           <aside
             data-testid="assistant-drawer"
-            className="animate-panel-in absolute bottom-5 right-5 top-5 z-20 w-[min(430px,34vw)] overflow-hidden rounded-lg border border-white/15 bg-white shadow-2xl"
+            className="animate-panel-in absolute bottom-5 right-5 top-5 z-20 w-[min(430px,34vw)] overflow-hidden rounded-lg border border-white/15 bg-surface-card shadow-2xl"
           >
             <ChatPanel businessId={id} chat={chat} onCollapse={onCollapseChat} />
           </aside>
@@ -459,7 +459,7 @@ function BusinessDetailContent({
           />
         </div>
         <div
-          className={`${activeTab === "chat" && !presentationMode ? "flex" : "hidden"} flex-1 flex-col overflow-hidden bg-white`}
+          className={`${activeTab === "chat" && !presentationMode ? "flex" : "hidden"} flex-1 flex-col overflow-hidden bg-surface-card`}
         >
           <ChatPanel businessId={id} chat={chat} />
         </div>

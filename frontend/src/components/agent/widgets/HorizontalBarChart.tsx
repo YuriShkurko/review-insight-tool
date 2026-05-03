@@ -42,9 +42,11 @@ export function HorizontalBarChart({ data }: { data: Record<string, unknown> }) 
   return (
     <div className="space-y-2">
       {bars.slice(0, 8).map((bar) => (
-        <div key={bar.label} className="group">
+        <div key={bar.label} className="group/row cursor-default">
           <div className="mb-0.5 flex items-center justify-between gap-2 text-xs">
-            <span className="truncate text-text-secondary">{bar.label}</span>
+            <span className="truncate text-text-secondary group-hover/row:text-text-primary">
+              {bar.label}
+            </span>
             <span className="tabular-nums text-text-primary">{bar.value}</span>
           </div>
           <div className="h-2 rounded-full bg-surface-elevated">

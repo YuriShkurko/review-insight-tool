@@ -153,8 +153,8 @@ export function ChatPanel({
   const lastActionSummary = getLastActionSummary(items);
 
   return (
-    <div className="flex h-full flex-col bg-white">
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-[#111827] px-4 py-3 text-white">
+    <div className="flex h-full flex-col bg-surface-card">
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-[#111827] px-4 py-3 text-white">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-white/45">
             Copilot
@@ -203,7 +203,7 @@ export function ChatPanel({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50 px-4 py-4">
+      <div className="flex-1 overflow-y-auto bg-surface px-4 py-4">
         {isEmpty ? (
           <SuggestedPrompts onSelect={sendMessage} />
         ) : (
@@ -211,7 +211,7 @@ export function ChatPanel({
             {lastActionSummary && (
               <div
                 data-testid="assistant-last-action"
-                className="rounded-lg border border-brand/15 bg-brand-light/40 px-3 py-2 text-xs text-brand"
+                className="rounded-lg border border-brand/30 bg-surface-elevated px-3 py-2 text-xs text-text-primary"
               >
                 {lastActionSummary}
               </div>
@@ -232,7 +232,7 @@ export function ChatPanel({
       </div>
 
       {(error || pinError) && (
-        <div className="mx-4 mb-2 flex shrink-0 items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="mx-4 mb-2 flex shrink-0 items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
           <span>{error ?? pinError}</span>
           <button
             type="button"
@@ -240,7 +240,7 @@ export function ChatPanel({
               clearError();
               setPinError(null);
             }}
-            className="shrink-0 text-red-400 transition-colors hover:text-red-600"
+            className="shrink-0 text-red-500 transition-colors hover:text-red-700 dark:text-red-300 dark:hover:text-red-100"
             aria-label="Dismiss error"
           >
             x

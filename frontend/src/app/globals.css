@@ -14,6 +14,22 @@
   --color-brand-light: #ede9fe;
   --color-accent: #d97706;
   --color-accent-light: #fef3c7;
+  /* semantic */
+  --color-success: #16a34a;
+  --color-success-soft: #f0fdf4;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+  --color-info: #0891b2;
+  --color-info-soft: #ecfeff;
+  /* chart palette */
+  --color-chart-1: #7c3aed;
+  --color-chart-2: #0891b2;
+  --color-chart-3: #0d9488;
+  --color-chart-4: #d97706;
+  --color-chart-5: #e11d48;
+  --color-chart-6: #78716c;
 }
 
 .dark {
@@ -30,6 +46,20 @@
   --color-brand-light: #2e1065;
   --color-accent: #fbbf24;
   --color-accent-light: #451a03;
+  --color-success: #4ade80;
+  --color-success-soft: #052e16;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #451a03;
+  --color-danger: #f87171;
+  --color-danger-soft: #450a0a;
+  --color-info: #22d3ee;
+  --color-info-soft: #083344;
+  --color-chart-1: #a78bfa;
+  --color-chart-2: #22d3ee;
+  --color-chart-3: #2dd4bf;
+  --color-chart-4: #fbbf24;
+  --color-chart-5: #fb7185;
+  --color-chart-6: #a8a29e;
 }
 
 @keyframes pulse-slow {
@@ -93,7 +123,7 @@
 
 @keyframes chart-draw {
   from {
-    stroke-dashoffset: 160;
+    stroke-dashoffset: 1;
   }
   to {
     stroke-dashoffset: 0;
@@ -101,8 +131,8 @@
 }
 
 .chart-path-reveal {
-  stroke-dasharray: 160;
-  stroke-dashoffset: 160;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
   animation: chart-draw 520ms ease-out both;
 }
 
@@ -123,6 +153,7 @@
   }
 
   .chart-path-reveal {
+    stroke-dasharray: none;
     stroke-dashoffset: 0;
   }
 }

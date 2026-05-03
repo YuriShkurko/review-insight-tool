@@ -105,11 +105,11 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="space-y-3">
-      <div className="h-32 w-full rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="h-36 w-full rounded-xl border border-border-subtle bg-surface p-3">
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           className="h-full w-full"
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="none"
         >
           {gridLines.map((y, i) => (
             <line
@@ -118,7 +118,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
               x2={chartWidth - padX}
               y1={y}
               y2={y}
-              className="stroke-slate-200"
+              className="stroke-border-subtle"
               strokeWidth="0.5"
             />
           ))}
@@ -129,6 +129,7 @@ export function LineChart({ data }: { data: Record<string, unknown> }) {
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            pathLength="1"
             className="chart-path-reveal text-brand"
           />
           {/* Anchor first/last so a single-point or short series still reads. */}

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { chartColor } from "@/lib/chartColors";
 
 type Slice = { label: string; value: number; percent?: number };
-
-const COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2"];
 
 function toNumber(value: unknown): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -63,19 +62,27 @@ export function DonutChart({ data }: { data: Record<string, unknown> }) {
     return [...acc, { slice, path: arcPath(50, 50, 44, start, end) }];
   }, []);
 
+  const centerLabel =
+    selectedIdx !== null && slices[selectedIdx] !== undefined
+      ? `${slices[selectedIdx].percent}%`
+      : String(total);
+  const centerSub =
+    selectedIdx !== null && slices[selectedIdx] !== undefined ? slices[selectedIdx].label : "total";
+
   return (
-    <div className="grid grid-cols-[88px_1fr] items-center gap-3">
+    <div className="grid grid-cols-[96px_1fr] items-center gap-4">
       <svg viewBox="0 0 100 100" className="h-24 w-24" role="img" aria-label="Donut chart">
         {segments.map(({ slice, path }, index) => {
           const isSelected = selectedIdx === index;
+          const color = chartColor(index);
           return (
             <path
               key={slice.label}
               d={path}
-              fill={COLORS[index % COLORS.length]}
-              opacity={selectedIdx !== null && !isSelected ? 0.45 : 1}
-              stroke={isSelected ? "white" : "none"}
-              strokeWidth={isSelected ? 2 : 0}
+              fill={color}
+              opacity={selectedIdx !== null && !isSelected ? 0.35 : 1}
+              stroke={isSelected ? "white" : "transparent"}
+              strokeWidth={isSelected ? 1.5 : 0}
               style={{ cursor: "pointer" }}
               onClick={() => setSelectedIdx(isSelected ? null : index)}
             >
@@ -83,35 +90,38 @@ export function DonutChart({ data }: { data: Record<string, unknown> }) {
             </path>
           );
         })}
-        <circle cx="50" cy="50" r="25" className="fill-surface-card" />
-        <text x="50" y="53" textAnchor="middle" className="fill-text-primary text-[13px] font-bold">
-          {selectedIdx !== null && slices[selectedIdx] !== undefined
-            ? slices[selectedIdx].value
-            : total}
+        <circle cx="50" cy="50" r="26" fill="white" />
+        <text x="50" y="48" textAnchor="middle" fontSize="14" fontWeight="700" fill="#1c1917">
+          {centerLabel}
+        </text>
+        <text x="50" y="60" textAnchor="middle" fontSize="7" fill="#a8a29e">
+          {centerSub.length > 10 ? centerSub.slice(0, 9) + "…" : centerSub}
         </text>
       </svg>
-      <div className="space-y-1 text-xs">
+      <div className="space-y-1.5 text-xs">
         {slices.map((slice, index) => {
           const isSelected = selectedIdx === index;
+          const color = chartColor(index);
           return (
             <div
               key={slice.label}
-              className={`flex cursor-pointer items-center justify-between gap-2 rounded transition-colors ${isSelected ? "bg-surface-elevated" : ""}`}
+              className={`flex cursor-pointer items-center justify-between gap-2 rounded px-1 py-0.5 transition-colors ${isSelected ? "bg-surface-elevated" : ""}`}
               onClick={() => setSelectedIdx(isSelected ? null : index)}
             >
-              <span
-                className={`flex min-w-0 items-center gap-1.5 ${isSelected ? "text-text-primary font-medium" : "text-text-secondary"}`}
-              >
+              <span className="flex min-w-0 items-center gap-1.5">
                 <span
-                  className="h-2 w-2 shrink-0 rounded-sm"
-                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                  style={{ backgroundColor: color }}
                 />
-                <span className="truncate">{slice.label}</span>
+                <span
+                  className={`truncate ${isSelected ? "font-medium text-text-primary" : "text-text-secondary"}`}
+                >
+                  {slice.label}
+                </span>
               </span>
-              <span
-                className={`shrink-0 tabular-nums ${isSelected ? "text-text-primary font-medium" : "text-text-primary"}`}
-              >
-                {slice.value} ({slice.percent}%)
+              <span className="shrink-0 tabular-nums text-text-primary">
+                {slice.value}
+                <span className="ml-1 text-text-muted">({slice.percent}%)</span>
               </span>
             </div>
           );

@@ -363,6 +363,262 @@ def test_agent_chat_tool_execution_pin_widget(client: TestClient, auth_headers: 
     assert any(w["widget_type"] == "metric_card" for w in r.json())
 
 
+def test_agent_can_pin_business_health_score(client: TestClient, auth_headers: dict, monkeypatch):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(id="tc1", name="get_business_health", arguments={}),
+                        ToolCall(
+                            id="tc2",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "health_score",
+                                "title": "Business Health",
+                                "source_tool": "get_business_health",
+                            },
+                        ),
+                    ],
+                )
+            return ("Pinned the business health score.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "How is the business doing? Pin the health score."},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+
+    events = _parse_sse(r.text)
+    assert any(
+        e["type"] == "tool_result" and e["data"].get("name") == "get_business_health"
+        for e in events
+    )
+    pin_result = next(
+        e for e in events if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin_result["data"]["result"]["pinned"] is True
+    assert pin_result["data"]["result"]["widget"]["widget_type"] == "health_score"
+    assert pin_result["data"]["result"]["widget"]["data"]["label"] == "Business Health"
+
+    workspace_events = [e for e in events if e["type"] == "workspace_event"]
+    assert workspace_events
+    assert workspace_events[-1]["data"]["widget"]["widget_type"] == "health_score"
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    assert any(w["widget_type"] == "health_score" for w in r.json())
+
+
+def test_agent_can_pin_signal_timeline(client: TestClient, auth_headers: dict, monkeypatch):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(id="tc1", name="get_signal_timeline", arguments={"days": 30}),
+                        ToolCall(
+                            id="tc2",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "signal_timeline",
+                                "title": "Signal Timeline",
+                                "source_tool": "get_signal_timeline",
+                            },
+                        ),
+                    ],
+                )
+            return ("Pinned the signal timeline.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "What changed this week? Pin a signal timeline."},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+
+    events = _parse_sse(r.text)
+    assert any(
+        e["type"] == "tool_result" and e["data"].get("name") == "get_signal_timeline"
+        for e in events
+    )
+    pin_result = next(
+        e for e in events if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin_result["data"]["result"]["pinned"] is True
+    assert pin_result["data"]["result"]["widget"]["widget_type"] == "signal_timeline"
+    assert pin_result["data"]["result"]["widget"]["data"]["events"]
+
+    workspace_events = [e for e in events if e["type"] == "workspace_event"]
+    assert workspace_events
+    assert workspace_events[-1]["data"]["widget"]["widget_type"] == "signal_timeline"
+
+    r = client.get(f"/api/businesses/{biz_id}/agent/workspace", headers=auth_headers)
+    assert r.status_code == 200
+    assert any(w["widget_type"] == "signal_timeline" for w in r.json())
+
+
+def test_agent_can_pin_demo_sales_summary(client: TestClient, auth_headers: dict, monkeypatch):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(id="tc1", name="get_sales_summary", arguments={}),
+                        ToolCall(
+                            id="tc2",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "sales_summary",
+                                "title": "Demo Sales Summary",
+                                "source_tool": "get_sales_summary",
+                            },
+                        ),
+                    ],
+                )
+            return ("Pinned the demo sales summary.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "Show demo sales signals and pin them."},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+
+    events = _parse_sse(r.text)
+    sales_result = next(
+        e
+        for e in events
+        if e["type"] == "tool_result" and e["data"].get("name") == "get_sales_summary"
+    )
+    assert sales_result["data"]["result"]["is_demo"] is True
+
+    pin_result = next(
+        e for e in events if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin_result["data"]["result"]["pinned"] is True
+    assert pin_result["data"]["result"]["widget"]["widget_type"] == "sales_summary"
+    assert pin_result["data"]["result"]["widget"]["data"]["source"] == "demo_sales"
+
+    workspace_events = [e for e in events if e["type"] == "workspace_event"]
+    assert workspace_events[-1]["data"]["widget"]["widget_type"] == "sales_summary"
+
+
+def test_agent_can_pin_action_plan(client: TestClient, auth_headers: dict, monkeypatch):
+    from unittest.mock import MagicMock
+
+    import app.agent.executor as executor_mod
+    from app.llm.base import ToolCall
+
+    call_count = 0
+
+    def _mock_provider():
+        mock = MagicMock()
+
+        def _complete_with_tools(messages, tools, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return (
+                    "",
+                    [
+                        ToolCall(id="tc1", name="get_action_plan", arguments={}),
+                        ToolCall(
+                            id="tc2",
+                            name="pin_widget",
+                            arguments={
+                                "widget_type": "action_plan",
+                                "title": "Action Plan",
+                                "source_tool": "get_action_plan",
+                            },
+                        ),
+                    ],
+                )
+            return ("Pinned the action plan.", [])
+
+        mock.complete_with_tools.side_effect = _complete_with_tools
+        return mock
+
+    monkeypatch.setattr(executor_mod, "get_llm_provider", _mock_provider)
+
+    biz_id = _make_biz(client, auth_headers)
+    r = client.post(
+        f"/api/businesses/{biz_id}/agent/chat",
+        json={"message": "What should we do this week? Pin an action plan."},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+
+    events = _parse_sse(r.text)
+    assert any(
+        e["type"] == "tool_result" and e["data"].get("name") == "get_action_plan" for e in events
+    )
+    pin_result = next(
+        e for e in events if e["type"] == "tool_result" and e["data"].get("name") == "pin_widget"
+    )
+    assert pin_result["data"]["result"]["pinned"] is True
+    assert pin_result["data"]["result"]["widget"]["widget_type"] == "action_plan"
+    assert pin_result["data"]["result"]["widget"]["data"]["actions"]
+
+    workspace_events = [e for e in events if e["type"] == "workspace_event"]
+    assert workspace_events[-1]["data"]["widget"]["widget_type"] == "action_plan"
+
+
 def test_agent_remove_widget_tool_emits_workspace_event(
     client: TestClient, auth_headers: dict, monkeypatch
 ):

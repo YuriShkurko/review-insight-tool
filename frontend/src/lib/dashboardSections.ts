@@ -32,12 +32,25 @@ export function classifyWidget(w: WorkspaceWidget): SectionId {
   const title = w.title.toLowerCase();
   const data = w.data as Record<string, unknown>;
 
-  if (widget_type === "metric_card" || widget_type === "trend_indicator") return "overview";
+  if (
+    widget_type === "metric_card" ||
+    widget_type === "trend_indicator" ||
+    widget_type === "health_score" ||
+    widget_type === "sales_summary" ||
+    widget_type === "local_presence_card" ||
+    widget_type === "social_signal"
+  )
+    return "overview";
+
+  if (widget_type === "operations_risk") return "issues";
+  if (widget_type === "opportunity_list" || widget_type === "action_plan") return "actions";
 
   if (widget_type === "summary_card") {
     if (data.action_items || data.recommended_focus) return "actions";
     return "overview";
   }
+
+  if (widget_type === "money_flow") return "trends";
 
   if (
     [
@@ -46,6 +59,7 @@ export function classifyWidget(w: WorkspaceWidget): SectionId {
       "horizontal_bar_chart",
       "comparison_chart",
       "comparison_card",
+      "signal_timeline",
     ].includes(widget_type)
   )
     return "trends";

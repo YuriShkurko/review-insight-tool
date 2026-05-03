@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+import re
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Literal, get_args
@@ -37,6 +39,7 @@ WidgetType = Literal[
     "social_signal",
     "opportunity_list",
     "action_plan",
+    "money_flow",
 ]
 
 WIDGET_TYPES: frozenset[str] = frozenset(get_args(WidgetType))
@@ -61,6 +64,7 @@ DATA_TOOL_NAMES: list[str] = [
     "get_social_signal_summary",
     "get_opportunities",
     "get_action_plan",
+    "get_financial_flow",
     "create_custom_chart_data",
 ]
 
@@ -82,6 +86,82 @@ _INFERENCE_KEYWORDS: tuple[str, ...] = (
     "predicted",
     "estimated",
 )
+
+logger = logging.getLogger(__name__)
+
+# Labels matching this many distinct money-flow keywords trigger a redirect away
+# from create_custom_chart_data bar charts (LLM bypass of get_financial_flow).
+_MONEY_FLOW_PHRASES: tuple[str, ...] = (
+    "gross profit",
+    "operating expenses",
+    "net profit",
+)
+_MONEY_FLOW_TOKENS: tuple[str, ...] = ("revenue", "cogs", "opex")
+
+
+def _money_flow_keyword_hit_count(labels: list[str]) -> int:
+    """How many distinct money-flow keywords appear across label texts (substring / word-boundary)."""
+    text = " ".join(lab.lower() for lab in labels)
+    hits = 0
+    for phrase in _MONEY_FLOW_PHRASES:
+        if phrase in text:
+            hits += 1
+    for token in _MONEY_FLOW_TOKENS:
+        if re.search(rf"\b{re.escape(token)}\b", text):
+            hits += 1
+    return hits
+
+
+def _labels_for_money_flow_probe(payload: dict) -> list[str]:
+    raw = payload.get("labels")
+    if isinstance(raw, list):
+        return [str(x).strip() for x in raw if isinstance(x, str) and str(x).strip()]
+    bars = payload.get("bars")
+    if isinstance(bars, list):
+        out: list[str] = []
+        for bar in bars:
+            if isinstance(bar, dict):
+                lab = bar.get("label")
+                if isinstance(lab, str) and lab.strip():
+                    out.append(lab.strip())
+        return out
+    return []
+
+
+def pin_rejects_money_flow_bar_masquerade(
+    source_tool: str | None,
+    widget_type: str,
+    payload: dict | None,
+) -> dict | None:
+    """If pin would persist a profit-bridge-shaped custom bar chart, return a pin error dict."""
+    if (
+        source_tool != "create_custom_chart_data"
+        or widget_type not in {"bar_chart", "horizontal_bar_chart"}
+        or not isinstance(payload, dict)
+        or "error" in payload
+    ):
+        return None
+    labels = _labels_for_money_flow_probe(payload)
+    if not labels or _money_flow_keyword_hit_count(labels) < 3:
+        return None
+    logger.warning(
+        "op=pin_widget money_flow_bar_masquerade source_tool=%s widget_type=%s labels=%s",
+        source_tool,
+        widget_type,
+        labels[:12],
+    )
+    allowed = sorted(TOOL_COMPATIBLE_WIDGETS.get("get_financial_flow", frozenset()))
+    return {
+        "pinned": False,
+        "error": (
+            "This payload matches a profit-bridge / money-flow pattern. "
+            "Call get_financial_flow, then pin_widget with source_tool='get_financial_flow' "
+            "and widget_type='money_flow'."
+        ),
+        "allowed_widget_types": allowed,
+        "redirect_tool": "get_financial_flow",
+        "redirect_widget_type": "money_flow",
+    }
 
 
 def _coerce_pin_widget_arguments(arguments: dict | None) -> dict[str, str | dict]:
@@ -368,6 +448,21 @@ TOOL_DEFINITIONS: list[dict] = [
     {
         "type": "function",
         "function": {
+            "name": "get_financial_flow",
+            "description": (
+                "Return a demo profit-bridge / money-flow breakdown: revenue, COGS, gross profit, "
+                "operating expenses, and net profit with margin percentages. This is demo/offline "
+                "data unless a real finance integration is connected. "
+                "ALWAYS use this tool (not create_custom_chart_data) for any money flow, profit bridge, "
+                "financial flow, or 'where does the money go' question. "
+                "Pin with widget_type=money_flow — never horizontal_bar_chart for this data."
+            ),
+            "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_operations_summary",
             "description": (
                 "Return deterministic demo operations signals: staffing, wait time, service pressure, "
@@ -438,7 +533,8 @@ TOOL_DEFINITIONS: list[dict] = [
                 "the user's question (e.g. complaints by inferred name attribute, custom themes, "
                 "composed metrics). When inference is involved (e.g. inferring gender from names), "
                 "uncertainty_note is REQUIRED and must say so plainly. The executor validates the "
-                "shape; invalid shapes are rejected with a clear error."
+                "shape; invalid shapes are rejected with a clear error. "
+                "DO NOT use for money flow, profit bridge, or financial flow — use get_financial_flow instead."
             ),
             "parameters": {
                 "type": "object",
@@ -654,6 +750,7 @@ TOOL_WIDGET_TYPES: dict[str, str | None] = {
     "get_business_health": "health_score",
     "get_signal_timeline": "signal_timeline",
     "get_sales_summary": "sales_summary",
+    "get_financial_flow": "money_flow",
     "get_operations_summary": "operations_risk",
     "get_local_presence_summary": "local_presence_card",
     "get_social_signal_summary": "social_signal",
@@ -686,6 +783,7 @@ TOOL_COMPATIBLE_WIDGETS: dict[str, frozenset[str]] = {
     "get_business_health": frozenset({"health_score", "summary_card"}),
     "get_signal_timeline": frozenset({"signal_timeline", "summary_card"}),
     "get_sales_summary": frozenset({"sales_summary", "summary_card"}),
+    "get_financial_flow": frozenset({"money_flow", "summary_card"}),
     "get_operations_summary": frozenset({"operations_risk", "summary_card"}),
     "get_local_presence_summary": frozenset({"local_presence_card", "summary_card"}),
     "get_social_signal_summary": frozenset({"social_signal", "summary_card"}),
@@ -711,6 +809,7 @@ _BUSINESS_INSIGHT_TOOL_NAMES = {
     "get_signal_timeline",
     "get_opportunities",
     "get_action_plan",
+    "get_financial_flow",  # offline/computed — available whenever BI is enabled
 } | _DEMO_SIGNAL_TOOL_NAMES
 
 
@@ -840,6 +939,8 @@ def execute_tool(
         return _get_signal_timeline(db, business_id, days=parsed_days)
     if name == "get_sales_summary":
         return _get_sales_summary(business_id)
+    if name == "get_financial_flow":
+        return _get_financial_flow(business_id)
     if name == "get_operations_summary":
         return _get_operations_summary(business_id)
     if name == "get_local_presence_summary":
@@ -1622,6 +1723,35 @@ def _get_business_health(db: Session, business_id: uuid.UUID) -> dict:
         momentum = 40
 
     competitive_position = 50
+    comp_evidence = "Run competitor comparison to replace this neutral baseline"
+    try:
+        from app.models.competitor_link import CompetitorLink
+        from app.mongo import get_cached_comparison
+
+        links = (
+            db.query(CompetitorLink).filter(CompetitorLink.target_business_id == business_id).all()
+        )
+        if links:
+            competitor_id_strs = sorted(str(lnk.competitor_business_id) for lnk in links)
+            cached = get_cached_comparison(str(business_id), competitor_id_strs)
+            if cached:
+                t_snap = cached.get("target_snapshot") or {}
+                c_snaps = cached.get("competitor_snapshots") or []
+                t_rating = t_snap.get("avg_rating") or 0
+                c_ratings = [c["avg_rating"] for c in c_snaps if c.get("avg_rating") is not None]
+                avg_c_rating = sum(c_ratings) / len(c_ratings) if c_ratings else t_rating
+                n_strengths = len(cached.get("strengths") or [])
+                n_weaknesses = len(cached.get("weaknesses") or [])
+                rating_offset = (t_rating - avg_c_rating) * 15
+                sw_offset = (n_strengths - n_weaknesses) * 3
+                competitive_position = _clamp_score(50 + rating_offset + sw_offset)
+                comp_evidence = (
+                    f"{n_strengths} strength(s) vs {n_weaknesses} weakness(es) "
+                    f"vs {len(c_snaps)} competitor(s)"
+                )
+    except Exception:
+        pass  # keep baseline if cache or DB lookup fails
+
     local_presence = 45
     if review_count > 0:
         local_presence = _clamp_score(45 + min(25, review_count // 2))
@@ -1659,7 +1789,7 @@ def _get_business_health(db: Session, business_id: uuid.UUID) -> dict:
             "id": "competitive_position",
             "label": "Competitive Position",
             "score": competitive_position,
-            "evidence": "Run competitor comparison to replace this neutral baseline",
+            "evidence": comp_evidence,
         },
         {
             "id": "local_presence",
@@ -1970,6 +2100,41 @@ def _get_sales_summary(business_id: uuid.UUID) -> dict:
             {"label": "Other", "value": other_share, "unit": "%"},
         ],
         "recommendation": "Compare demand spikes with review complaints before changing staffing or promotions.",
+    }
+
+
+def _get_financial_flow(business_id: uuid.UUID) -> dict:
+    base = _demo_signal_base("finance", business_id)
+    if not base.get("is_demo"):
+        return base
+    seed = int(base.pop("_seed"))
+    orders = 420 + seed * 7
+    avg_ticket = round(18 + (seed % 11) * 1.35, 2)
+    revenue = round(orders * avg_ticket)
+    cogs_pct = 0.30 + (seed % 8) * 0.01
+    cogs = round(revenue * cogs_pct)
+    gross_profit = revenue - cogs
+    opex_pct = 0.35 + (seed % 7) * 0.01
+    operating_expenses = round(revenue * opex_pct)
+    net_profit = gross_profit - operating_expenses
+    gross_margin = round((gross_profit / revenue) * 100) if revenue else 0
+    net_margin = round((net_profit / revenue) * 100) if revenue else 0
+    return {
+        **base,
+        "label": "Demo Financial Flow",
+        "period": "Last 30 days",
+        "currency": "USD",
+        "revenue": revenue,
+        "cogs": cogs,
+        "gross_profit": gross_profit,
+        "operating_expenses": operating_expenses,
+        "net_profit": net_profit,
+        "gross_margin_pct": gross_margin,
+        "net_margin_pct": net_margin,
+        "summary": (
+            f"Demo financial signals: ${revenue:,} revenue → ${gross_profit:,} gross profit "
+            f"({gross_margin}% margin) → ${net_profit:,} net profit ({net_margin}% margin)."
+        ),
     }
 
 
@@ -2635,6 +2800,32 @@ def _create_custom_chart_data(args: dict) -> dict:
                 "plainly so the chart cannot be read as fact."
             ),
         }
+
+    if widget_type in {"bar_chart", "horizontal_bar_chart"}:
+        lf_probe = raw.get("labels")
+        if isinstance(lf_probe, list) and lf_probe:
+            probe_labels: list[str] = []
+            for x in lf_probe:
+                if x is None:
+                    continue
+                s = str(x).strip()
+                if s:
+                    probe_labels.append(s)
+            if probe_labels and _money_flow_keyword_hit_count(probe_labels) >= 3:
+                logger.warning(
+                    "op=create_custom_chart_data money_flow_redirect labels=%s",
+                    probe_labels[:12],
+                )
+                return {
+                    "error": "money_flow_redirect",
+                    "message": (
+                        "This looks like a profit bridge / money-flow chart. "
+                        "Call get_financial_flow and pin as widget_type=money_flow instead. "
+                        "Do not use create_custom_chart_data for money-flow data."
+                    ),
+                    "redirect_tool": "get_financial_flow",
+                    "redirect_widget_type": "money_flow",
+                }
 
     if widget_type == "insight_list":
         items_raw = raw.get("items")

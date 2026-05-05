@@ -1,6 +1,6 @@
 """Unit tests for place_service URL parsing and place ID extraction."""
 
-import pytest
+import asyncio
 
 from app.services.place_service import parse_place_id_from_url, resolve_place_details
 
@@ -91,13 +91,12 @@ class TestParsePlaceIdFromUrl:
 
 
 class TestResolvePlaceDetails:
-    @pytest.mark.asyncio
-    async def test_known_sim_business_names_are_resolved_without_google_places(self, monkeypatch):
+    def test_known_sim_business_names_are_resolved_without_google_places(self, monkeypatch):
         from app.config import settings
 
         monkeypatch.setattr(settings, "GOOGLE_PLACES_API_KEY", "")
 
-        details = await resolve_place_details("sim_tap_room")
+        details = asyncio.run(resolve_place_details("sim_tap_room"))
 
         assert details == {
             "name": "The Tap Room",

@@ -13,6 +13,7 @@ from app.providers import get_review_provider
 logger = logging.getLogger(__name__)
 
 MAX_REVIEWS_PER_FETCH = 500
+UNCAPPED_PROVIDER_NAMES = {"SimulationProvider"}
 
 
 def fetch_reviews_for_business(db: Session, business: Business) -> list[Review]:
@@ -43,7 +44,8 @@ def fetch_reviews_for_business(db: Session, business: Business) -> list[Review]:
 
     reviews_fetched.add(len(raw_reviews))
 
-    if len(raw_reviews) > MAX_REVIEWS_PER_FETCH:
+    provider_name = type(provider).__name__
+    if len(raw_reviews) > MAX_REVIEWS_PER_FETCH and provider_name not in UNCAPPED_PROVIDER_NAMES:
         logger.warning(
             "op=provider_fetch business_id=%s review_count=%d truncated_to=%d",
             business.id,

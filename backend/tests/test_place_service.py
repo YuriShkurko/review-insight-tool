@@ -1,6 +1,8 @@
 """Unit tests for place_service URL parsing and place ID extraction."""
 
-from app.services.place_service import parse_place_id_from_url
+import pytest
+
+from app.services.place_service import parse_place_id_from_url, resolve_place_details
 
 
 class TestParsePlaceIdFromUrl:
@@ -86,3 +88,18 @@ class TestParsePlaceIdFromUrl:
     def test_random_url_returns_none(self):
         url = "https://example.com/not-maps"
         assert parse_place_id_from_url(url) is None
+
+
+class TestResolvePlaceDetails:
+    @pytest.mark.asyncio
+    async def test_known_sim_business_names_are_resolved_without_google_places(self, monkeypatch):
+        from app.config import settings
+
+        monkeypatch.setattr(settings, "GOOGLE_PLACES_API_KEY", "")
+
+        details = await resolve_place_details("sim_tap_room")
+
+        assert details == {
+            "name": "The Tap Room",
+            "address": "Dizengoff St 55, Tel Aviv",
+        }

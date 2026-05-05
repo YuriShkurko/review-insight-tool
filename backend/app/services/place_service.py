@@ -15,6 +15,20 @@ logger = logging.getLogger(__name__)
 
 _SHORTLINK_HOSTS = {"maps.app.goo.gl", "goo.gl"}
 _REDIRECT_TIMEOUT = 10
+_SIM_PLACE_DETAILS = {
+    "sim_lager_ale_tlv": {
+        "name": "Lager & Ale TLV",
+        "address": "Rothschild Blvd 22, Tel Aviv",
+    },
+    "sim_beer_garden": {
+        "name": "The Beer Garden",
+        "address": "HaYarkon St 98, Tel Aviv",
+    },
+    "sim_tap_room": {
+        "name": "The Tap Room",
+        "address": "Dizengoff St 55, Tel Aviv",
+    },
+}
 
 # Place ID extraction patterns (order matters: more specific first).
 # Supports: place_id=, query_place_id=, /place/.../data=!...!1s0x... or !1sChIJ..., and bare !1s forms.
@@ -127,6 +141,9 @@ async def resolve_place_details(place_id: str, google_maps_url: str | None = Non
 
     Falls back to name extracted from URL, or a placeholder.
     """
+    if place_id in _SIM_PLACE_DETAILS:
+        return _SIM_PLACE_DETAILS[place_id]
+
     if not settings.GOOGLE_PLACES_API_KEY:
         name = None
         if google_maps_url:

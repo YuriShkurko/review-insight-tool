@@ -223,7 +223,10 @@ export default function BusinessesPage() {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleAdd} className="rounded-lg border border-white/10 bg-surface-card p-3">
+              <form
+                onSubmit={handleAdd}
+                className="rounded-lg border border-white/10 bg-surface-card p-3"
+              >
                 <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                   <input
                     type="text"

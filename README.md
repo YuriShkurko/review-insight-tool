@@ -617,31 +617,23 @@ Grafana dashboard JSON lives under `infrastructure/grafana/dashboards/`.
 
 ## Screenshots
 
-These screenshots are from earlier product states and should be refreshed after the Business Insight rebrand is pushed.
-
 1. Login
    ![Login](docs/screenshots/01-login.png)
 
-2. Business List
-   ![Business List](docs/screenshots/02-business-list.png)
+2. Business Launcher
+   ![Business Launcher](docs/screenshots/02-business-launcher.png)
 
-3. Dashboard Header
-   ![Dashboard Header](docs/screenshots/03-dashboard-header.png)
+3. Workspace Canvas
+   ![Workspace Canvas](docs/screenshots/03-workspace-canvas.png)
 
-4. Dashboard Insights
-   ![Dashboard Insights](docs/screenshots/04-dashboard-insights.png)
+4. Agent Chat
+   ![Agent Chat](docs/screenshots/04-agent-chat.png)
 
-5. Competitors
-   ![Competitors](docs/screenshots/05-competitors.png)
+5. Presentation Mode
+   ![Presentation Mode](docs/screenshots/05-presentation-mode.png)
 
-6. Comparison
-   ![Comparison](docs/screenshots/06-comparison.png)
-
-7. Reviews
-   ![Reviews](docs/screenshots/07-reviews.png)
-
-8. Debug Panel Events
-   ![Debug Panel Events](docs/screenshots/08-debug-panel-events.png)
+6. Debug Panel
+   ![Debug Panel](docs/screenshots/06-debug-panel.png)
 
 ## Roadmap
 

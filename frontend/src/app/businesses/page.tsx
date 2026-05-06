@@ -223,7 +223,7 @@ export default function BusinessesPage() {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleAdd} className="rounded-lg border border-white/10 bg-white p-3">
+              <form onSubmit={handleAdd} className="rounded-lg border border-white/10 bg-surface-card p-3">
                 <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                   <input
                     type="text"
@@ -232,7 +232,7 @@ export default function BusinessesPage() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Paste Google Maps URL or place ID"
                     disabled={adding}
-                    className="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm text-text-primary focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 disabled:opacity-50"
+                    className="min-w-0 rounded-lg border border-border bg-surface-card px-3 py-2 text-sm text-text-primary focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 disabled:opacity-50"
                   />
                   <button
                     type="submit"
@@ -246,7 +246,7 @@ export default function BusinessesPage() {
                   value={businessType}
                   onChange={(e) => setBusinessType(e.target.value as BusinessType)}
                   disabled={adding}
-                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm capitalize text-text-secondary focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 disabled:opacity-50"
+                  className="mt-2 w-full rounded-lg border border-border bg-surface-card px-3 py-2 text-sm capitalize text-text-secondary focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 disabled:opacity-50"
                 >
                   {BUSINESS_TYPES.map((t) => (
                     <option key={t} value={t}>

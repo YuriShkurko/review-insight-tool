@@ -11,12 +11,13 @@ export function SummaryCard({ data }: { data: Record<string, unknown> }) {
   const summary =
     (data.ai_summary as string | null) ??
     (data.summary as string | null) ??
-    (data.comparison_summary as string | null);
+    (data.comparison_summary as string | null) ??
+    (data.source_summary as string | null);
   const complaints = data.top_complaints as InsightItem[] | undefined;
   const praise = data.top_praise as InsightItem[] | undefined;
   const actions = data.action_items as string[] | undefined;
   const focus = data.recommended_focus as string | null | undefined;
-  const issues = data.issues as TopIssueRow[] | undefined;
+  const issues = (data.issues ?? data.items) as TopIssueRow[] | undefined;
   const period = data.period as string | undefined;
 
   const hasContent =

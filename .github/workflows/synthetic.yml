@@ -5,8 +5,8 @@
 name: Synthetic Monitor
 
 on:
-  schedule:
-    - cron: "*/30 * * * *"
+  # Schedule disabled after AWS teardown to avoid recurring Actions runs.
+  # Manual dispatch and deploy-triggered smoke tests stay available.
   workflow_dispatch:
   workflow_call:  # allows cd.yml to call this after a successful deploy
 

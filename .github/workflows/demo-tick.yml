@@ -5,8 +5,8 @@
 name: Demo World Tick
 
 on:
-  schedule:
-    - cron: "*/30 * * * *"
+  # Schedule disabled after the May 2026 living-demo soak.
+  # Re-enable for a future hosted demo window.
   workflow_dispatch:
 
 jobs:

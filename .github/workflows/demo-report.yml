@@ -6,13 +6,8 @@
 name: Demo Soak Report
 
 on:
-  schedule:
-    # Weekly progress check every Monday 09:00 UTC
-    - cron: "0 9 * * 1"
-    # End-of-cycle on May 8 and then every 14 days
-    - cron: "0 2 8 5 *"
-    - cron: "0 2 22 5 *"
-    - cron: "0 2 5 6 *"
+  # Schedule disabled after the May 2026 living-demo soak.
+  # Re-enable for a future hosted demo window.
   workflow_dispatch:
     inputs:
       since:

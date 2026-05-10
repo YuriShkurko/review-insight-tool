@@ -37,6 +37,7 @@ import httpx
 
 ARC_EPOCH = 1776988800   # 2026-04-24 00:00 UTC
 ARC_PERIOD = 14 * 86400  # 14 days
+DEFAULT_BOUNDARY_GRACE_HOURS = 12
 
 ARCS = [
     {"name": "festival_weekend", "label": "Craft Beer Festival",  "emoji": "🎪",
@@ -78,19 +79,75 @@ class ArcStats:
     completed: bool = False   # whether we've passed the arc's end time
 
 
-def collect_db_stats(db_url: str, cycle_start_ts: float) -> list[ArcStats]:
+def resolve_cycle_start(
+    now_ts: float,
+    mode: str = "auto",
+    boundary_grace_hours: int = DEFAULT_BOUNDARY_GRACE_HOURS,
+) -> float:
+    """Resolve which narrative cycle a report should cover.
+
+    GitHub scheduled jobs can run minutes or hours late. End-of-cycle reports
+    scheduled just after the boundary should still summarize the cycle that
+    just ended, not the fresh cycle with almost no data.
+    """
+    elapsed = now_ts - ARC_EPOCH
+    if elapsed < 0:
+        return ARC_EPOCH
+
+    cycle_number = int(elapsed // ARC_PERIOD)
+    current_start = ARC_EPOCH + cycle_number * ARC_PERIOD
+
+    if mode == "current":
+        return current_start
+
+    if mode == "completed":
+        if cycle_number == 0:
+            return ARC_EPOCH
+        return current_start - ARC_PERIOD
+
+    if mode != "auto":
+        raise ValueError(f"unknown cycle mode: {mode}")
+
+    cycle_pos = elapsed - cycle_number * ARC_PERIOD
+    grace_seconds = max(0, boundary_grace_hours) * 3600
+    if cycle_number > 0 and cycle_pos <= grace_seconds:
+        return current_start - ARC_PERIOD
+    return current_start
+
+
+def report_end_ts(cycle_start_ts: float, now_ts: float) -> float:
+    """End of the report window: now for active cycles, boundary for completed."""
+    return min(now_ts, cycle_start_ts + ARC_PERIOD)
+
+
+def collect_db_stats(
+    db_url: str, cycle_start_ts: float, report_until_ts: float
+) -> list[ArcStats]:
     import sqlalchemy as sa
 
     engine = sa.create_engine(db_url)
-    now_ts = datetime.now(UTC).timestamp()
     stats: list[ArcStats] = []
 
     with engine.connect() as conn:
         for arc in ARCS:
             start_ts = cycle_start_ts + arc["offset_start"]
             end_ts   = cycle_start_ts + arc["offset_end"]
+            query_end_ts = min(end_ts, report_until_ts)
+
+            a = ArcStats(
+                name=arc["name"],
+                label=arc["label"],
+                emoji=arc["emoji"],
+                start_ts=start_ts,
+                end_ts=end_ts,
+                completed=(report_until_ts >= end_ts),
+            )
+            if query_end_ts <= start_ts:
+                stats.append(a)
+                continue
+
             start_dt = datetime.fromtimestamp(start_ts, UTC)
-            end_dt   = datetime.fromtimestamp(end_ts, UTC)
+            end_dt   = datetime.fromtimestamp(query_end_ts, UTC)
 
             rows = conn.execute(
                 sa.text(
@@ -111,15 +168,6 @@ def collect_db_stats(db_url: str, cycle_start_ts: float) -> list[ArcStats]:
                     "pids": list(BUSINESSES.keys()),
                 },
             ).fetchall()
-
-            a = ArcStats(
-                name=arc["name"],
-                label=arc["label"],
-                emoji=arc["emoji"],
-                start_ts=start_ts,
-                end_ts=end_ts,
-                completed=(now_ts >= end_ts),
-            )
             for row in rows:
                 pid = row.place_id
                 a.reviews_by_biz[pid] = row.cnt
@@ -130,12 +178,13 @@ def collect_db_stats(db_url: str, cycle_start_ts: float) -> list[ArcStats]:
     return stats
 
 
-def collect_total_db(db_url: str, since_ts: float) -> dict[str, int]:
-    """Total reviews per business since the cycle started."""
+def collect_total_db(db_url: str, since_ts: float, until_ts: float) -> dict[str, int]:
+    """Total reviews per business inside the report window."""
     import sqlalchemy as sa
 
     engine = sa.create_engine(db_url)
     since_dt = datetime.fromtimestamp(since_ts, UTC)
+    until_dt = datetime.fromtimestamp(until_ts, UTC)
     with engine.connect() as conn:
         rows = conn.execute(
             sa.text(
@@ -143,11 +192,12 @@ def collect_total_db(db_url: str, since_ts: float) -> dict[str, int]:
                 SELECT place_id, COUNT(*) AS cnt
                 FROM sim_reviews
                 WHERE published_at >= :since
+                  AND published_at <  :until
                   AND place_id = ANY(:pids)
                 GROUP BY place_id
                 """
             ),
-            {"since": since_dt, "pids": list(BUSINESSES.keys())},
+            {"since": since_dt, "until": until_dt, "pids": list(BUSINESSES.keys())},
         ).fetchall()
     return {row.place_id: row.cnt for row in rows}
 
@@ -164,7 +214,9 @@ class MonitorStats:
     failures: list[dict] = field(default_factory=list)   # {date, conclusion, name}
 
 
-def collect_github_stats(token: str, repo: str, since_ts: float) -> MonitorStats:
+def collect_github_stats(
+    token: str, repo: str, since_ts: float, until_ts: float
+) -> MonitorStats:
     since_dt = datetime.fromtimestamp(since_ts, UTC)
     since_str = since_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -213,6 +265,14 @@ def collect_github_stats(token: str, repo: str, since_ts: float) -> MonitorStats
             break
 
         for run in runs:
+            created_ts = (
+                datetime.fromisoformat(run["created_at"].replace("Z", "+00:00"))
+                .astimezone(UTC)
+                .timestamp()
+            )
+            if created_ts >= until_ts:
+                continue
+
             conclusion = run.get("conclusion")
             if conclusion is None:
                 continue   # still in progress
@@ -549,6 +609,24 @@ def main() -> None:
         default=None,
         help="Override cycle start date (YYYY-MM-DD). Defaults to the ARC_EPOCH.",
     )
+    parser.add_argument(
+        "--cycle",
+        choices=("auto", "current", "completed"),
+        default="auto",
+        help=(
+            "Which cycle to report when --since is omitted. "
+            "auto reports the just-completed cycle during the boundary grace window."
+        ),
+    )
+    parser.add_argument(
+        "--boundary-grace-hours",
+        type=int,
+        default=DEFAULT_BOUNDARY_GRACE_HOURS,
+        help=(
+            "Hours after a cycle boundary where --cycle auto still reports "
+            "the completed cycle."
+        ),
+    )
     args = parser.parse_args()
 
     db_url = os.environ.get("DATABASE_URL")
@@ -560,38 +638,41 @@ def main() -> None:
         print("ERROR: DATABASE_URL required", file=sys.stderr)
         sys.exit(1)
 
+    now_ts = datetime.now(UTC).timestamp()
+
     if args.since:
         cycle_start_ts = datetime.strptime(args.since, "%Y-%m-%d").replace(tzinfo=UTC).timestamp()
     else:
-        # Compute the start of the current arc cycle from ARC_EPOCH
-        now_ts = datetime.now(UTC).timestamp()
-        elapsed = now_ts - ARC_EPOCH
-        cycle_number = int(elapsed // ARC_PERIOD)
-        cycle_start_ts = ARC_EPOCH + cycle_number * ARC_PERIOD
+        cycle_start_ts = resolve_cycle_start(
+            now_ts,
+            mode=args.cycle,
+            boundary_grace_hours=args.boundary_grace_hours,
+        )
 
-    now_ts = datetime.now(UTC).timestamp()
-    cycle_day = (now_ts - cycle_start_ts) / 86400
+    until_ts = report_end_ts(cycle_start_ts, now_ts)
+    cycle_day = (until_ts - cycle_start_ts) / 86400
     print(f"\nDemo soak report  (cycle day {cycle_day:.1f}/14)", flush=True)
     print(f"Cycle start: {datetime.fromtimestamp(cycle_start_ts, UTC).strftime('%Y-%m-%d %H:%M UTC')}", flush=True)
+    print(f"Report end:  {datetime.fromtimestamp(until_ts, UTC).strftime('%Y-%m-%d %H:%M UTC')}", flush=True)
 
     # Collect data
     print("\n[1/3] Querying sim_reviews...", flush=True)
-    arc_stats = collect_db_stats(db_url, cycle_start_ts)
-    totals = collect_total_db(db_url, cycle_start_ts)
+    arc_stats = collect_db_stats(db_url, cycle_start_ts, until_ts)
+    totals = collect_total_db(db_url, cycle_start_ts, until_ts)
     for a in arc_stats:
         print(f"  [{a.name}] {a.label}: {a.total_reviews} reviews", flush=True)
 
     print("\n[2/3] Querying GitHub Actions...", flush=True)
     if github_token:
-        monitor = collect_github_stats(github_token, github_repo, cycle_start_ts)
+        monitor = collect_github_stats(github_token, github_repo, cycle_start_ts, until_ts)
         print(f"  Synthetic monitor: {monitor.passed}/{monitor.total_runs} passed", flush=True)
     else:
         print("  GITHUB_TOKEN not set — skipping", flush=True)
         monitor = MonitorStats()
 
     print("\n[3/3] Building report...", flush=True)
-    tg_msg = build_telegram_message(arc_stats, totals, monitor, cycle_start_ts, now_ts)
-    md_report = build_markdown_report(arc_stats, totals, monitor, cycle_start_ts, now_ts)
+    tg_msg = build_telegram_message(arc_stats, totals, monitor, cycle_start_ts, until_ts)
+    md_report = build_markdown_report(arc_stats, totals, monitor, cycle_start_ts, until_ts)
 
     # Write markdown artifact
     with open(report_path, "w", encoding="utf-8") as f:

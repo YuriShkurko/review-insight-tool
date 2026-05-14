@@ -4,9 +4,9 @@
 
 **Generated:** 2026-05-10 03:57 UTC
 
-**Demo URL:** http://review-insight-alb-1659964100.eu-central-1.elb.amazonaws.com
+**Demo URL:** <redacted-public-demo-url>
 
-**Login:** `demo@review-insight.app / DemoWorld2026!`
+**Login:** `<redacted-demo-credential>`
 
 ---
 

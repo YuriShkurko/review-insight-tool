@@ -30,8 +30,11 @@ from datetime import UTC, datetime, timezone
 import httpx
 
 BASE_URL = os.environ.get("DEMO_API_URL", "http://localhost:8000")
-DEMO_EMAIL = "demo@review-insight.app"
-DEMO_PASSWORD = "DemoWorld2026!"
+# Demo credentials come from env vars so real values are never committed.
+# Defaults are safe placeholders for local development only — override via
+# DEMO_EMAIL / DEMO_PASSWORD for any shared/staging demo deployment.
+DEMO_EMAIL = os.getenv("DEMO_EMAIL", "demo@example.local")
+DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "local-demo-password")
 
 # Fixed epoch so narrative arcs are globally coherent.
 # 2026-04-24 00:00 UTC — day 0 of the first arc cycle.

@@ -6,7 +6,10 @@ analysis and comparison so the dashboard is fully populated on first login.
 
 Usage:
     DEMO_API_URL=http://localhost:8000 python scripts/seed_demo.py
-    DEMO_API_URL=http://review-insight-alb-xxx.eu-central-1.elb.amazonaws.com python scripts/seed_demo.py
+    DEMO_API_URL=https://<your-demo-host> python scripts/seed_demo.py
+
+Demo credentials (email + password) come from env vars:
+    DEMO_EMAIL=...  DEMO_PASSWORD=...
 
 Safe to re-run: skips steps that are already done (idempotent).
 """
@@ -17,8 +20,11 @@ import sys
 import httpx
 
 BASE_URL = os.environ.get("DEMO_API_URL", "http://localhost:8000")
-DEMO_EMAIL = "demo@review-insight.app"
-DEMO_PASSWORD = "DemoWorld2026!"
+# Demo credentials come from env vars so real values are never committed.
+# Defaults are safe placeholders for local development only — override via
+# DEMO_EMAIL / DEMO_PASSWORD for any shared/staging demo deployment.
+DEMO_EMAIL = os.getenv("DEMO_EMAIL", "demo@example.local")
+DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "local-demo-password")
 
 # ---------------------------------------------------------------------------
 # Demo businesses

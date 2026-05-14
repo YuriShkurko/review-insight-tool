@@ -40,6 +40,11 @@ COMMIT_MSG.txt
 # Generated reports (committed as CI artifacts, not source)
 demo-report.md
 
+# Local AWS task-definition dumps (output of `aws ecs describe-task-definition`).
+# Contain live AWS account IDs and ALB URLs — never commit.
+infrastructure/*-taskdef.json
+task-def-*.json
+
 # Personal / local-only files
 prompt.txt
 INTERVIEW_PREP.md

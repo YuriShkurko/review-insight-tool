@@ -115,6 +115,21 @@ For a pre-seeded **`demo@example.com`** account and linked businesses (bypasses 
 2. `cd /app && python -m scripts.seed_offline`
 3. Log in as `demo@example.com` / `demo1234`.
 
+### Demo / living-demo credentials (env vars)
+
+The `scripts/seed_demo.py`, `scripts/tick_demo.py`, and `scripts/demo_report.py`
+operational scripts read demo credentials from env vars:
+
+| Variable | Default (placeholder, local-only) |
+|----------|-----------------------------------|
+| `DEMO_EMAIL` | `demo@example.local` |
+| `DEMO_PASSWORD` | `local-demo-password` |
+
+For any shared/staging/hosted demo, **set these via Railway Variables or GitHub
+Actions secrets — never commit real credentials**. The defaults are inert
+placeholders so the scripts can run locally without surfacing a real
+account, and so this repo stays safe to share publicly.
+
 If the command errors on missing tables, fix **`DATABASE_URL`** and redeploy.
 
 ## Local Docker Compose (unchanged)

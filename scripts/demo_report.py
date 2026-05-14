@@ -59,7 +59,12 @@ BUSINESSES = {
 }
 
 DEMO_URL = os.environ.get("DEMO_API_URL", "").rstrip("/")
-DEMO_LOGIN = "demo@review-insight.app / DemoWorld2026!"
+# Demo credentials come from env vars so real values are never committed.
+# Defaults are safe placeholders for local development only — override via
+# DEMO_EMAIL / DEMO_PASSWORD for any shared/staging demo deployment.
+_DEMO_EMAIL = os.getenv("DEMO_EMAIL", "demo@example.local")
+_DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "local-demo-password")
+DEMO_LOGIN = f"{_DEMO_EMAIL} / {_DEMO_PASSWORD}"
 
 
 # ---------------------------------------------------------------------------
